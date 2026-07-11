@@ -1,0 +1,1105 @@
+// ===== STATE =====
+let currentUser = null;
+let currentPage = 'dashboard-home';
+let allRewards = [];
+let selectedRewardColor = 'primary';
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  checkAuth();
+  setupNavigation();
+  setupSidebar();
+  setupModTabs();
+  setupModSearch();
+  setupCategorySearch();
+  setupColorBtns();
+});
+
+// ===== AUTH =====
+async function checkAuth() {
+  try {
+    const resp = await fetch('/auth/me');
+    const data = await resp.json();
+    if (data.authenticated && data.user) {
+      currentUser = data.user;
+      showDashboard();
+    } else {
+      showLogin();
+    }
+  } catch {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+}
+
+function showDashboard() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  populateUserInfo();
+  loadHomeData();
+}
+
+function populateUserInfo() {
+  if (!currentUser) return;
+  document.getElementById('userAvatar').src = currentUser.profile_image_url;
+  document.getElementById('userName').textContent = currentUser.display_name;
+  document.getElementById('pageTitle').textContent = 'Inicio';
+}
+
+// ===== NAVIGATION =====
+function setupNavigation() {
+  document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigateTo(item.dataset.page);
+    });
+  });
+}
+
+function navigateTo(page) {
+  currentPage = page;
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const activeNav = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (activeNav) activeNav.classList.add('active');
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pageEl = document.getElementById(`page-${page}`);
+  if (pageEl) pageEl.classList.add('active');
+
+  const titles = {
+    'dashboard-home': 'Inicio',
+    'moderation': 'Moderacion',
+    'channel-points': 'Puntos del Canal',
+    'stream-config': 'Configurar Directo',
+    'chat-settings': 'Chat',
+    'stats': 'Estadisticas',
+    'predictions': 'Predicciones',
+    'polls': 'Encuestas'
+  };
+  document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
+
+  // Close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+
+  loadPageData(page);
+}
+
+function loadPageData(page) {
+  switch (page) {
+    case 'dashboard-home': loadHomeData(); break;
+    case 'moderation': loadModerationData(); break;
+    case 'channel-points': loadRewards(); break;
+    case 'stream-config': loadStreamConfig(); break;
+    case 'chat-settings': loadChatSettings(); break;
+    case 'stats': loadStats(); break;
+    case 'predictions': loadPredictions(); break;
+    case 'polls': loadPolls(); break;
+  }
+}
+
+// ===== SIDEBAR =====
+function setupSidebar() {
+  document.getElementById('sidebarToggle').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+  });
+  document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('open');
+  });
+}
+
+// ===== API HELPER =====
+async function api(endpoint, options = {}) {
+  try {
+    const resp = await fetch(endpoint, {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      ...options,
+      body: options.body ? JSON.stringify(options.body) : undefined
+    });
+    if (resp.status === 401) {
+      showToast('Sesion expirada. Recarga la pagina.', 'error');
+      return null;
+    }
+    return await resp.json();
+  } catch (err) {
+    console.error('API Error:', err);
+    showToast('Error de conexion', 'error');
+    return null;
+  }
+}
+
+// ===== HOME =====
+async function loadHomeData() {
+  if (!currentUser) return;
+  
+  document.getElementById('followersValue').textContent = currentUser.followers_count || '--';
+  document.getElementById('viewsValue').textContent = formatNumber(currentUser.view_count);
+
+  const stream = await api('/api/stream');
+  if (stream && stream.data && stream.data.length > 0) {
+    const s = stream.data[0];
+    document.getElementById('userStatus').textContent = 'EN DIRECTO';
+    document.getElementById('userStatus').className = 'user-status live';
+    document.getElementById('streamStatusLabel').textContent = 'EN DIRECTO';
+    document.querySelector('.status-dot').className = 'status-dot live';
+    document.getElementById('viewerCountNum').textContent = s.viewer_count;
+    document.getElementById('currentViewersValue').textContent = s.viewer_count;
+
+    const startTime = new Date(s.started_at);
+    document.getElementById('streamTimeValue').textContent = getTimeSince(startTime);
+
+    const homeInfo = document.getElementById('homeStreamInfo');
+    homeInfo.innerHTML = `
+      <div class="channel-info-grid">
+        <div class="channel-info-item">
+          <span class="label">Titulo</span>
+          <span class="value">${escapeHtml(s.title)}</span>
+        </div>
+        <div class="channel-info-item">
+          <span class="label">Categoria</span>
+          <span class="value">${escapeHtml(s.game_name || 'Sin categoria')}</span>
+        </div>
+        <div class="channel-info-item">
+          <span class="label">Espectadores</span>
+          <span class="value">${s.viewer_count}</span>
+        </div>
+        <div class="channel-info-item">
+          <span class="label">Idioma</span>
+          <span class="value">${s.language}</span>
+        </div>
+        <div class="channel-info-item">
+          <span class="label">Inicio</span>
+          <span class="value">${new Date(s.started_at).toLocaleString('es')}</span>
+        </div>
+        <div class="channel-info-item">
+          <span class="label">Tags</span>
+          <span class="value">${s.tags ? s.tags.join(', ') : 'Ninguno'}</span>
+        </div>
+      </div>
+    `;
+  } else {
+    document.getElementById('userStatus').textContent = 'Offline';
+    document.getElementById('userStatus').className = 'user-status';
+    document.getElementById('streamStatusLabel').textContent = 'Offline';
+    document.querySelector('.status-dot').className = 'status-dot offline';
+    document.getElementById('currentViewersValue').textContent = '0';
+    document.getElementById('streamTimeValue').textContent = '--';
+    document.getElementById('homeStreamInfo').innerHTML = '<div class="empty-state"><p>No hay directo activo</p></div>';
+  }
+}
+
+// ===== MODERATION =====
+let followers = [];
+
+function setupModTabs() {
+  // Single tab, no tab switching needed
+}
+
+function setupModSearch() {
+  const input = document.getElementById('modUserSearch');
+  let debounce;
+  input.addEventListener('input', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      const q = input.value.toLowerCase().trim();
+      if (!q) return renderFollowers(followers.slice(0, 100));
+      const filtered = followers.filter(f => f.user_name.toLowerCase().includes(q) || f.user_login.toLowerCase().includes(q));
+      renderFollowers(filtered.slice(0, 100));
+    }, 300);
+  });
+}
+
+async function loadModerationData() {
+  loadFollowers();
+}
+
+async function loadFollowers() {
+  const loadingEl = document.getElementById('followersLoading');
+  const listEl = document.getElementById('followersList');
+  const countEl = document.getElementById('modFollowerCount');
+
+  loadingEl.style.display = '';
+  listEl.innerHTML = '';
+  countEl.textContent = 'Cargando...';
+
+  try {
+    const data = await fetch('/api/mod/followers').then(r => r.json());
+
+    if (data && data.data && Array.isArray(data.data.data) && data.data.data.length > 0) {
+      followers = data.data.data;
+      countEl.textContent = `${followers.length} seguidores`;
+      renderFollowers(followers.slice(0, 100));
+    } else if (data && data.data && data.data.error) {
+      const errMsg = data.data.error.message || data.data.error.error || JSON.stringify(data.data.error);
+      listEl.innerHTML = `<div class="empty-state"><p>Error: ${escapeHtml(errMsg)}</p><p style="margin-top:12px">Cierra sesion y vuelve a loguearte para actualizar los permisos.</p></div>`;
+      countEl.textContent = 'Error';
+    } else {
+      listEl.innerHTML = '<div class="empty-state"><p>No se pudieron cargar los seguidores. Cierra sesion y vuelve a loguearte.</p></div>';
+      countEl.textContent = '0 seguidores';
+    }
+  } catch (err) {
+    console.error('Load followers error:', err);
+    listEl.innerHTML = `<div class="empty-state"><p>Error de conexion: ${escapeHtml(err.message)}</p><p style="margin-top:12px">Asegurate de que el servidor esta corriendo (npm start).</p></div>`;
+    countEl.textContent = 'Error';
+  }
+
+  loadingEl.style.display = 'none';
+}
+
+function renderFollowers(list) {
+  const container = document.getElementById('followersList');
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No se encontraron seguidores</p></div>';
+    return;
+  }
+  container.innerHTML = list.map(f => `
+    <div class="user-item" data-userid="${f.user_id}">
+      <img src="${f.user_profile_image_url || ''}" alt="" onerror="this.style.background='var(--purple-700)';this.style.borderRadius='50%';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%237c3aed%22 width=%2240%22 height=%2240%22 rx=%2220%22/><text x=%2220%22 y=%2226%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2216%22 font-family=%22sans-serif%22>${f.user_name.charAt(0).toUpperCase()}</text></svg>'">
+      <div class="user-item-info">
+        <div class="user-item-name">${escapeHtml(f.user_name)}</div>
+        <div class="user-item-meta">Siguiendo desde ${new Date(f.followed_at).toLocaleDateString('es')}</div>
+      </div>
+      <div class="user-item-actions-inline">
+        <button class="btn btn-danger btn-sm" onclick="showBanModal('${f.user_id}', '${escapeAttr(f.user_name)}')" title="Banear">Ban</button>
+        <button class="btn btn-warning btn-sm" onclick="showTimeoutModal('${f.user_id}', '${escapeAttr(f.user_name)}')" title="Mutear">Mute</button>
+        <button class="btn btn-secondary btn-sm" onclick="showRoleModal('${f.user_id}', '${escapeAttr(f.user_name)}')" title="Rol">Rol</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===== BAN =====
+function showBanModal(userId, userName) {
+  showModal('Banear a ' + userName, `
+    <div class="form-group">
+      <label>Tipo de ban</label>
+      <div class="ban-type-selector">
+        <button class="ban-type-btn active" data-type="permanent" onclick="selectBanType(this, 'permanent')">Permanente</button>
+        <button class="ban-type-btn" data-type="temporary" onclick="selectBanType(this, 'temporary')">Temporal</button>
+      </div>
+    </div>
+    <div class="form-group hidden" id="banDurationGroup">
+      <label>Duracion</label>
+      <select id="banDuration" class="form-input">
+        <option value="600">10 minutos</option>
+        <option value="1800">30 minutos</option>
+        <option value="3600" selected>1 hora</option>
+        <option value="7200">2 horas</option>
+        <option value="14400">4 horas</option>
+        <option value="43200">12 horas</option>
+        <option value="86400">24 horas</option>
+        <option value="259200">3 dias</option>
+        <option value="604800">7 dias</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Motivo</label>
+      <input type="text" id="banReason" class="form-input" placeholder="Motivo del ban (opcional)">
+    </div>
+  `, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: 'Banear', class: 'btn-danger', action: `executeBan('${userId}', '${userName}')` }
+  ]);
+}
+
+function selectBanType(btn, type) {
+  document.querySelectorAll('.ban-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const durationGroup = document.getElementById('banDurationGroup');
+  if (type === 'temporary') {
+    durationGroup.classList.remove('hidden');
+  } else {
+    durationGroup.classList.add('hidden');
+  }
+}
+
+async function executeBan(userId, userName) {
+  const isTemporary = document.querySelector('.ban-type-btn.active').dataset.type === 'temporary';
+  const reason = document.getElementById('banReason').value;
+  const body = { user_id: userId, reason: reason || '' };
+  if (isTemporary) body.duration = parseInt(document.getElementById('banDuration').value);
+
+  const result = await api('/api/mod/ban', { method: 'POST', body });
+  closeModal();
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast(`${userName} ha sido baneado${isTemporary ? ' temporalmente' : ''}`, 'success');
+  } else {
+    showToast('Error al banear usuario', 'error');
+  }
+}
+
+async function unbanUser(userId, userName) {
+  const result = await api('/api/mod/unban', { method: 'DELETE', body: { user_id: userId } });
+  closeModal();
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast(`${userName || 'Usuario'} desbaneado`, 'success');
+  } else {
+    showToast('Error al desbanear', 'error');
+  }
+}
+
+// ===== TIMEOUT =====
+function showTimeoutModal(userId, userName) {
+  showModal('Mutear a ' + userName, `
+    <div class="form-group">
+      <label>Duracion del mute</label>
+      <select id="timeoutDuration" class="form-input">
+        <option value="60">1 minuto</option>
+        <option value="300">5 minutos</option>
+        <option value="600" selected>10 minutos</option>
+        <option value="1800">30 minutos</option>
+        <option value="3600">1 hora</option>
+        <option value="7200">2 horas</option>
+        <option value="14400">4 horas</option>
+        <option value="43200">12 horas</option>
+        <option value="86400">24 horas</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Motivo</label>
+      <input type="text" id="timeoutReason" class="form-input" placeholder="Motivo del mute (opcional)">
+    </div>
+  `, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: 'Mutear', class: 'btn-warning', action: `executeTimeout('${userId}', '${userName}')` }
+  ]);
+}
+
+async function executeTimeout(userId, userName) {
+  const duration = parseInt(document.getElementById('timeoutDuration').value);
+  const reason = document.getElementById('timeoutReason').value;
+
+  const result = await api('/api/mod/timeout', { method: 'POST', body: { user_id: userId, duration, reason } });
+  closeModal();
+  if (result && (result.status === 200 || result.status === 204)) {
+    const mins = Math.floor(duration / 60);
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const timeStr = h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}` : `${m} minutos`;
+    showToast(`${userName} mutado por ${timeStr}`, 'success');
+  } else {
+    showToast('Error al mutear usuario', 'error');
+  }
+}
+
+// ===== ROLES =====
+function showRoleModal(userId, userName) {
+  showModal('Cambiar rol: ' + userName, `
+    <div class="role-options">
+      <div class="role-option" onclick="addAsMod('${userId}', '${userName}')">
+        <div class="role-option-icon" style="background:rgba(59,130,246,0.15);color:var(--blue-400)">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="role-option-info">
+          <span class="role-option-title">Hacer Moderador</span>
+          <span class="role-option-desc">Permisos completos de moderacion del canal</span>
+        </div>
+      </div>
+      <div class="role-option" onclick="removeAsMod('${userId}', '${userName}')">
+        <div class="role-option-icon" style="background:rgba(107,95,138,0.15);color:var(--text-muted)">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        </div>
+        <div class="role-option-info">
+          <span class="role-option-title">Quitar Moderador</span>
+          <span class="role-option-desc">Remover permisos de moderador</span>
+        </div>
+      </div>
+      <div class="role-option" onclick="addAsVip('${userId}', '${userName}')">
+        <div class="role-option-icon" style="background:rgba(168,85,247,0.15);color:var(--purple-400)">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <div class="role-option-info">
+          <span class="role-option-title">Hacer VIP</span>
+          <span class="role-option-desc">Badge VIP en el chat</span>
+        </div>
+      </div>
+      <div class="role-option" onclick="removeAsVip('${userId}', '${userName}')">
+        <div class="role-option-icon" style="background:rgba(107,95,138,0.15);color:var(--text-muted)">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/><line x1="4" y1="4" x2="20" y2="20" stroke-width="2"/></svg>
+        </div>
+        <div class="role-option-info">
+          <span class="role-option-title">Quitar VIP</span>
+          <span class="role-option-desc">Remover badge VIP</span>
+        </div>
+      </div>
+    </div>
+  `, [{ text: 'Cerrar', class: 'btn-secondary', action: 'closeModal()' }]);
+}
+
+async function addAsMod(userId, userName) {
+  const result = await api('/api/mod/moderators', { method: 'POST', body: { user_id: userId } });
+  closeModal();
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast(`${userName} ahora es moderador`, 'success');
+  } else {
+    showToast('Error al asignar moderador', 'error');
+  }
+}
+
+async function removeAsMod(userId, userName) {
+  const result = await api('/api/mod/moderators', { method: 'DELETE', body: { user_id: userId } });
+  closeModal();
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast(`Moderador removido de ${userName}`, 'success');
+  } else {
+    showToast('Error al remover moderador', 'error');
+  }
+}
+
+async function addAsVip(userId, userName) {
+  const result = await api('/api/mod/vips', { method: 'POST', body: { user_id: userId } });
+  closeModal();
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast(`${userName} ahora es VIP`, 'success');
+  } else {
+    showToast('Error al asignar VIP', 'error');
+  }
+}
+
+async function removeAsVip(userId, userName) {
+  const result = await api('/api/mod/vips', { method: 'DELETE', body: { user_id: userId } });
+  closeModal();
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast(`VIP removido de ${userName}`, 'success');
+  } else {
+    showToast('Error al remover VIP', 'error');
+  }
+}
+
+// ===== CHANNEL POINTS =====
+async function loadRewards() {
+  document.getElementById('rewardsLoading').style.display = '';
+  const data = await api('/api/channel-points/rewards');
+  const grid = document.getElementById('rewardsGrid');
+
+  if (data && data.data && data.data.length > 0) {
+    allRewards = data.data;
+    grid.innerHTML = data.data.map(r => `
+      <div class="reward-card">
+        <div class="reward-header">
+          <div class="reward-icon" style="background:${r.backgroundColor || '#7c3aed'}">${r.image ? `<img src="${r.image.url}" style="width:100%;height:100%;object-fit:contain;border-radius:8px">` : '🎁'}</div>
+          <div>
+            <div class="reward-title">${escapeHtml(r.title)}</div>
+            <div class="reward-cost">${formatNumber(r.cost)} puntos</div>
+          </div>
+        </div>
+        <div class="reward-description">${escapeHtml(r.prompt || 'Sin descripcion')}</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px">
+          ${r.isEnabled ? 'Activa' : 'Inactiva'} | Max redenciones/dia: ${r.maxRedemptionsPerStream || 'Ilimitado'} | Total: ${r.totalRedemptions || 0}
+        </div>
+        <div class="reward-actions">
+          <button class="btn btn-secondary btn-sm" onclick="editReward('${r.id}')">Editar</button>
+          <button class="btn btn-secondary btn-sm" onclick="duplicateReward('${r.id}')">Duplicar</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteReward('${r.id}')">Eliminar</button>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    grid.innerHTML = '<div class="empty-state"><p>No hay recompensas creadas. Crea la primera!</p></div>';
+  }
+  document.getElementById('rewardsLoading').style.display = 'none';
+}
+
+function showRewardModal(reward = null) {
+  const isEdit = !!reward;
+  showModal(isEdit ? 'Editar Recompensa' : 'Nueva Recompensa', `
+    <div class="form-group">
+      <label>Titulo</label>
+      <input type="text" id="rewardTitle" class="form-input" value="${isEdit ? escapeHtml(reward.title) : ''}" placeholder="Nombre de la recompensa">
+    </div>
+    <div class="form-group">
+      <label>Costo (puntos)</label>
+      <input type="number" id="rewardCost" class="form-input" value="${isEdit ? reward.cost : 100}" min="0">
+    </div>
+    <div class="form-group">
+      <label>Descripcion / Prompt</label>
+      <textarea id="rewardPrompt" class="form-input" rows="2" placeholder="Que deben hacer los viewers?">${isEdit ? escapeHtml(reward.prompt || '') : ''}</textarea>
+    </div>
+    <div class="form-group">
+      <label>Color de fondo</label>
+      <div class="color-options">
+        ${['#7c3aed','#db2777','#3b82f6','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6'].map(c => `
+          <button type="button" class="color-btn ${isEdit && reward.backgroundColor === c ? 'active' : ''}" style="background:${c}" onclick="selectRewardColor(this, '${c}')"></button>
+        `).join('')}
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Maximo por directo</label>
+      <input type="number" id="rewardMaxPerStream" class="form-input" value="${isEdit && reward.maxRedemptionsPerStream ? reward.maxRedemptionsPerStream : ''}" placeholder="Ilimitado" min="0">
+    </div>
+    <div class="form-group">
+      <label>Maximo por usuario</label>
+      <input type="number" id="rewardMaxPerUser" class="form-input" value="${isEdit && reward.maxRedemptionsPerUser ? reward.maxRedemptionsPerUser : ''}" placeholder="Ilimitado" min="0">
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="rewardEnabled" ${isEdit ? (reward.isEnabled ? 'checked' : '') : 'checked'}>
+        Activa
+      </label>
+    </div>
+  `, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: isEdit ? 'Guardar' : 'Crear', class: 'btn-primary', action: isEdit ? `updateReward('${reward.id}')` : 'createReward()' }
+  ]);
+
+  selectedRewardColor = isEdit ? (reward.backgroundColor || '#7c3aed') : '#7c3aed';
+}
+
+function selectRewardColor(btn, color) {
+  document.querySelectorAll('.color-options .color-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedRewardColor = color;
+}
+
+async function createReward() {
+  const body = {
+    title: document.getElementById('rewardTitle').value,
+    cost: parseInt(document.getElementById('rewardCost').value) || 100,
+    prompt: document.getElementById('rewardPrompt').value,
+    backgroundColor: selectedRewardColor,
+    isEnabled: document.getElementById('rewardEnabled').checked
+  };
+  const maxPerStream = document.getElementById('rewardMaxPerStream').value;
+  const maxPerUser = document.getElementById('rewardMaxPerUser').value;
+  if (maxPerStream) body.maxRedemptionsPerStream = parseInt(maxPerStream);
+  if (maxPerUser) body.maxRedemptionsPerUser = parseInt(maxPerUser);
+
+  const result = await api('/api/channel-points/rewards', { method: 'POST', body });
+  closeModal();
+  if (result && result.data) {
+    showToast('Recompensa creada!', 'success');
+    loadRewards();
+  } else {
+    showToast('Error al crear recompensa', 'error');
+  }
+}
+
+function editReward(id) {
+  const reward = allRewards.find(r => r.id === id);
+  if (reward) showRewardModal(reward);
+}
+
+async function updateReward(id) {
+  const body = {
+    title: document.getElementById('rewardTitle').value,
+    cost: parseInt(document.getElementById('rewardCost').value) || 100,
+    prompt: document.getElementById('rewardPrompt').value,
+    backgroundColor: selectedRewardColor,
+    isEnabled: document.getElementById('rewardEnabled').checked
+  };
+  const maxPerStream = document.getElementById('rewardMaxPerStream').value;
+  const maxPerUser = document.getElementById('rewardMaxPerUser').value;
+  if (maxPerStream) body.maxRedemptionsPerStream = parseInt(maxPerStream);
+  else body.maxRedemptionsPerStream = null;
+  if (maxPerUser) body.maxRedemptionsPerUser = parseInt(maxPerUser);
+  else body.maxRedemptionsPerUser = null;
+
+  const result = await api(`/api/channel-points/rewards/${id}`, { method: 'PATCH', body });
+  closeModal();
+  if (result && result.data) {
+    showToast('Recompensa actualizada!', 'success');
+    loadRewards();
+  } else {
+    showToast('Error al actualizar', 'error');
+  }
+}
+
+async function duplicateReward(id) {
+  const reward = allRewards.find(r => r.id === id);
+  if (!reward) return;
+
+  const body = {
+    title: reward.title + ' (copia)',
+    cost: reward.cost,
+    prompt: reward.prompt,
+    backgroundColor: reward.backgroundColor,
+    isEnabled: reward.isEnabled
+  };
+  if (reward.maxRedemptionsPerStream) body.maxRedemptionsPerStream = reward.maxRedemptionsPerStream;
+  if (reward.maxRedemptionsPerUser) body.maxRedemptionsPerUser = reward.maxRedemptionsPerUser;
+
+  const result = await api('/api/channel-points/rewards', { method: 'POST', body });
+  if (result && result.data) {
+    showToast('Recompensa duplicada!', 'success');
+    loadRewards();
+  } else {
+    showToast('Error al duplicar', 'error');
+  }
+}
+
+async function deleteReward(id) {
+  if (!confirm('Eliminar esta recompensa?')) return;
+  const result = await api(`/api/channel-points/rewards/${id}`, { method: 'DELETE' });
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast('Recompensa eliminada', 'success');
+    loadRewards();
+  } else {
+    showToast('Error al eliminar', 'error');
+  }
+}
+
+// ===== STREAM CONFIG =====
+let selectedGameId = null;
+
+async function loadStreamConfig() {
+  const channelData = await api('/api/channel');
+  if (channelData && channelData.data && channelData.data[0]) {
+    const ch = channelData.data[0];
+    document.getElementById('streamTitle').value = ch.title || '';
+    document.getElementById('currentGameName').textContent = ch.game_name || 'Sin categoria';
+    selectedGameId = ch.game_id;
+
+    const langSelect = document.getElementById('streamLanguage');
+    for (let opt of langSelect.options) {
+      if (opt.value === ch.language) { opt.selected = true; break; }
+    }
+  }
+
+  const tagsData = await api('/api/tags');
+  const tagsContainer = document.getElementById('streamTags');
+  if (tagsData && tagsData.data && tagsData.data.length > 0) {
+    tagsContainer.innerHTML = tagsData.data.map(t => 
+      `<span class="tag">${escapeHtml(t.localization_names && t.localization_names['es-mx'] ? t.localization_names['es-mx'] : t.tag_id)}</span>`
+    ).join('');
+  } else {
+    tagsContainer.innerHTML = '<span class="help-text">No hay etiquetas configuradas</span>';
+  }
+}
+
+function setupCategorySearch() {
+  const input = document.getElementById('gameSearch');
+  const dropdown = document.getElementById('categoryDropdown');
+  let debounce;
+
+  input.addEventListener('input', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(async () => {
+      const name = input.value.trim();
+      if (name.length < 2) { dropdown.classList.add('hidden'); return; }
+      
+      const data = await api(`/api/categories/search?name=${encodeURIComponent(name)}`);
+      if (data && data.data && data.data.length > 0) {
+        dropdown.innerHTML = data.data.slice(0, 8).map(c => `
+          <div class="category-option" onclick="selectCategory('${c.id}', '${escapeHtml(c.name)}')">
+            <img src="${c.box_art_url.replace('{width}', '30').replace('{height}', '30')}" alt="">
+            <span>${escapeHtml(c.name)}</span>
+          </div>
+        `).join('');
+        dropdown.classList.remove('hidden');
+      } else {
+        dropdown.classList.add('hidden');
+      }
+    }, 400);
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => dropdown.classList.add('hidden'), 200);
+  });
+}
+
+function selectCategory(id, name) {
+  selectedGameId = id;
+  document.getElementById('gameSearch').value = '';
+  document.getElementById('currentGameName').textContent = name;
+  document.getElementById('categoryDropdown').classList.add('hidden');
+  showToast(`Categoria: ${name}`, 'info');
+}
+
+async function updateStreamInfo() {
+  const body = {
+    title: document.getElementById('streamTitle').value,
+    language: document.getElementById('streamLanguage').value
+  };
+  if (selectedGameId) body.game_id = selectedGameId;
+
+  const result = await api('/api/stream/info', { method: 'PATCH', body });
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast('Directo actualizado!', 'success');
+  } else {
+    showToast('Error al actualizar', 'error');
+  }
+}
+
+// ===== CHAT SETTINGS =====
+async function loadChatSettings() {
+  const data = await api('/api/chat/settings');
+  const container = document.getElementById('chatSettings');
+
+  if (data && data.data) {
+    const s = data.data;
+    const settings = [
+      { key: 'emote_mode', label: 'Modo Emotes', desc: 'Solo se permiten emotes en el chat' },
+      { key: 'subscriber_mode', label: 'Modo Suscriptores', desc: 'Solo suscriptores pueden chatear' },
+      { key: 'follower_mode', label: 'Modo Seguidores', desc: 'Solo seguidores pueden chatear' },
+      { key: 'slow_mode', label: 'Modo Lento', desc: 'Limita la velocidad de mensajes' },
+      { key: 'unique_chat_mode', label: 'Mensajes Unicos', desc: 'No se pueden repetir mensajes' }
+    ];
+
+    container.innerHTML = settings.map(st => `
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">${st.label}</span>
+          <span class="setting-desc">${st.desc}</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" ${s[st.key] ? 'checked' : ''} onchange="toggleChatSetting('${st.key}', this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    `).join('') + `
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">Emotes no moderados</span>
+          <span class="setting-desc">${s.non_moderator_chat_delay ? `Retraso: ${s.non_moderator_chat_delay} segundos` : 'Sin retraso'}</span>
+        </div>
+      </div>
+    `;
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No se pudieron cargar los ajustes</p></div>';
+  }
+}
+
+async function toggleChatSetting(key, value) {
+  const body = {};
+  body[key] = value;
+  const result = await api('/api/chat/settings', { method: 'PATCH', body });
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast('Configuracion actualizada', 'success');
+  } else {
+    showToast('Error al actualizar', 'error');
+    loadChatSettings();
+  }
+}
+
+// ===== ANNOUNCEMENTS =====
+function setupColorBtns() {
+  document.querySelectorAll('.color-btn[data-color]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.color-btn[data-color]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedRewardColor = btn.dataset.color;
+    });
+  });
+}
+
+async function sendAnnouncement() {
+  const message = document.getElementById('announcementMessage').value.trim();
+  if (!message) return showToast('Escribe un mensaje', 'warning');
+
+  const activeColor = document.querySelector('.color-btn[data-color].active');
+  const color = activeColor ? activeColor.dataset.color : 'primary';
+
+  const result = await api('/api/mod/announce', { method: 'POST', body: { message, color } });
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast('Anuncio enviado!', 'success');
+    document.getElementById('announcementMessage').value = '';
+  } else {
+    showToast('Error al enviar anuncio', 'error');
+  }
+}
+
+// ===== STATS =====
+async function loadStats() {
+  if (!currentUser) return;
+
+  document.getElementById('statBigFollowers').textContent = formatNumber(currentUser.followers_count || 0);
+  document.getElementById('statBigViews').textContent = formatNumber(currentUser.view_count);
+  document.getElementById('statBigBroadcaster').textContent = currentUser.broadcaster_type === 'partner' ? 'Partner' : currentUser.broadcaster_type === 'affiliate' ? 'Afiliado' : 'Estandar';
+
+  const channelData = await api('/api/channel');
+  const channelInfo = document.getElementById('channelInfoDetail');
+  if (channelData && channelData.data && channelData.data[0]) {
+    const ch = channelData.data[0];
+    channelInfo.innerHTML = `
+      <div class="channel-info-grid">
+        <div class="channel-info-item"><span class="label">Nombre</span><span class="value">${escapeHtml(ch.display_name)}</span></div>
+        <div class="channel-info-item"><span class="label">Titulo</span><span class="value">${escapeHtml(ch.title || '--')}</span></div>
+        <div class="channel-info-item"><span class="label">Categoria</span><span class="value">${escapeHtml(ch.game_name || '--')}</span></div>
+        <div class="channel-info-item"><span class="label">Idioma</span><span class="value">${ch.language || '--'}</span></div>
+        <div class="channel-info-item"><span class="label">Seguidores</span><span class="value">${formatNumber(ch.follower_count || currentUser.followers_count || 0)}</span></div>
+        <div class="channel-info-item"><span class="label">Tipo</span><span class="value">${ch.broadcaster_type || 'Estándar'}</span></div>
+        <div class="channel-info-item"><span class="label">Creado</span><span class="value">${new Date(currentUser.created_at).toLocaleDateString('es')}</span></div>
+        <div class="channel-info-item"><span class="label">Descripcion</span><span class="value">${escapeHtml(ch.description || 'Sin descripcion')}</span></div>
+      </div>
+    `;
+  }
+
+  const streamData = await api('/api/stream');
+  const streamInfo = document.getElementById('streamDetailInfo');
+  if (streamData && streamData.data && streamData.data.length > 0) {
+    const s = streamData.data[0];
+    streamInfo.innerHTML = `
+      <div class="channel-info-grid">
+        <div class="channel-info-item"><span class="label">Estado</span><span class="value" style="color:var(--success)">EN DIRECTO</span></div>
+        <div class="channel-info-item"><span class="label">Titulo</span><span class="value">${escapeHtml(s.title)}</span></div>
+        <div class="channel-info-item"><span class="label">Categoria</span><span class="value">${escapeHtml(s.game_name)}</span></div>
+        <div class="channel-info-item"><span class="label">Espectadores</span><span class="value">${s.viewer_count}</span></div>
+        <div class="channel-info-item"><span class="label">Inicio</span><span class="value">${new Date(s.started_at).toLocaleString('es')}</span></div>
+        <div class="channel-info-item"><span class="label">Idioma</span><span class="value">${s.language}</span></div>
+        <div class="channel-info-item"><span class="label">Tags</span><span class="value">${s.tags ? s.tags.join(', ') : '--'}</span></div>
+        <div class="channel-info-item"><span class="label">Thumbnail</span><span class="value"><a href="${s.thumbnail_url}" target="_blank" style="color:var(--purple-400)">Ver thumbnail</a></span></div>
+      </div>
+    `;
+  } else {
+    streamInfo.innerHTML = '<div class="empty-state"><p>No hay directo activo</p></div>';
+  }
+}
+
+// ===== PREDICTIONS =====
+async function loadPredictions() {
+  const data = await api('/api/predictions');
+  const container = document.getElementById('predictionsList');
+
+  if (data && data.data && data.data.length > 0) {
+    container.innerHTML = data.data.map(p => {
+      const statusClass = p.status === 'ACTIVE' ? 'active' : p.status === 'RESOLVED' ? 'resolved' : 'canceled';
+      const totalPoints = p.outcomes.reduce((sum, o) => sum + o.channel_points, 0);
+      return `
+        <div class="prediction-item">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+            <h4>${escapeHtml(p.title)}</h4>
+            <span class="prediction-status ${statusClass}">${p.status}</span>
+          </div>
+          <div class="prediction-outcomes">
+            ${p.outcomes.map(o => {
+              const pct = totalPoints > 0 ? Math.round((o.channel_points / totalPoints) * 100) : 0;
+              return `
+                <div class="prediction-outcome">
+                  <div class="outcome-name">
+                    <span class="outcome-color" style="background:${o.color}"></span>
+                    ${escapeHtml(o.title)}
+                  </div>
+                  <div style="font-size:0.8rem;color:var(--text-muted)">${formatNumber(o.channel_points)} puntos (${pct}%)</div>
+                  <div class="outcome-bar"><div class="outcome-fill" style="width:${pct}%;background:${o.color}"></div></div>
+                  ${o.winner ? '<div style="margin-top:6px;font-size:0.75rem;color:var(--success)">Ganador</div>' : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+          ${p.status === 'ACTIVE' ? `
+            <div style="margin-top:12px;display:flex;gap:6px">
+              <button class="btn btn-success btn-sm" onclick="resolvePrediction('${p.id}', '${p.outcomes[0].id}')">${escapeHtml(p.outcomes[0].title)}</button>
+              ${p.outcomes[1] ? `<button class="btn btn-success btn-sm" onclick="resolvePrediction('${p.id}', '${p.outcomes[1].id}')">${escapeHtml(p.outcomes[1].title)}</button>` : ''}
+              <button class="btn btn-danger btn-sm" onclick="cancelPrediction('${p.id}')">Cancelar</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No hay predicciones</p></div>';
+  }
+}
+
+function showPredictionModal() {
+  showModal('Nueva Prediccion', `
+    <div class="form-group">
+      <label>Pregunta</label>
+      <input type="text" id="predictionTitle" class="form-input" placeholder="Ej: Ganare esta partida?">
+    </div>
+    <div class="form-group">
+      <label>Opcion 1</label>
+      <input type="text" id="predictionOpt1" class="form-input" value="Si" placeholder="Opcion 1">
+    </div>
+    <div class="form-group">
+      <label>Opcion 2</label>
+      <input type="text" id="predictionOpt2" class="form-input" value="No" placeholder="Opcion 2">
+    </div>
+    <div class="form-group">
+      <label>Duracion (minutos)</label>
+      <input type="number" id="predictionDuration" class="form-input" value="2" min="1" max="180">
+    </div>
+  `, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: 'Crear', class: 'btn-primary', action: 'createPrediction()' }
+  ]);
+}
+
+async function createPrediction() {
+  const body = {
+    title: document.getElementById('predictionTitle').value,
+    outcomes: [
+      { title: document.getElementById('predictionOpt1').value || 'Si', color: 'BLUE' },
+      { title: document.getElementById('predictionOpt2').value || 'No', color: 'PINK' }
+    ],
+    prediction_window: parseInt(document.getElementById('predictionDuration').value) * 60
+  };
+  const result = await api('/api/predictions', { method: 'POST', body });
+  closeModal();
+  if (result && result.data) {
+    showToast('Prediccion creada!', 'success');
+    loadPredictions();
+  } else {
+    showToast('Error al crear prediccion', 'error');
+  }
+}
+
+async function resolvePrediction(predictionId, outcomeId) {
+  await api('/api/predictions/' + predictionId, { method: 'PATCH', body: { id: predictionId, status: 'RESOLVED', winning_outcome_id: outcomeId } });
+  showToast('Prediccion resuelta', 'success');
+  loadPredictions();
+}
+
+async function cancelPrediction(predictionId) {
+  if (!confirm('Cancelar esta prediccion?')) return;
+  await api('/api/predictions/' + predictionId, { method: 'PATCH', body: { id: predictionId, status: 'CANCELED' } });
+  showToast('Prediccion cancelada', 'success');
+  loadPredictions();
+}
+
+// ===== POLLS =====
+async function loadPolls() {
+  const data = await api('/api/polls');
+  const container = document.getElementById('pollsList');
+
+  if (data && data.data && data.data.length > 0) {
+    container.innerHTML = data.data.map(p => {
+      const totalVotes = p.choices.reduce((sum, c) => sum + c.votes, 0);
+      const statusClass = p.status === 'ACTIVE' ? 'active' : p.status === 'ENDED' ? 'ended' : 'canceled';
+      return `
+        <div class="poll-item">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+            <h4>${escapeHtml(p.title)}</h4>
+            <span class="poll-status ${statusClass}">${p.status}</span>
+          </div>
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px">Votos totales: ${totalVotes} ${p.duration ? `| Duracion: ${p.duration/60} min` : ''}</div>
+          <div class="poll-options">
+            ${p.choices.map(c => {
+              const pct = totalVotes > 0 ? Math.round((c.votes / totalVotes) * 100) : 0;
+              return `
+                <div class="poll-option">
+                  <span class="poll-option-text">${escapeHtml(c.title)}</span>
+                  <div class="poll-option-bar"><div class="poll-option-fill" style="width:${pct}%"></div></div>
+                  <span class="poll-option-pct">${pct}%</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+          ${p.status === 'ACTIVE' ? `
+            <div style="margin-top:12px">
+              <button class="btn btn-danger btn-sm" onclick="endPoll('${p.id}')">Finalizar</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No hay encuestas</p></div>';
+  }
+}
+
+function showPollModal() {
+  showModal('Nueva Encuesta', `
+    <div class="form-group">
+      <label>Pregunta</label>
+      <input type="text" id="pollTitle" class="form-input" placeholder="Ej: Que juego juego hoy?">
+    </div>
+    <div class="form-group">
+      <label>Opciones (una por linea)</label>
+      <textarea id="pollChoices" class="form-input" rows="4" placeholder="Opcion 1&#10;Opcion 2&#10;Opcion 3">Opcion 1\nOpcion 2</textarea>
+    </div>
+    <div class="form-group">
+      <label>Duracion (minutos)</label>
+      <input type="number" id="pollDuration" class="form-input" value="5" min="1" max="1800">
+    </div>
+  `, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: 'Crear', class: 'btn-primary', action: 'createPoll()' }
+  ]);
+}
+
+async function createPoll() {
+  const choicesText = document.getElementById('pollChoices').value.split('\n').filter(c => c.trim());
+  if (choicesText.length < 2) return showToast('Necesitas al menos 2 opciones', 'warning');
+  if (choicesText.length > 5) return showToast('Maximo 5 opciones', 'warning');
+
+  const body = {
+    title: document.getElementById('pollTitle').value,
+    choices: choicesText.map(title => ({ title: title.trim() })),
+    duration: parseInt(document.getElementById('pollDuration').value) * 60
+  };
+  const result = await api('/api/polls', { method: 'POST', body });
+  closeModal();
+  if (result && result.data) {
+    showToast('Encuesta creada!', 'success');
+    loadPolls();
+  } else {
+    showToast('Error al crear encuesta', 'error');
+  }
+}
+
+async function endPoll(pollId) {
+  await api('/api/polls/' + pollId, { method: 'PATCH', body: { id: pollId, status: 'TERMINATED' } });
+  showToast('Encuesta finalizada', 'success');
+  loadPolls();
+}
+
+// ===== MODAL =====
+function showModal(title, body, buttons = []) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalFooter').innerHTML = buttons.map(b => 
+    `<button class="btn ${b.class}" onclick="${b.action}">${b.text}</button>`
+  ).join('');
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.add('hidden');
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'modalOverlay') closeModal();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ===== TOAST =====
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = {
+    success: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    error: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    warning: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    info: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+  };
+  toast.innerHTML = `${icons[type] || icons.info}<span>${message}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3500);
+}
+
+// ===== UTILITIES =====
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function escapeAttr(str) {
+  if (!str) return '';
+  return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function formatNumber(n) {
+  if (n === undefined || n === null) return '--';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return n.toString();
+}
+
+function getTimeSince(date) {
+  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+  const h = Math.floor(diff / 3600);
+  const m = Math.floor((diff % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
