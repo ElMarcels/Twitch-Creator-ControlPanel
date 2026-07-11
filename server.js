@@ -11,7 +11,11 @@ const PORT = process.env.PORT || 3000;
 const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const JWT_SECRET = process.env.JWT_SECRET || 'fav-twitch-jwt-secret-change-me';
-const BASE_URL = process.env.BASE_URL || process.env.VERCEL_URL || `http://localhost:${PORT}`;
+let BASE_URL = process.env.BASE_URL || process.env.VERCEL_URL || `http://localhost:${PORT}`;
+if (BASE_URL && !BASE_URL.startsWith('http')) {
+  BASE_URL = `https://${BASE_URL}`;
+}
+BASE_URL = BASE_URL.replace(/\/+$/, '');
 const COOKIE_NAME = 'tw_auth';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
