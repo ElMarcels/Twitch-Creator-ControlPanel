@@ -369,10 +369,6 @@ app.get('/auth/twitch/callback', async (req, res) => {
 app.get('/auth/logout', (req, res) => {
   const token = req.cookies[COOKIE_NAME];
   const decoded = token ? verifyToken(token) : null;
-  if (decoded && !decoded.role) {
-    ownerTokens.delete(decoded.user.id);
-    saveDashboardData();
-  }
   res.clearCookie(COOKIE_NAME, { path: '/' });
   res.redirect('/');
 });
