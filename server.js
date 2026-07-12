@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const fetch = require('node-fetch');
 const path = require('path');
 const crypto = require('crypto');
-const fs = require('fs');
+const { Redis } = require('@upstash/redis');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -66,30 +66,40 @@ let lastViewerSampleTime = 0;
 let lastFollowerSampleTime = 0;
 
 // Moderator access system
-const DATA_FILE = path.join(__dirname, '.dashboard-data.json');
-let dashboardData = { ownerTokens: {}, moderatorAccounts: {} };
-try {
-  if (fs.existsSync(DATA_FILE)) {
-    dashboardData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  }
-} catch {}
+const redis = process.env.UPSTASH_REDIS_REST_URL ? new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+}) : null;
 
 const moderatorAccounts = new Map();
 const ownerTokens = new Map();
 
-if (dashboardData.moderatorAccounts) {
-  Object.entries(dashboardData.moderatorAccounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
-}
-if (dashboardData.ownerTokens) {
-  Object.entries(dashboardData.ownerTokens).forEach(([k, v]) => ownerTokens.set(k, v));
+async function loadDashboardData() {
+  if (!redis) return;
+  try {
+    const tokens = await redis.get('fav-twitch:ownerTokens');
+    const accounts = await redis.get('fav-twitch:moderatorAccounts');
+    if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
+    if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
+  } catch (err) {
+    console.error('Failed to load from Redis:', err.message);
+  }
 }
 
-function saveDashboardData() {
+async function saveDashboardData() {
+  if (!redis) return;
   const obj = { ownerTokens: {}, moderatorAccounts: {} };
   ownerTokens.forEach((v, k) => obj.ownerTokens[k] = v);
   moderatorAccounts.forEach((v, k) => obj.moderatorAccounts[k] = v);
-  try { fs.writeFileSync(DATA_FILE, JSON.stringify(obj, null, 2)); } catch {}
+  try {
+    await redis.set('fav-twitch:ownerTokens', obj.ownerTokens);
+    await redis.set('fav-twitch:moderatorAccounts', obj.moderatorAccounts);
+  } catch (err) {
+    console.error('Failed to save to Redis:', err.message);
+  }
 }
+
+loadDashboardData();
 
 app.use(cookieParser());
 app.use(express.json());
@@ -288,7 +298,7 @@ async function twitchAPI(req, res, endpoint, options = {}) {
         if (req.moderatorSession) {
           if (ownerTokens.has(req.moderatorSession.ownerId)) {
             ownerTokens.set(req.moderatorSession.ownerId, refreshed);
-            saveDashboardData();
+            await saveDashboardData();
           }
           const newToken = signToken({
             role: 'moderator',
@@ -380,7 +390,7 @@ app.get('/auth/twitch/callback', async (req, res) => {
 
     setAuthCookie(res, authData);
     ownerTokens.set(authData.user.id, authData);
-    saveDashboardData();
+    await saveDashboardData();
     res.redirect('/dashboard');
   } catch (err) {
     console.error('Auth error:', err);
@@ -443,7 +453,7 @@ app.get('/api/owner/moderators', requireAuth, requireOwner, (req, res) => {
   res.json({ data: mods });
 });
 
-app.post('/api/owner/moderators', requireAuth, requireOwner, (req, res) => {
+app.post('/api/owner/moderators', requireAuth, requireOwner, async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
   if (password.length < 4) return res.status(400).json({ error: 'Password must be at least 4 characters' });
@@ -457,7 +467,7 @@ app.post('/api/owner/moderators', requireAuth, requireOwner, (req, res) => {
     createdAt: new Date().toISOString()
   };
   moderatorAccounts.set(key, mod);
-  saveDashboardData();
+  await saveDashboardData();
   const accessCard = signToken({
     type: 'moderator_access_card',
     username: mod.username,
@@ -466,22 +476,21 @@ app.post('/api/owner/moderators', requireAuth, requireOwner, (req, res) => {
     ownerId: req.auth.user.id,
     ownerUser: req.auth.user,
     ownerAccessToken: req.auth.accessToken,
-    ownerRefreshToken: req.auth.refreshToken,
-    exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60)
+    ownerRefreshToken: req.auth.refreshToken
   });
   res.json({ data: { id: mod.id, username: mod.username, createdAt: mod.createdAt, accessCard } });
 });
 
-app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, (req, res) => {
+app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, async (req, res) => {
   let found = false;
-  moderatorAccounts.forEach((val, key) => {
+  for (const [key, val] of moderatorAccounts) {
     if (val.id === req.params.id && val.ownerId === req.auth.user.id) {
       moderatorAccounts.delete(key);
-      saveDashboardData();
       found = true;
     }
-  });
+  }
   if (!found) return res.status(404).json({ error: 'Moderator not found' });
+  await saveDashboardData();
   res.json({ status: 204 });
 });
 
