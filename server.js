@@ -981,6 +981,44 @@ app.get('/api/mod/spam-log', requireAuth, (req, res) => {
   res.json({ data: spamLog.slice(-100) });
 });
 
+// ===== MOD ACTIVITY =====
+const modActions = [];
+app.get('/api/mod/activity', requireAuth, (req, res) => {
+  const today = new Date().toDateString();
+  const todayActions = modActions.filter(a => new Date(a.timestamp).toDateString() === today);
+  const modCounts = {};
+  modActions.forEach(a => {
+    modCounts[a.moderator] = (modCounts[a.moderator] || 0) + 1;
+  });
+  const leaderboard = Object.entries(modCounts)
+    .map(([user, actions]) => ({ user, actions }))
+    .sort((a, b) => b.actions - a.actions)
+    .slice(0, 10);
+
+  res.json({
+    data: {
+      totalActions: modActions.length,
+      activeMods: Object.keys(modCounts).length,
+      bansToday: todayActions.filter(a => a.type === 'ban').length,
+      timeoutsToday: todayActions.filter(a => a.type === 'timeout').length,
+      leaderboard,
+      recentActions: modActions.slice(-50).reverse()
+    }
+  });
+});
+
+app.post('/api/mod/activity/log', requireAuth, (req, res) => {
+  const { type, moderator, detail } = req.body;
+  modActions.push({
+    type: type || 'msg',
+    moderator: moderator || req.auth.displayName || 'Mod',
+    detail: detail || '',
+    timestamp: new Date().toISOString()
+  });
+  if (modActions.length > 500) modActions.splice(0, modActions.length - 500);
+  res.json({ status: 200 });
+});
+
 // ===== DASHBOARD SHARING =====
 const sharedDashboards = new Map();
 app.post('/api/share', requireAuth, (req, res) => {

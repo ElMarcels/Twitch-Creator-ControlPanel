@@ -131,6 +131,18 @@
           <span data-i18n="nav_chat_log">Log Chat</span>
         </a>
         <div class="nav-divider"></div>
+        <a href="#" class="nav-item" data-page="mod-activity">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          <span data-i18n="nav_mod_activity">Actividad Mods</span>
+        </a>
+        <a href="#" class="nav-item" data-page="suspicious">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span data-i18n="nav_suspicious">Usuarios Sospechosos</span>
+        </a>
+        <a href="#" class="nav-item" data-page="chat-rules">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span data-i18n="nav_chat_rules">Reglas del Chat</span>
+        </a>
         <a href="#" class="nav-item" data-page="spam">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span data-i18n="nav_spam">Spam Detector</span>
@@ -814,6 +826,102 @@
             <div class="card-header"><h3 data-i18n="alerts_history">Historial de alertas</h3></div>
             <div class="card-body" style="max-height:300px;overflow-y:auto">
               <div id="alertsHistoryList" class="loading">Cargando...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MOD ACTIVITY DASHBOARD -->
+        <div class="page" id="page-mod-activity">
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="loadModActivity()" data-i18n="btn_refresh">Refrescar</button>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon purple"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="stat-content"><span class="stat-value" id="modTotalActions">--</span><span class="stat-label" data-i18n="mod_total_actions">Acciones totales</span></div></div>
+            <div class="stat-card"><div class="stat-icon green"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="stat-content"><span class="stat-value" id="modActiveMods">--</span><span class="stat-label" data-i18n="mod_active_mods">Mods activos</span></div></div>
+            <div class="stat-card"><div class="stat-icon blue"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div><div class="stat-content"><span class="stat-value" id="modBansToday">--</span><span class="stat-label" data-i18n="mod_bans_today">Bans hoy</span></div></div>
+            <div class="stat-card"><div class="stat-icon magenta"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="stat-content"><span class="stat-value" id="modTimeoutsToday">--</span><span class="stat-label" data-i18n="mod_timeouts_today">Timeouts hoy</span></div></div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-header"><h3 data-i18n="mod_leaderboard">Leaderboard de moderadores</h3></div>
+            <div class="card-body">
+              <div id="modLeaderboard" class="loading">Cargando...</div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-header"><h3 data-i18n="mod_actions_log">Registro de acciones</h3></div>
+            <div class="card-body" style="max-height:400px;overflow-y:auto">
+              <div id="modActionsLog" class="loading">Cargando...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUSPICIOUS USERS -->
+        <div class="page" id="page-suspicious">
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="loadSuspiciousUsers()" data-i18n="btn_refresh">Refrescar</button>
+          </div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header"><h3 data-i18n="suspicious_add_title">Agregar usuario sospechoso</h3></div>
+            <div class="card-body">
+              <div class="suspicious-add-row">
+                <input type="text" class="form-input" id="suspiciousUsername" placeholder="Nombre de usuario..." data-i18n-placeholder="suspicious_username">
+                <select class="form-input" id="suspiciousReason" style="width:180px">
+                  <option value="spam" data-i18n="suspicious_reason_spam">Spam</option>
+                  <option value="raid" data-i18n="suspicious_reason_raid">Raid no deseado</option>
+                  <option value="alt" data-i18n="suspicious_reason_alt">Cuenta alterna</option>
+                  <option value="troll" data-i18n="suspicious_reason_troll">Troll</option>
+                  <option value="other" data-i18n="suspicious_reason_other">Otro</option>
+                </select>
+                <button class="btn btn-primary" onclick="addSuspiciousUser()" data-i18n="btn_add">Agregar</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3 data-i18n="suspicious_list_title">Usuarios sospechosos</h3></div>
+            <div class="card-body" style="max-height:500px;overflow-y:auto">
+              <div id="suspiciousUsersList" class="loading">Cargando...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHAT RULES MANAGER -->
+        <div class="page" id="page-chat-rules">
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="saveChatRules()" data-i18n="btn_save">Guardar</button>
+          </div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header"><h3 data-i18n="rules_editor">Editor de reglas</h3></div>
+            <div class="card-body">
+              <p class="text-muted" style="margin-bottom:12px" data-i18n="rules_desc">Una regla por linea. Las reglas se muestran automaticamente a nuevos chatters.</p>
+              <textarea class="form-input" id="chatRulesEditor" rows="10" style="font-family:monospace;resize:vertical" placeholder="1. Se respeta a todos los miembros del chat.&#10;2. No se permite spam ni enlaces.&#10;3. No hay contenido NSFW.&#10;4. Usa los canales de temas apropiados.&#10;5. Los moderadores tienen la ultima palabra." data-i18n-placeholder="rules_placeholder"></textarea>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header"><h3 data-i18n="rules_preview">Vista previa</h3></div>
+            <div class="card-body">
+              <div id="chatRulesPreview" class="rules-preview-box"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3 data-i18n="rules_settings">Configuracion</h3></div>
+            <div class="card-body">
+              <div class="settings-row">
+                <div class="settings-info">
+                  <h3 data-i18n="rules_auto_greet">Saludo automatico</h3>
+                  <p data-i18n="rules_auto_greet_desc">Enviar reglas a usuarios nuevos en el chat</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="rulesAutoGreet" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="settings-row">
+                <div class="settings-info">
+                  <h3 data-i18n="rules_greet_delay">Retraso del saludo (seg)</h3>
+                  <p data-i18n="rules_greet_delay_desc">Segundos antes de enviar las reglas</p>
+                </div>
+                <input type="number" class="form-input" id="rulesGreetDelay" value="5" min="1" max="30" style="width:80px">
+              </div>
             </div>
           </div>
         </div>

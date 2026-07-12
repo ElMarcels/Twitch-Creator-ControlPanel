@@ -18,6 +18,7 @@ const translations = {
     nav_commands: 'Comandos', nav_goals: 'Metas', nav_chat_log: 'Log Chat',
     nav_settings: 'Ajustes', nav_about: 'Acerca de', nav_logout: 'Cerrar sesion',
     nav_spam: 'Spam Detector', nav_alerts_widget: 'Alertas', nav_share: 'Compartir',
+    nav_mod_activity: 'Actividad Mods', nav_suspicious: 'Usuarios Sospechosos', nav_chat_rules: 'Reglas del Chat',
     settings_appearance: 'Apariencia', settings_theme: 'Tema',
     settings_theme_desc: 'Cambia entre tema oscuro y claro',
     theme_dark: 'Oscuro', theme_light: 'Claro',
@@ -31,6 +32,9 @@ const translations = {
     title_custom_commands: 'Comandos', title_goals: 'Metas', title_chat_log: 'Log del Chat',
     title_settings: 'Ajustes', title_about: 'Acerca de',
     title_spam: 'Spam Detector',
+    title_mod_activity: 'Actividad de Moderadores',
+    title_suspicious: 'Usuarios Sospechosos',
+    title_chat_rules: 'Reglas del Chat',
     title_alerts_widget: 'Alertas en Vivo',
     title_share: 'Compartir Dashboard',
     stat_followers: 'Seguidores', stat_views: 'Visitas totales',
@@ -47,7 +51,19 @@ const translations = {
     spam_log_title: 'Registro de spam detectado',
     alerts_title: 'Alertas en vivo', alerts_preview: 'Vista previa',
     alerts_test_sub: 'Test Sub', alerts_test_follow: 'Test Follow',
-    alerts_test_bits: 'Test Bits', alerts_history: 'Historial',
+    alerts_test_bits: 'Test Bits',     alerts_history: 'Historial',
+    mod_total_actions: 'Acciones totales', mod_active_mods: 'Mods activos',
+    mod_bans_today: 'Bans hoy', mod_timeouts_today: 'Timeouts hoy',
+    mod_leaderboard: 'Leaderboard de moderadores', mod_actions_log: 'Registro de acciones',
+    suspicious_add_title: 'Agregar usuario sospechoso', suspicious_username: 'Nombre de usuario...',
+    suspicious_reason_spam: 'Spam', suspicious_reason_raid: 'Raid no deseado',
+    suspicious_reason_alt: 'Cuenta alterna', suspicious_reason_troll: 'Troll',
+    suspicious_reason_other: 'Otro', suspicious_list_title: 'Usuarios sospechosos',
+    btn_add: 'Agregar', btn_save: 'Guardar',
+    rules_editor: 'Editor de reglas', rules_desc: 'Una regla por linea. Las reglas se muestran automaticamente a nuevos chatters.',
+    rules_preview: 'Vista previa', rules_settings: 'Configuracion',
+    rules_auto_greet: 'Saludo automatico', rules_auto_greet_desc: 'Enviar reglas a usuarios nuevos en el chat',
+    rules_greet_delay: 'Retraso del saludo (seg)', rules_greet_delay_desc: 'Segundos antes de enviar las reglas',
     share_new: 'Compartir vista', share_desc: 'Crear enlace de tu configuracion actual',
     share_create: 'Crear enlace', share_active: 'Enlaces activos',
     settings_display: 'Pantalla', settings_compact: 'Modo compacto',
@@ -65,6 +81,7 @@ const translations = {
     nav_commands: 'Commands', nav_goals: 'Goals', nav_chat_log: 'Chat Log',
     nav_settings: 'Settings', nav_about: 'About', nav_logout: 'Log out',
     nav_spam: 'Spam Detector', nav_alerts_widget: 'Alerts',
+    nav_mod_activity: 'Mod Activity', nav_suspicious: 'Suspicious Users', nav_chat_rules: 'Chat Rules',
     settings_appearance: 'Appearance', settings_theme: 'Theme',
     settings_theme_desc: 'Switch between dark and light theme',
     theme_dark: 'Dark', theme_light: 'Light',
@@ -77,10 +94,11 @@ const translations = {
     title_ads: 'Ads', title_clips: 'Clips', title_shield: 'Shield Mode',
     title_custom_commands: 'Commands', title_goals: 'Goals', title_chat_log: 'Chat Log',
     title_settings: 'Settings', title_about: 'About',
-    title_chatbot: 'Chat Bot', title_spam: 'Spam Detector',
-    title_viewer_chart: 'Viewer Chart', title_top_chatters: 'Top Chatters',
-    title_growth: 'Growth Analysis', title_scenes: 'OBS Scenes',
-    title_tweets: 'Tweet Scheduler', title_alerts_widget: 'Live Alerts',
+    title_spam: 'Spam Detector',
+    title_mod_activity: 'Moderator Activity',
+    title_suspicious: 'Suspicious Users',
+    title_chat_rules: 'Chat Rules',
+    title_alerts_widget: 'Live Alerts',
     title_share: 'Share Dashboard',
     stat_followers: 'Followers', stat_views: 'Total Views',
     stat_viewers: 'Viewers', stat_stream_time: 'Stream Time',
@@ -96,7 +114,19 @@ const translations = {
     spam_log_title: 'Spam detection log',
     alerts_title: 'Live alerts', alerts_preview: 'Preview',
     alerts_test_sub: 'Test Sub', alerts_test_follow: 'Test Follow',
-    alerts_test_bits: 'Test Bits', alerts_history: 'History',
+    alerts_test_bits: 'Test Bits',     alerts_history: 'History',
+    mod_total_actions: 'Total Actions', mod_active_mods: 'Active Mods',
+    mod_bans_today: 'Bans Today', mod_timeouts_today: 'Timeouts Today',
+    mod_leaderboard: 'Moderator Leaderboard', mod_actions_log: 'Actions Log',
+    suspicious_add_title: 'Add Suspicious User', suspicious_username: 'Username...',
+    suspicious_reason_spam: 'Spam', suspicious_reason_raid: 'Unwanted Raid',
+    suspicious_reason_alt: 'Alt Account', suspicious_reason_troll: 'Troll',
+    suspicious_reason_other: 'Other', suspicious_list_title: 'Suspicious Users',
+    btn_add: 'Add', btn_save: 'Save',
+    rules_editor: 'Rules Editor', rules_desc: 'One rule per line. Rules are auto-shown to new chatters.',
+    rules_preview: 'Preview', rules_settings: 'Settings',
+    rules_auto_greet: 'Auto Greeting', rules_auto_greet_desc: 'Send rules to new users in chat',
+    rules_greet_delay: 'Greeting Delay (sec)', rules_greet_delay_desc: 'Seconds before sending rules',
     share_new: 'Share view', share_desc: 'Create link to your current setup',
     share_create: 'Create link', share_active: 'Active links',
     settings_display: 'Display', settings_compact: 'Compact mode',
@@ -114,6 +144,7 @@ const translations = {
     nav_commands: 'Befehle', nav_goals: 'Ziele', nav_chat_log: 'Chat-Log',
     nav_settings: 'Einstellungen', nav_about: 'Uber', nav_logout: 'Abmelden',
     nav_spam: 'Spam Detektor', nav_alerts_widget: 'Alerten',
+    nav_mod_activity: 'Mod Aktivitaet', nav_suspicious: 'Verdaechtige User', nav_chat_rules: 'Chat Regeln',
     settings_appearance: 'Darstellung', settings_theme: 'Thema',
     settings_theme_desc: 'Zwischen dunklem und hellem Thema wechseln',
     theme_dark: 'Dunkel', theme_light: 'Hell',
@@ -126,10 +157,11 @@ const translations = {
     title_ads: 'Werbung', title_clips: 'Clips', title_shield: 'Schutzmodus',
     title_custom_commands: 'Befehle', title_goals: 'Ziele', title_chat_log: 'Chat-Log',
     title_settings: 'Einstellungen', title_about: 'Uber',
-    title_chatbot: 'Chat Bot', title_spam: 'Spam Detektor',
-    title_viewer_chart: 'Zuschauer Graph', title_top_chatters: 'Top Chatter',
-    title_growth: 'Wachstum', title_scenes: 'OBS Szenen',
-    title_tweets: 'Tweet Planer', title_alerts_widget: 'Live Alerten',
+    title_spam: 'Spam Detektor',
+    title_mod_activity: 'Mod Aktivitaet',
+    title_suspicious: 'Verdaechtige User',
+    title_chat_rules: 'Chat Regeln',
+    title_alerts_widget: 'Live Alerten',
     title_share: 'Dashboard Teilen',
     stat_followers: 'Follower', stat_views: 'Gesamtaufrufe',
     stat_viewers: 'Zuschauer', stat_stream_time: 'Streamzeit',
@@ -145,7 +177,19 @@ const translations = {
     spam_log_title: 'Spam-Erkennungslog',
     alerts_title: 'Live-Alerten', alerts_preview: 'Vorschau',
     alerts_test_sub: 'Test Sub', alerts_test_follow: 'Test Follow',
-    alerts_test_bits: 'Test Bits', alerts_history: 'Verlauf',
+    alerts_test_bits: 'Test Bits',     alerts_history: 'Verlauf',
+    mod_total_actions: 'Aktionen gesamt', mod_active_mods: 'Aktive Mods',
+    mod_bans_today: 'Bans heute', mod_timeouts_today: 'Timeouts heute',
+    mod_leaderboard: 'Mod Rangliste', mod_actions_log: 'Aktionslog',
+    suspicious_add_title: 'Verdaechtigen User hinzufuegen', suspicious_username: 'Benutzername...',
+    suspicious_reason_spam: 'Spam', suspicious_reason_raid: 'Unerwuenschter Raid',
+    suspicious_reason_alt: 'Alternatives Konto', suspicious_reason_troll: 'Troll',
+    suspicious_reason_other: 'Sonstiges', suspicious_list_title: 'Verdaechtige User',
+    btn_add: 'Hinzufuegen', btn_save: 'Speichern',
+    rules_editor: 'Regel-Editor', rules_desc: 'Eine Regel pro Zeile. Regeln werden neuen Chattern automatisch angezeigt.',
+    rules_preview: 'Vorschau', rules_settings: 'Einstellungen',
+    rules_auto_greet: 'Automatische Begruessung', rules_auto_greet_desc: 'Regeln an neue Benutzer im Chat senden',
+    rules_greet_delay: 'Begruessungsverzoegerung (sek)', rules_greet_delay_desc: 'Sekunden vor dem Senden der Regeln',
     share_new: 'Ansicht teilen', share_desc: 'Link zu deinem aktuellen Setup erstellen',
     share_create: 'Link erstellen', share_active: 'Aktive Links',
     settings_display: 'Anzeige', settings_compact: 'Kompakter Modus',
@@ -163,6 +207,7 @@ const translations = {
     nav_commands: 'Commandes', nav_goals: 'Objectifs', nav_chat_log: 'Journal Chat',
     nav_settings: 'Parametres', nav_about: 'A propos', nav_logout: 'Deconnexion',
     nav_spam: 'Detecteur Spam', nav_alerts_widget: 'Alertes',
+    nav_mod_activity: 'Activite Mod', nav_suspicious: 'Utilisateurs Suspects', nav_chat_rules: 'Regles du Chat',
     settings_appearance: 'Apparence', settings_theme: 'Theme',
     settings_theme_desc: 'Basculer entre le theme sombre et clair',
     theme_dark: 'Sombre', theme_light: 'Clair',
@@ -175,10 +220,11 @@ const translations = {
     title_ads: 'Publicites', title_clips: 'Clips', title_shield: 'Mode Bouclier',
     title_custom_commands: 'Commandes', title_goals: 'Objectifs', title_chat_log: 'Journal Chat',
     title_settings: 'Parametres', title_about: 'A propos',
-    title_chatbot: 'Chat Bot', title_spam: 'Detecteur Spam',
-    title_viewer_chart: 'Graphique Viewers', title_top_chatters: 'Top Chatters',
-    title_growth: 'Croissance', title_scenes: 'Scenes OBS',
-    title_tweets: 'Planificateur', title_alerts_widget: 'Alertes En Direct',
+    title_spam: 'Detecteur Spam',
+    title_mod_activity: 'Activite Mod',
+    title_suspicious: 'Utilisateurs Suspects',
+    title_chat_rules: 'Regles du Chat',
+    title_alerts_widget: 'Alertes En Direct',
     title_share: 'Partager Dashboard',
     stat_followers: 'Abonnes', stat_views: 'Vues totales',
     stat_viewers: 'Spectateurs', stat_stream_time: 'Temps en direct',
@@ -194,7 +240,19 @@ const translations = {
     spam_log_title: 'Journal de spam detecte',
     alerts_title: 'Alertes en direct', alerts_preview: 'Apercu',
     alerts_test_sub: 'Test Sub', alerts_test_follow: 'Test Follow',
-    alerts_test_bits: 'Test Bits', alerts_history: 'Historique',
+    alerts_test_bits: 'Test Bits',     alerts_history: 'Historique',
+    mod_total_actions: 'Actions totales', mod_active_mods: 'Mods actifs',
+    mod_bans_today: 'Bans aujourd\'hui', mod_timeouts_today: 'Timeouts aujourd\'hui',
+    mod_leaderboard: 'Classement des moderateurs', mod_actions_log: 'Journal des actions',
+    suspicious_add_title: 'Ajouter utilisateur suspect', suspicious_username: 'Nom d\'utilisateur...',
+    suspicious_reason_spam: 'Spam', suspicious_reason_raid: 'Raid non desire',
+    suspicious_reason_alt: 'Compte alternatif', suspicious_reason_troll: 'Troll',
+    suspicious_reason_other: 'Autre', suspicious_list_title: 'Utilisateurs suspects',
+    btn_add: 'Ajouter', btn_save: 'Sauvegarder',
+    rules_editor: 'Editeur de regles', rules_desc: 'Une regle par ligne. Les regles sont affichees automatiquement aux nouveaux utilisateurs.',
+    rules_preview: 'Apercu', rules_settings: 'Configuration',
+    rules_auto_greet: 'Salutation automatique', rules_auto_greet_desc: 'Envoyer les regles aux nouveaux utilisateurs',
+    rules_greet_delay: 'Delai de salutation (sec)', rules_greet_delay_desc: 'Secondes avant d\'envoyer les regles',
     share_new: 'Partager la vue', share_desc: 'Creer un lien de votre configuration',
     share_create: 'Creer le lien', share_active: 'Liens actifs',
     settings_display: 'Affichage', settings_compact: 'Mode compact',
@@ -212,6 +270,7 @@ const translations = {
     nav_commands: 'Comandos', nav_goals: 'Metas', nav_chat_log: 'Log do Chat',
     nav_settings: 'Configuracoes', nav_about: 'Sobre', nav_logout: 'Sair',
     nav_spam: 'Detector Spam', nav_alerts_widget: 'Alertas',
+    nav_mod_activity: 'Atividade Mods', nav_suspicious: 'Usuarios Suspeitos', nav_chat_rules: 'Regras do Chat',
     settings_appearance: 'Aparencia', settings_theme: 'Tema',
     settings_theme_desc: 'Alternar entre tema escuro e claro',
     theme_dark: 'Escuro', theme_light: 'Claro',
@@ -224,10 +283,11 @@ const translations = {
     title_ads: 'Anuncios', title_clips: 'Clips', title_shield: 'Modo Escudo',
     title_custom_commands: 'Comandos', title_goals: 'Metas', title_chat_log: 'Log do Chat',
     title_settings: 'Configuracoes', title_about: 'Sobre',
-    title_chatbot: 'Chat Bot', title_spam: 'Detector Spam',
-    title_viewer_chart: 'Grafico de Viewers', title_top_chatters: 'Top Chatters',
-    title_growth: 'Crescimento', title_scenes: 'Cenas OBS',
-    title_tweets: 'Agendador de Tweets', title_alerts_widget: 'Alertas ao Vivo',
+    title_spam: 'Detector Spam',
+    title_mod_activity: 'Atividade de Mods',
+    title_suspicious: 'Usuarios Suspeitos',
+    title_chat_rules: 'Regras do Chat',
+    title_alerts_widget: 'Alertas ao Vivo',
     title_share: 'Compartilhar Dashboard',
     stat_followers: 'Seguidores', stat_views: 'Visualizacoes',
     stat_viewers: 'Espectadores', stat_stream_time: 'Tempo ao vivo',
@@ -243,7 +303,19 @@ const translations = {
     spam_log_title: 'Registro de spam detectado',
     alerts_title: 'Alertas ao vivo', alerts_preview: 'Visualizar',
     alerts_test_sub: 'Testar Sub', alerts_test_follow: 'Testar Follow',
-    alerts_test_bits: 'Testar Bits', alerts_history: 'Historico',
+    alerts_test_bits: 'Testar Bits',     alerts_history: 'Historico',
+    mod_total_actions: 'Acoes totais', mod_active_mods: 'Mods ativos',
+    mod_bans_today: 'Bans hoje', mod_timeouts_today: 'Timeouts hoje',
+    mod_leaderboard: 'Ranking de moderadores', mod_actions_log: 'Registro de acoes',
+    suspicious_add_title: 'Adicionar usuario suspeito', suspicious_username: 'Nome de usuario...',
+    suspicious_reason_spam: 'Spam', suspicious_reason_raid: 'Raid indesejado',
+    suspicious_reason_alt: 'Conta alternativa', suspicious_reason_troll: 'Troll',
+    suspicious_reason_other: 'Outro', suspicious_list_title: 'Usuarios suspeitos',
+    btn_add: 'Adicionar', btn_save: 'Salvar',
+    rules_editor: 'Editor de regras', rules_desc: 'Uma regra por linha. Regras sao exibidas automaticamente para novos usuarios.',
+    rules_preview: 'Visualizar', rules_settings: 'Configuracao',
+    rules_auto_greet: 'Saudacao automatica', rules_auto_greet_desc: 'Enviar regras para novos usuarios no chat',
+    rules_greet_delay: 'Atraso da saudacao (seg)', rules_greet_delay_desc: 'Segundos antes de enviar as regras',
     share_new: 'Compartilhar vista', share_desc: 'Criar link da sua configuracao',
     share_create: 'Criar link', share_active: 'Links ativos',
     settings_display: 'Tela', settings_compact: 'Modo compacto',
@@ -261,6 +333,7 @@ const translations = {
     nav_commands: 'コマンド', nav_goals: '目標', nav_chat_log: 'チャット履歴',
     nav_settings: '設定', nav_about: '概要', nav_logout: 'ログアウト',
     nav_spam: 'スパム検出', nav_alerts_widget: 'アラート',
+    nav_mod_activity: 'モデレーター活動', nav_suspicious: '不審なユーザー', nav_chat_rules: 'チャットルール',
     settings_appearance: '外観', settings_theme: 'テーマ',
     settings_theme_desc: 'ダークテーマとライトテーマを切り替え',
     theme_dark: 'ダーク', theme_light: 'ライト',
@@ -273,10 +346,11 @@ const translations = {
     title_ads: '広告', title_clips: 'クリップ', title_shield: 'シールドモード',
     title_custom_commands: 'コマンド', title_goals: '目標', title_chat_log: 'チャット履歴',
     title_settings: '設定', title_about: '概要',
-    title_chatbot: 'チャットボット', title_spam: 'スパム検出',
-    title_viewer_chart: '視聴者チャート', title_top_chatters: 'トップチャッター',
-    title_growth: '成長分析', title_scenes: 'OBSシーン',
-    title_tweets: 'ツイートスケジューラー', title_alerts_widget: 'ライブアラート',
+    title_spam: 'スパム検出',
+    title_mod_activity: 'モデレーター活動',
+    title_suspicious: '不審なユーザー',
+    title_chat_rules: 'チャットルール',
+    title_alerts_widget: 'ライブアラート',
     title_share: 'ダッシュボード共有',
     stat_followers: 'フォロワー', stat_views: '総視聴数',
     stat_viewers: '視聴者', stat_stream_time: '配信時間',
@@ -292,7 +366,19 @@ const translations = {
     spam_log_title: 'スパム検出ログ',
     alerts_title: 'ライブアラート', alerts_preview: 'プレビュー',
     alerts_test_sub: 'テストSub', alerts_test_follow: 'テストFollow',
-    alerts_test_bits: 'テストBits', alerts_history: '履歴',
+    alerts_test_bits: 'テストBits',     alerts_history: '履歴',
+    mod_total_actions: '合計アクション', mod_active_mods: 'アクティブMod',
+    mod_bans_today: '今日のBans', mod_timeouts_today: '今日のTimeouts',
+    mod_leaderboard: 'モデレーターランキング', mod_actions_log: 'アクションログ',
+    suspicious_add_title: '不審なユーザーを追加', suspicious_username: 'ユーザー名...',
+    suspicious_reason_spam: 'スパム', suspicious_reason_raid: '不要なレイド',
+    suspicious_reason_alt: 'サブアカウント', suspicious_reason_troll: 'トロル',
+    suspicious_reason_other: 'その他', suspicious_list_title: '不審なユーザー',
+    btn_add: '追加', btn_save: '保存',
+    rules_editor: 'ルールエディター', rules_desc: '1行に1ルール。ルールは新しいチャッターに自動表示されます。',
+    rules_preview: 'プレビュー', rules_settings: '設定',
+    rules_auto_greet: '自動挨拶', rules_auto_greet_desc: '新しいユーザーにルールを送信',
+    rules_greet_delay: '挨拶の遅延（秒）', rules_greet_delay_desc: 'ルール送信前の秒数',
     share_new: 'ビューを共有', share_desc: '現在のセットアップのリンクを作成',
     share_create: 'リンク作成', share_active: 'アクティブリンク',
     settings_display: '表示', settings_compact: 'コンパクトモード',
@@ -310,6 +396,7 @@ const translations = {
     nav_commands: '명령어', nav_goals: '목표', nav_chat_log: '채팅 기록',
     nav_settings: '설정', nav_about: '정보', nav_logout: '로그아웃',
     nav_spam: '스팸 감지', nav_alerts_widget: '알림',
+    nav_mod_activity: '모더레이터 활동', nav_suspicious: '의심 사용자', nav_chat_rules: '채팅 규칙',
     settings_appearance: '외관', settings_theme: '테마',
     settings_theme_desc: '다크 테마와 라이트 테마 전환',
     theme_dark: '다크', theme_light: '라이트',
@@ -322,10 +409,11 @@ const translations = {
     title_ads: '광고', title_clips: '클립', title_shield: '실드 모드',
     title_custom_commands: '명령어', title_goals: '목표', title_chat_log: '채팅 기록',
     title_settings: '설정', title_about: '정보',
-    title_chatbot: '채팅봇', title_spam: '스팸 감지',
-    title_viewer_chart: '시청자 차트', title_top_chatters: '탑 채터',
-    title_growth: '성장 분석', title_scenes: 'OBS 장면',
-    title_tweets: '트윗 스케줄러', title_alerts_widget: '실시간 알림',
+    title_spam: '스팸 감지',
+    title_mod_activity: '모더레이터 활동',
+    title_suspicious: '의심 사용자',
+    title_chat_rules: '채팅 규칙',
+    title_alerts_widget: '실시간 알림',
     title_share: '대시보드 공유',
     stat_followers: '팔로워', stat_views: '총 조회수',
     stat_viewers: '시청자', stat_stream_time: '방송 시간',
@@ -341,7 +429,19 @@ const translations = {
     spam_log_title: '스팸 감지 로그',
     alerts_title: '실시간 알림', alerts_preview: '미리보기',
     alerts_test_sub: '테스트 Sub', alerts_test_follow: '테스트 Follow',
-    alerts_test_bits: '테스트 Bits', alerts_history: '기록',
+    alerts_test_bits: '테스트 Bits',     alerts_history: '기록',
+    mod_total_actions: '총 액션', mod_active_mods: '활성 Mod',
+    mod_bans_today: '오늘의 Bans', mod_timeouts_today: '오늘의 Timeouts',
+    mod_leaderboard: '모더레이터 랭킹', mod_actions_log: '액션 로그',
+    suspicious_add_title: '의심 사용자 추가', suspicious_username: '사용자 이름...',
+    suspicious_reason_spam: '스팸', suspicious_reason_raid: '원치 않는 레이드',
+    suspicious_reason_alt: '부 계정', suspicious_reason_troll: '트롤',
+    suspicious_reason_other: '기타', suspicious_list_title: '의심 사용자',
+    btn_add: '추가', btn_save: '저장',
+    rules_editor: '규칙 편집기', rules_desc: '줄당 규칙 1개. 새 채터에게 규칙이 자동으로 표시됩니다.',
+    rules_preview: '미리보기', rules_settings: '설정',
+    rules_auto_greet: '자동 인사', rules_auto_greet_desc: '새 사용자에게 규칙 전송',
+    rules_greet_delay: '인사 지연 (초)', rules_greet_delay_desc: '규칙 전송 전 대기 초',
     share_new: '보기 공유', share_desc: '현재 설정의 링크 만들기',
     share_create: '링크 만들기', share_active: '활성 링크',
     settings_display: '화면', settings_compact: '컴팩트 모드',
@@ -500,6 +600,9 @@ function navigateTo(page) {
     'goals': t('title_goals'),
     'chat-log': t('title_chat_log'),
     'spam': t('title_spam'),
+    'mod-activity': t('title_mod_activity'),
+    'suspicious': t('title_suspicious'),
+    'chat-rules': t('title_chat_rules'),
     'alerts-widget': t('title_alerts_widget'),
     'share': t('title_share'),
     'settings': t('title_settings'),
@@ -531,6 +634,9 @@ function loadPageData(page) {
     case 'goals': loadGoals(); break;
     case 'chat-log': loadChatLog(); break;
     case 'spam': loadSpamLog(); break;
+    case 'mod-activity': loadModActivity(); break;
+    case 'suspicious': loadSuspiciousUsers(); break;
+    case 'chat-rules': loadChatRules(); break;
     case 'alerts-widget': loadAlerts(); break;
     case 'share': loadShareLinks(); break;
   }
@@ -2611,6 +2717,163 @@ async function loadSpamLog() {
   } else {
     container.innerHTML = '<div class="empty-state"><p>No se ha detectado spam aun.</p></div>';
   }
+}
+
+// ============================================================
+// FEATURE: MOD ACTIVITY DASHBOARD
+// ============================================================
+async function loadModActivity() {
+  const data = await api('/api/mod/activity');
+  if (!data || !data.data) return;
+  const d = data.data;
+
+  document.getElementById('modTotalActions').textContent = d.totalActions || 0;
+  document.getElementById('modActiveMods').textContent = d.activeMods || 0;
+  document.getElementById('modBansToday').textContent = d.bansToday || 0;
+  document.getElementById('modTimeoutsToday').textContent = d.timeoutsToday || 0;
+
+  const leaderboard = document.getElementById('modLeaderboard');
+  if (d.leaderboard && d.leaderboard.length > 0) {
+    leaderboard.innerHTML = d.leaderboard.map((m, i) => {
+      let rankClass = '';
+      if (i === 0) rankClass = 'gold';
+      else if (i === 1) rankClass = 'silver';
+      else if (i === 2) rankClass = 'bronze';
+      return `
+        <div class="mod-leaderboard-entry">
+          <span class="mod-rank ${rankClass}">${i + 1}</span>
+          <span class="mod-name">${escapeHtml(m.user)}</span>
+          <span class="mod-count">${m.actions} acciones</span>
+        </div>`;
+    }).join('');
+  } else {
+    leaderboard.innerHTML = '<div class="empty-state"><p>No hay datos de actividad de moderadores aun.</p></div>';
+  }
+
+  const log = document.getElementById('modActionsLog');
+  if (d.recentActions && d.recentActions.length > 0) {
+    log.innerHTML = d.recentActions.map(a => {
+      const icons = { ban: '🚫', timeout: '⏱️', warn: '⚠️', msg: '💬' };
+      const icon = icons[a.type] || '📋';
+      const time = new Date(a.timestamp).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+      return `
+        <div class="mod-action-entry">
+          <span class="mod-action-icon ${a.type}">${icon}</span>
+          <span class="mod-action-user">${escapeHtml(a.moderator)}</span>
+          <span class="mod-action-detail">${escapeHtml(a.detail)}</span>
+          <span class="mod-action-time">${time}</span>
+        </div>`;
+    }).join('');
+  } else {
+    log.innerHTML = '<div class="empty-state"><p>No hay acciones de moderacion registradas.</p></div>';
+  }
+}
+
+// ============================================================
+// FEATURE: SUSPICIOUS USERS
+// ============================================================
+function loadSuspiciousUsers() {
+  const list = JSON.parse(localStorage.getItem('suspiciousUsers') || '[]');
+  const container = document.getElementById('suspiciousUsersList');
+  if (!container) return;
+
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No hay usuarios sospechosos registrados.</p></div>';
+    return;
+  }
+
+  container.innerHTML = list.map((u, i) => {
+    const initial = u.username.charAt(0).toUpperCase();
+    const date = new Date(u.addedAt).toLocaleDateString('es');
+    return `
+      <div class="suspicious-user-entry">
+        <span class="suspicious-avatar">${initial}</span>
+        <div class="suspicious-info">
+          <div class="suspicious-name">${escapeHtml(u.username)}</div>
+          <div class="suspicious-reason">Agregado: ${date}</div>
+        </div>
+        <span class="suspicious-badge ${u.reason}">${u.reason}</span>
+        <button class="btn btn-danger btn-sm" onclick="removeSuspiciousUser(${i})">X</button>
+      </div>`;
+  }).join('');
+}
+
+function addSuspiciousUser() {
+  const username = document.getElementById('suspiciousUsername').value.trim();
+  const reason = document.getElementById('suspiciousReason').value;
+  if (!username) { showToast('Ingresa un nombre de usuario', 'warning'); return; }
+
+  const list = JSON.parse(localStorage.getItem('suspiciousUsers') || '[]');
+  if (list.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+    showToast('Este usuario ya esta en la lista', 'warning');
+    return;
+  }
+
+  list.push({ username, reason, addedAt: new Date().toISOString() });
+  localStorage.setItem('suspiciousUsers', JSON.stringify(list));
+  document.getElementById('suspiciousUsername').value = '';
+  showToast(`${username} agregado a la lista`, 'success');
+  loadSuspiciousUsers();
+}
+
+function removeSuspiciousUser(index) {
+  const list = JSON.parse(localStorage.getItem('suspiciousUsers') || '[]');
+  const removed = list.splice(index, 1);
+  localStorage.setItem('suspiciousUsers', JSON.stringify(list));
+  showToast(`${removed[0].username} eliminado de la lista`, 'info');
+  loadSuspiciousUsers();
+}
+
+// ============================================================
+// FEATURE: CHAT RULES MANAGER
+// ============================================================
+function loadChatRules() {
+  const rules = localStorage.getItem('chatRules') || '';
+  const editor = document.getElementById('chatRulesEditor');
+  if (editor && !editor.value) editor.value = rules;
+  renderRulesPreview();
+
+  const autoGreet = document.getElementById('rulesAutoGreet');
+  const savedGreet = localStorage.getItem('rulesAutoGreet');
+  if (autoGreet && savedGreet !== null) autoGreet.checked = savedGreet === 'true';
+
+  const delay = document.getElementById('rulesGreetDelay');
+  const savedDelay = localStorage.getItem('rulesGreetDelay');
+  if (delay && savedDelay) delay.value = savedDelay;
+}
+
+function renderRulesPreview() {
+  const editor = document.getElementById('chatRulesEditor');
+  const preview = document.getElementById('chatRulesPreview');
+  if (!editor || !preview) return;
+
+  const text = editor.value.trim();
+  if (!text) {
+    preview.innerHTML = '<p class="text-muted">Escribe reglas en el editor para ver la vista previa.</p>';
+    return;
+  }
+
+  const lines = text.split('\n').filter(l => l.trim());
+  preview.innerHTML = lines.map((line, i) => {
+    const cleaned = line.replace(/^\d+[\.\)]\s*/, '');
+    return `
+      <div class="rule-item">
+        <span class="rule-num">${i + 1}.</span>
+        <span>${escapeHtml(cleaned)}</span>
+      </div>`;
+  }).join('');
+}
+
+function saveChatRules() {
+  const editor = document.getElementById('chatRulesEditor');
+  const autoGreet = document.getElementById('rulesAutoGreet');
+  const delay = document.getElementById('rulesGreetDelay');
+
+  if (editor) localStorage.setItem('chatRules', editor.value);
+  if (autoGreet) localStorage.setItem('rulesAutoGreet', autoGreet.checked);
+  if (delay) localStorage.setItem('rulesGreetDelay', delay.value);
+
+  showToast('Reglas del chat guardadas', 'success');
 }
 
 // ============================================================
