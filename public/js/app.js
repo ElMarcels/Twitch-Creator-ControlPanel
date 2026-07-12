@@ -1873,7 +1873,7 @@ let customCommands = JSON.parse(localStorage.getItem('twitchmod_commands') || '[
 function loadCommands() {
   const list = document.getElementById('commandsList');
   if (customCommands.length === 0) {
-    list.innerHTML = '<div class="empty-state"><p>No hay comandos personalizados. Crea uno con el boton de arriba.</p><p class="text-muted" style="margin-top:8px">Los comandos se guardan localmente en tu navegador.</p></div>';
+    list.innerHTML = '<div class="empty-state"><p>No hay comandos personalizados. Crea uno con el boton de arriba.</p><p class="text-muted" style="margin-top:8px">Los comandos se guardan localmente en tu navegador. Haz clic en "Usar" para enviar la respuesta al chat.</p></div>';
     return;
   }
   list.innerHTML = customCommands.map((cmd, i) => `
@@ -1883,7 +1883,9 @@ function loadCommands() {
         <span class="command-response">${escapeHtml(cmd.response)}</span>
       </div>
       <div class="command-actions">
-        <button class="btn btn-danger btn-sm" onclick="deleteCommand(${i})">Eliminar</button>
+        <button class="btn btn-primary btn-sm" onclick="useCommand(${i})">Usar</button>
+        <button class="btn btn-secondary btn-sm" onclick="copyCommand(${i})">Copiar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCommand(${i})">X</button>
       </div>
     </div>
   `).join('');
@@ -1917,6 +1919,24 @@ function addCommand() {
   loadCommands();
 }
 
+async function useCommand(index) {
+  const cmd = customCommands[index];
+  if (!cmd) return;
+  const result = await api('/api/chat/send', { method: 'POST', body: { message: cmd.response } });
+  if (result && result.data && result.data[0] && result.data[0].is_sent) {
+    showToast(`Comando !${cmd.name} enviado al chat`, 'success');
+  } else {
+    showToast('Error al enviar al chat', 'error');
+  }
+}
+
+function copyCommand(index) {
+  const cmd = customCommands[index];
+  if (!cmd) return;
+  navigator.clipboard.writeText(cmd.response);
+  showToast('Respuesta copiada', 'success');
+}
+
 function deleteCommand(index) {
   customCommands.splice(index, 1);
   localStorage.setItem('twitchmod_commands', JSON.stringify(customCommands));
@@ -1926,8 +1946,47 @@ function deleteCommand(index) {
 
 // ===== GOALS =====
 async function loadGoals() {
+  loadLocalGoals();
+  loadTwitchGoals();
+}
+
+async function loadLocalGoals() {
+  const grid = document.getElementById('localGoalsGrid');
+  const data = await api('/api/goals/local');
+  if (data && data.data && data.data.length > 0) {
+    grid.innerHTML = data.data.map(goal => {
+      const pct = goal.target > 0 ? Math.min(100, Math.round((goal.current / goal.target) * 100)) : 0;
+      return `
+        <div class="goal-card">
+          <div class="goal-header">
+            <span class="goal-type">${escapeHtml(goal.title)}</span>
+            <span class="goal-status active">${goal.type}</span>
+          </div>
+          ${goal.description ? `<div class="goal-description">${escapeHtml(goal.description)}</div>` : ''}
+          <div class="goal-progress">
+            <div class="goal-bar">
+              <div class="goal-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="goal-numbers">
+              <span>${goal.current} / ${goal.target}</span>
+              <span>${pct}%</span>
+            </div>
+          </div>
+          <div class="goal-actions">
+            <button class="btn btn-secondary btn-sm" onclick="updateGoalCurrent('${goal.id}', ${goal.current})">Actualizar progreso</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteGoal('${goal.id}')">Eliminar</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    grid.innerHTML = '<div class="empty-state"><p>No hay metas creadas. Crea una con el boton de arriba.</p></div>';
+  }
+}
+
+async function loadTwitchGoals() {
   const grid = document.getElementById('goalsGrid');
-  grid.innerHTML = '<div class="loading">Cargando metas...</div>';
+  grid.innerHTML = '<div class="loading">Cargando metas de Twitch...</div>';
   const data = await api('/api/goals');
   if (data && data.data && data.data.length > 0) {
     grid.innerHTML = data.data.map(goal => {
@@ -1953,7 +2012,85 @@ async function loadGoals() {
       `;
     }).join('');
   } else {
-    grid.innerHTML = '<div class="empty-state"><p>No hay metas activas. Crea una desde el panel de Twitch.</p></div>';
+    grid.innerHTML = '<div class="empty-state"><p>No hay metas de Twitch activas.</p></div>';
+  }
+}
+
+function showCreateGoalModal() {
+  showModal('Crear Nueva Meta', `
+    <div class="form-group">
+      <label>Titulo</label>
+      <input type="text" id="goalTitle" class="form-input" placeholder="ej: 1000 Seguidores">
+    </div>
+    <div class="form-group">
+      <label>Descripcion (opcional)</label>
+      <input type="text" id="goalDescription" class="form-input" placeholder="ej: Meta para el fin de semana">
+    </div>
+    <div class="form-group">
+      <label>Objetivo (numero)</label>
+      <input type="number" id="goalTarget" class="form-input" placeholder="1000" min="1">
+    </div>
+    <div class="form-group">
+      <label>Tipo</label>
+      <select id="goalType" class="form-input">
+        <option value="custom">Personalizada</option>
+        <option value="followers">Seguidores</option>
+        <option value="subs">Suscriptores</option>
+        <option value="views">Visitas</option>
+        <option value="hours">Horas</option>
+      </select>
+    </div>
+  `, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: 'Crear', class: 'btn-primary', action: 'createGoal()' }
+  ]);
+}
+
+async function createGoal() {
+  const title = document.getElementById('goalTitle').value.trim();
+  const description = document.getElementById('goalDescription').value.trim();
+  const target = document.getElementById('goalTarget').value;
+  const type = document.getElementById('goalType').value;
+  if (!title || !target) return showToast('Titulo y objetivo son requeridos', 'error');
+  const result = await api('/api/goals/local', { method: 'POST', body: { title, description, target, type } });
+  if (result && result.data) {
+    closeModal();
+    showToast('Meta creada!', 'success');
+    loadLocalGoals();
+  } else {
+    showToast('Error al crear meta', 'error');
+  }
+}
+
+async function updateGoalCurrent(goalId, current) {
+  showModal('Actualizar Progreso', `
+    <div class="form-group">
+      <label>Progreso actual</label>
+      <input type="number" id="goalCurrentInput" class="form-input" value="${current}" min="0">
+    </div>
+  `, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: 'Actualizar', class: 'btn-primary', action: `saveGoalProgress('${goalId}')` }
+  ]);
+}
+
+async function saveGoalProgress(goalId) {
+  const current = document.getElementById('goalCurrentInput').value;
+  if (current === '') return showToast('Ingresa un valor', 'error');
+  const result = await api(`/api/goals/local/${goalId}`, { method: 'PATCH', body: { current } });
+  if (result && result.data) {
+    closeModal();
+    showToast('Progreso actualizado', 'success');
+    loadLocalGoals();
+  }
+}
+
+async function deleteGoal(goalId) {
+  if (!confirm('Eliminar esta meta?')) return;
+  const result = await api(`/api/goals/local/${goalId}`, { method: 'DELETE' });
+  if (result && (result.status === 204 || result.status === 200)) {
+    showToast('Meta eliminada', 'success');
+    loadLocalGoals();
   }
 }
 

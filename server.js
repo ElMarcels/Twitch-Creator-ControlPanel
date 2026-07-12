@@ -869,6 +869,47 @@ app.get('/api/polls/history', requireAuth, async (req, res) => {
   res.json(result);
 });
 
+// ===== LOCAL GOALS =====
+const localGoals = [];
+let goalIdCounter = 1;
+
+app.get('/api/goals/local', requireAuth, (req, res) => {
+  res.json({ data: localGoals });
+});
+
+app.post('/api/goals/local', requireAuth, (req, res) => {
+  const { title, description, target, type } = req.body;
+  if (!title || !target) return res.status(400).json({ error: 'title and target required' });
+  const goal = {
+    id: String(goalIdCounter++),
+    title,
+    description: description || '',
+    target: parseInt(target),
+    current: 0,
+    type: type || 'custom',
+    created_at: new Date().toISOString()
+  };
+  localGoals.push(goal);
+  res.json({ data: goal });
+});
+
+app.patch('/api/goals/local/:id', requireAuth, (req, res) => {
+  const goal = localGoals.find(g => g.id === req.params.id);
+  if (!goal) return res.status(404).json({ error: 'Goal not found' });
+  if (req.body.current !== undefined) goal.current = parseInt(req.body.current);
+  if (req.body.target !== undefined) goal.target = parseInt(req.body.target);
+  if (req.body.title) goal.title = req.body.title;
+  if (req.body.description !== undefined) goal.description = req.body.description;
+  res.json({ data: goal });
+});
+
+app.delete('/api/goals/local/:id', requireAuth, (req, res) => {
+  const idx = localGoals.findIndex(g => g.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Goal not found' });
+  localGoals.splice(idx, 1);
+  res.json({ status: 204 });
+});
+
 // ===== CHAT LOG =====
 const chatLog = [];
 app.get('/api/chat/log', requireAuth, (req, res) => {

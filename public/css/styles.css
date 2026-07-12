@@ -2061,6 +2061,25 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
   color: var(--text-muted);
 }
 
+.goal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.goals-section {
+  margin-bottom: 32px;
+}
+
+.goals-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
 /* Chat Log */
 .chat-log-container {
   background: var(--card-bg);
