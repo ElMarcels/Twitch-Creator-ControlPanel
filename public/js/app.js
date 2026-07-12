@@ -327,16 +327,20 @@ function renderModList(tab, list, total, filtered) {
     `).join('');
   } else if (tab === 'banned') {
     container.innerHTML = list.map(f => {
-      const expiry = f.expires_at ? new Date(f.expires_at).toLocaleString('es') : 'Permanente';
+      const isTimeout = !!f.expires_at;
+      const expiry = isTimeout ? new Date(f.expires_at).toLocaleString('es') : 'Permanente';
+      const actionBtn = isTimeout
+        ? `<button class="btn btn-warning btn-sm" onclick="unbanUser('${f.user_id}', '${escapeAttr(f.user_name || f.user_login)}')">Quitar Timeout</button>`
+        : `<button class="btn btn-success btn-sm" onclick="unbanUser('${f.user_id}', '${escapeAttr(f.user_name || f.user_login)}')">Desbanear</button>`;
       return `
         <div class="user-item" data-userid="${f.user_id}">
           <img src="${f.user_profile_image_url || ''}" alt="" onerror="this.style.background='var(--danger)';this.style.borderRadius='50%';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%23ef4444%22 width=%2240%22 height=%2240%22 rx=%2220%22/><text x=%2220%22 y=%2226%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2216%22 font-family=%22sans-serif%22>${(f.user_name||'').charAt(0).toUpperCase()}</text></svg>'">
           <div class="user-item-info">
             <div class="user-item-name">${escapeHtml(f.user_name || f.user_login)}</div>
-            <div class="user-item-meta">${f.moderator_name ? `Baneado por ${f.moderator_name}` : ''} ${f.reason ? `| ${escapeHtml(f.reason)}` : ''} | Expira: ${expiry}</div>
+            <div class="user-item-meta">${f.moderator_name ? `${isTimeout ? 'Timeout por' : 'Baneado por'} ${f.moderator_name}` : ''} ${f.reason ? `| ${escapeHtml(f.reason)}` : ''} | Expira: ${expiry}</div>
           </div>
           <div class="user-item-actions-inline">
-            <button class="btn btn-success btn-sm" onclick="unbanUser('${f.user_id}', '${escapeAttr(f.user_name || f.user_login)}')">Desbanear</button>
+            ${actionBtn}
           </div>
         </div>
       `;
@@ -551,11 +555,12 @@ async function executeBan(userId, userName) {
 }
 
 async function unbanUser(userId, userName) {
-  const result = await api('/api/mod/unban', { method: 'DELETE', body: { user_id: userId } });
+  const result = await api(`/api/mod/unban?user_id=${userId}`, { method: 'DELETE' });
   closeModal();
   if (result && (result.status === 200 || result.status === 204)) {
     logAction('unban', userName || 'Usuario');
     showToast(`${userName || 'Usuario'} desbaneado`, 'success');
+    loadBanned();
   } else {
     showToast('Error al desbanear', 'error');
   }

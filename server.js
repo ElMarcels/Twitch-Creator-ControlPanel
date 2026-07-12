@@ -330,7 +330,7 @@ app.post('/api/mod/ban', requireAuth, async (req, res) => {
 });
 
 app.delete('/api/mod/unban', requireAuth, async (req, res) => {
-  const { user_id } = req.body;
+  const user_id = req.query.user_id || (req.body && req.body.user_id);
   const result = await twitchAPI(req, res, `/moderation/bans?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&user_id=${user_id}`, {
     method: 'DELETE'
   });
@@ -632,7 +632,7 @@ app.get('/api/tags', requireAuth, async (req, res) => {
 app.post('/api/chat/send', requireAuth, async (req, res) => {
   const { message } = req.body;
   if (!message || !message.trim()) return res.status(400).json({ error: 'Message required' });
-  const result = await twitchAPI(req, res, '/chat/message', {
+  const result = await twitchAPI(req, res, '/chat/messages', {
     method: 'POST',
     body: {
       broadcaster_id: req.auth.user.id,
