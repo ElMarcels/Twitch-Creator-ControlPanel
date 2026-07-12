@@ -3514,3 +3514,15 @@ select.form-input:focus {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Login mode toggle */
+.login-mode-btn {
+  border: 1px solid var(--border) !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+}
+.login-mode-btn.active {
+  background: var(--purple-700) !important;
+  color: #fff !important;
+  border-color: var(--purple-600) !important;
+}

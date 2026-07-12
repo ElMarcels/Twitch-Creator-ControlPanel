@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const fetch = require('node-fetch');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -63,6 +64,10 @@ const bannedWords = new Set();
 let lastViewerSampleTime = 0;
 let lastFollowerSampleTime = 0;
 
+// Moderator access system
+const moderatorAccounts = new Map();
+const ownerTokens = new Map();
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -79,11 +84,43 @@ function verifyToken(token) {
   }
 }
 
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return { salt, hash };
+}
+
+function verifyPassword(password, salt, hash) {
+  const result = crypto.scryptSync(password, salt, 64).toString('hex');
+  return result === hash;
+}
+
+function getModeratorName(req) {
+  if (req.moderatorSession) return req.moderatorSession.username;
+  return req.auth.user.display_name || req.auth.user.login;
+}
+
 function requireAuth(req, res, next) {
   const token = req.cookies[COOKIE_NAME];
   const decoded = token ? verifyToken(token) : null;
   if (decoded) {
-    req.auth = decoded;
+    if (decoded.role === 'moderator') {
+      const ownerData = ownerTokens.get(decoded.ownerId);
+      if (!ownerData) {
+        if (req.path.startsWith('/api/')) {
+          return res.status(401).json({ error: 'Owner not connected' });
+        }
+        return res.status(401).send('Owner not connected');
+      }
+      req.auth = {
+        user: ownerData.user,
+        accessToken: ownerData.accessToken,
+        refreshToken: ownerData.refreshToken
+      };
+      req.moderatorSession = decoded;
+    } else {
+      req.auth = decoded;
+    }
     return next();
   }
   if (req.path.startsWith('/api/')) {
@@ -217,8 +254,12 @@ async function twitchAPI(req, res, endpoint, options = {}) {
     if (resp.status === 401) {
       const refreshed = await refreshAccessToken(req.auth);
       if (refreshed) {
-        req.auth = refreshed;
-        setAuthCookie(res, refreshed);
+        if (req.moderatorSession) {
+          ownerTokens.set(req.moderatorSession.ownerId, refreshed);
+        } else {
+          req.auth = refreshed;
+          setAuthCookie(res, refreshed);
+        }
         headers['Authorization'] = `Bearer ${refreshed.accessToken}`;
         fetchOptions.headers = headers;
         resp = await fetch(url, fetchOptions);
@@ -292,6 +333,7 @@ app.get('/auth/twitch/callback', async (req, res) => {
     }
 
     setAuthCookie(res, authData);
+    ownerTokens.set(authData.user.id, authData);
     res.redirect('/dashboard');
   } catch (err) {
     console.error('Auth error:', err);
@@ -300,6 +342,11 @@ app.get('/auth/twitch/callback', async (req, res) => {
 });
 
 app.get('/auth/logout', (req, res) => {
+  const token = req.cookies[COOKIE_NAME];
+  const decoded = token ? verifyToken(token) : null;
+  if (decoded && !decoded.role) {
+    ownerTokens.delete(decoded.user.id);
+  }
   res.clearCookie(COOKIE_NAME, { path: '/' });
   res.redirect('/');
 });
@@ -307,11 +354,105 @@ app.get('/auth/logout', (req, res) => {
 app.get('/auth/me', (req, res) => {
   const token = req.cookies[COOKIE_NAME];
   const decoded = token ? verifyToken(token) : null;
-  if (decoded && decoded.user) {
-    res.json({ authenticated: true, user: decoded.user });
-  } else {
-    res.json({ authenticated: false });
+  if (!decoded) {
+    return res.json({ authenticated: false });
   }
+  if (decoded.role === 'moderator') {
+    const ownerData = ownerTokens.get(decoded.ownerId);
+    if (!ownerData) return res.json({ authenticated: false, error: 'Owner not connected' });
+    return res.json({
+      authenticated: true,
+      role: 'moderator',
+      user: ownerData.user,
+      moderator: { id: decoded.moderatorId, username: decoded.username }
+    });
+  }
+  if (decoded.user) {
+    return res.json({ authenticated: true, user: decoded.user });
+  }
+  res.json({ authenticated: false });
+});
+
+// ===== MODERATOR ACCESS SYSTEM =====
+function requireOwner(req, res, next) {
+  if (req.moderatorSession) {
+    return res.status(403).json({ error: 'Owner access required' });
+  }
+  next();
+}
+
+app.get('/api/owner/moderators', requireAuth, requireOwner, (req, res) => {
+  const mods = [];
+  moderatorAccounts.forEach((val) => {
+    if (val.ownerId === req.auth.user.id) {
+      mods.push({ id: val.id, username: val.username, createdAt: val.createdAt });
+    }
+  });
+  res.json({ data: mods });
+});
+
+app.post('/api/owner/moderators', requireAuth, requireOwner, (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+  if (password.length < 4) return res.status(400).json({ error: 'Password must be at least 4 characters' });
+  const key = `${req.auth.user.id}:${username.toLowerCase()}`;
+  if (moderatorAccounts.has(key)) return res.status(400).json({ error: 'Moderator already exists' });
+  const { salt, hash } = hashPassword(password);
+  const mod = {
+    id: 'mod_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    username, passwordHash: hash, salt,
+    ownerId: req.auth.user.id,
+    createdAt: new Date().toISOString()
+  };
+  moderatorAccounts.set(key, mod);
+  res.json({ data: { id: mod.id, username: mod.username, createdAt: mod.createdAt } });
+});
+
+app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, (req, res) => {
+  let found = false;
+  moderatorAccounts.forEach((val, key) => {
+    if (val.id === req.params.id && val.ownerId === req.auth.user.id) {
+      moderatorAccounts.delete(key);
+      found = true;
+    }
+  });
+  if (!found) return res.status(404).json({ error: 'Moderator not found' });
+  res.json({ status: 204 });
+});
+
+app.post('/auth/moderator/login', (req, res) => {
+  const { username, password, channelLogin } = req.body;
+  if (!username || !password || !channelLogin) {
+    return res.status(400).json({ error: 'Username, password, and channel required' });
+  }
+  let ownerId = null;
+  ownerTokens.forEach((val, key) => {
+    if (val.user && val.user.login && val.user.login.toLowerCase() === channelLogin.toLowerCase()) {
+      ownerId = key;
+    }
+  });
+  if (!ownerId) return res.status(400).json({ error: 'Channel owner is not connected to this dashboard' });
+  const key = `${ownerId}:${username.toLowerCase()}`;
+  const mod = moderatorAccounts.get(key);
+  if (!mod) return res.status(401).json({ error: 'Invalid credentials' });
+  if (!verifyPassword(password, mod.salt, mod.passwordHash)) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+  const ownerData = ownerTokens.get(ownerId);
+  const token = signToken({
+    role: 'moderator', ownerId,
+    moderatorId: mod.id, username: mod.username
+  });
+  res.cookie(COOKIE_NAME, token, {
+    maxAge: COOKIE_MAX_AGE, httpOnly: true,
+    secure: process.env.NODE_ENV === 'production' || process.env.VERCEL,
+    sameSite: 'lax', path: '/'
+  });
+  res.json({
+    authenticated: true, role: 'moderator',
+    user: ownerData.user,
+    moderator: { id: mod.id, username: mod.username }
+  });
 });
 
 // User info
@@ -373,7 +514,10 @@ app.post('/api/mod/announce', requireAuth, async (req, res) => {
 // Followers (with profile images via /users)
 app.get('/api/mod/followers', requireAuth, async (req, res) => {
   try {
-    const result = await twitchAPI(req, res, `/channels/followers?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&first=100`);
+    const after = req.query.after || '';
+    let endpoint = `/channels/followers?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&first=100`;
+    if (after) endpoint += `&after=${after}`;
+    const result = await twitchAPI(req, res, endpoint);
     if (result.status !== 200 || !result.data || !result.data.data) {
       return res.json({ status: result.status, data: { data: [], error: result.data } });
     }
@@ -394,7 +538,8 @@ app.get('/api/mod/followers', requireAuth, async (req, res) => {
         f.user_profile_image_url = profileMap[f.user_id] || '';
       }
     }
-    res.json(result);
+    const pagination = result.data.pagination || {};
+    res.json({ status: result.status, data: result.data, pagination });
   } catch (err) {
     res.json({ status: 500, data: { data: [], error: err.message } });
   }
@@ -628,6 +773,21 @@ app.get('/api/tags', requireAuth, async (req, res) => {
   res.json(result);
 });
 
+// Send chat message
+app.post('/api/chat/send', requireAuth, async (req, res) => {
+  const { message } = req.body;
+  if (!message || !message.trim()) return res.status(400).json({ error: 'Message required' });
+  const result = await twitchAPI(req, res, '/chat/messages', {
+    method: 'POST',
+    body: {
+      broadcaster_id: req.auth.user.id,
+      sender_id: req.auth.user.id,
+      message: message.trim()
+    }
+  });
+  res.json(result);
+});
+
 // Get chatters list with pagination
 app.get('/api/mod/chatters/list', requireAuth, async (req, res) => {
   const result = await twitchAPI(req, res, `/chat/chatters?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&first=100`);
@@ -758,7 +918,7 @@ app.post('/api/mod/action-log', requireAuth, (req, res) => {
     action: action || 'unknown',
     target: target || '',
     details: details || '',
-    moderator: req.auth.user.display_name || req.auth.user.login
+    moderator: getModeratorName(req)
   });
   if (actionLog.length > 200) actionLog.shift();
   res.json({ status: 200 });

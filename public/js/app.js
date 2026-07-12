@@ -531,6 +531,10 @@ async function checkAuth() {
     const data = await resp.json();
     if (data.authenticated && data.user) {
       currentUser = data.user;
+      if (data.role === 'moderator') {
+        currentUser.isModerator = true;
+        currentUser.moderatorName = data.moderator.username;
+      }
       showDashboard();
     } else {
       showLogin();
@@ -559,6 +563,9 @@ function populateUserInfo() {
   if (!currentUser) return;
   document.getElementById('userAvatar').src = currentUser.profile_image_url;
   document.getElementById('userName').textContent = currentUser.display_name;
+  if (currentUser.isModerator) {
+    document.getElementById('userName').textContent += ' (Mod: ' + currentUser.moderatorName + ')';
+  }
   document.getElementById('pageTitle').textContent = t('title_home');
 }
 
@@ -639,6 +646,7 @@ function loadPageData(page) {
     case 'chat-rules': loadChatRules(); break;
     case 'alerts-widget': loadAlerts(); break;
     case 'share': loadShareLinks(); break;
+    case 'settings': loadModeratorAccounts(); break;
   }
 }
 
@@ -794,7 +802,7 @@ function filterCurrentModTab(q) {
 function filterAndRender(tab, q) {
   const data = modData[tab];
   if (!q) {
-    renderModList(tab, data.slice(0, 100), data.length);
+    renderModList(tab, data, data.length);
     return;
   }
   const filtered = data.filter(item => {
@@ -802,7 +810,7 @@ function filterAndRender(tab, q) {
     const login = (item.login || item.user_login || '').toLowerCase();
     return name.includes(q) || login.includes(q);
   });
-  renderModList(tab, filtered.slice(0, 100), data.length, filtered.length);
+  renderModList(tab, filtered, data.length, filtered.length);
 }
 
 function renderModList(tab, list, total, filtered) {
@@ -909,37 +917,6 @@ function renderModList(tab, list, total, filtered) {
 
 async function loadModerationData() {
   refreshCurrentModTab();
-}
-
-async function loadFollowers() {
-  const loadingEl = document.getElementById('followersLoading');
-  const countEl = document.getElementById('modFollowerCount');
-
-  loadingEl.style.display = '';
-  countEl.textContent = 'Cargando...';
-
-  try {
-    const data = await fetch('/api/mod/followers').then(r => r.json());
-
-    if (data && data.data && Array.isArray(data.data.data) && data.data.data.length > 0) {
-      modData.followers = data.data.data;
-      countEl.textContent = `${modData.followers.length} seguidores`;
-      renderModList('followers', modData.followers.slice(0, 100), modData.followers.length);
-    } else if (data && data.data && data.data.error) {
-      const errMsg = data.data.error.message || data.data.error.error || JSON.stringify(data.data.error);
-      document.getElementById('followersList').innerHTML = `<div class="empty-state"><p>Error: ${escapeHtml(errMsg)}</p><p style="margin-top:12px">Cierra sesion y vuelve a loguearte para actualizar los permisos.</p></div>`;
-      countEl.textContent = 'Error';
-    } else {
-      document.getElementById('followersList').innerHTML = '<div class="empty-state"><p>No se pudieron cargar los seguidores.</p></div>';
-      countEl.textContent = '0 seguidores';
-    }
-  } catch (err) {
-    console.error('Load followers error:', err);
-    document.getElementById('followersList').innerHTML = `<div class="empty-state"><p>Error de conexion</p></div>`;
-    countEl.textContent = 'Error';
-  }
-
-  loadingEl.style.display = 'none';
 }
 
 async function loadChatters() {
@@ -3046,4 +3023,166 @@ function loadShortcutsSettings() {
   const saved = localStorage.getItem('shortcutsEnabled');
   const toggle = document.getElementById('shortcutsEnabled');
   if (toggle && saved !== null) toggle.checked = saved === '1';
+}
+
+// ============================================================
+// FEATURE: MODERATOR ACCESS SYSTEM
+// ============================================================
+function toggleLoginMode(mode) {
+  document.getElementById('twitchLoginSection').style.display = mode === 'owner' ? '' : 'none';
+  document.getElementById('modLoginSection').style.display = mode === 'moderator' ? '' : 'none';
+  document.querySelectorAll('.login-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+}
+
+async function moderatorLogin() {
+  const username = document.getElementById('modLoginUsername').value.trim();
+  const password = document.getElementById('modLoginPassword').value;
+  const channel = document.getElementById('modLoginChannel').value.trim();
+  if (!username || !password || !channel) return showToast('Completa todos los campos', 'error');
+  try {
+    const resp = await fetch('/auth/moderator/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, channelLogin: channel })
+    });
+    const data = await resp.json();
+    if (data.authenticated && data.user) {
+      currentUser = data.user;
+      currentUser.isModerator = true;
+      currentUser.moderatorName = data.moderator.username;
+      showDashboard();
+    } else {
+      showToast(data.error || 'Error al iniciar sesion', 'error');
+    }
+  } catch (err) {
+    showToast('Error de conexion', 'error');
+  }
+}
+
+async function loadModeratorAccounts() {
+  const container = document.getElementById('moderatorAccountsList');
+  if (!container) return;
+  if (currentUser && currentUser.isModerator) {
+    const section = container.closest('.settings-section');
+    if (section) section.style.display = 'none';
+    return;
+  }
+  const data = await api('/api/owner/moderators');
+  if (data && data.data && data.data.length > 0) {
+    container.innerHTML = data.data.map(mod => `
+      <div class="settings-row">
+        <div class="settings-info">
+          <h3>${escapeHtml(mod.username)}</h3>
+          <p>Creado: ${new Date(mod.createdAt).toLocaleString('es')}</p>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="removeModeratorAccount('${mod.id}')">Eliminar</button>
+      </div>
+    `).join('');
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No hay moderadores configurados. Agrega uno con el boton de arriba.</p></div>';
+  }
+}
+
+function showAddModeratorModal() {
+  showModal('Agregar Moderador', `
+    <div class="form-group">
+      <label>Nombre de usuario</label>
+      <input type="text" id="newModUsername" class="form-input" placeholder="Nombre de usuario">
+    </div>
+    <div class="form-group">
+      <label>Contrasena</label>
+      <input type="password" id="newModPassword" class="form-input" placeholder="Minimo 4 caracteres">
+    </div>
+  `, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: 'Agregar', class: 'btn-primary', action: 'addModeratorAccount()' }
+  ]);
+}
+
+async function addModeratorAccount() {
+  const username = document.getElementById('newModUsername').value.trim();
+  const password = document.getElementById('newModPassword').value;
+  if (!username || !password) return showToast('Nombre y contrasena requeridos', 'error');
+  const result = await api('/api/owner/moderators', { method: 'POST', body: { username, password } });
+  closeModal();
+  if (result && result.data) {
+    showToast(`Moderador ${username} agregado`, 'success');
+    loadModeratorAccounts();
+  } else {
+    showToast(result?.error || 'Error al agregar moderador', 'error');
+  }
+}
+
+async function removeModeratorAccount(id) {
+  if (!confirm('Eliminar este moderador?')) return;
+  const result = await api(`/api/owner/moderators/${id}`, { method: 'DELETE' });
+  if (result && (result.status === 204 || result.status === 200)) {
+    showToast('Moderador eliminado', 'success');
+    loadModeratorAccounts();
+  } else {
+    showToast('Error al eliminar', 'error');
+  }
+}
+
+// ============================================================
+// FEATURE: FOLLOWERS PAGINATION
+// ============================================================
+let followersPaginationCursor = null;
+let allFollowersLoaded = false;
+
+async function loadFollowers(append = false) {
+  const loadingEl = document.getElementById('followersLoading');
+  const countEl = document.getElementById('modFollowerCount');
+
+  if (!append) {
+    loadingEl.style.display = '';
+    countEl.textContent = 'Cargando...';
+    modData.followers = [];
+    followersPaginationCursor = null;
+    allFollowersLoaded = false;
+  }
+
+  try {
+    let url = '/api/mod/followers';
+    if (followersPaginationCursor) url += `?after=${followersPaginationCursor}`;
+    const data = await fetch(url).then(r => r.json());
+
+    if (data && data.data && Array.isArray(data.data.data) && data.data.data.length > 0) {
+      modData.followers = modData.followers.concat(data.data.data);
+      countEl.textContent = `${modData.followers.length} seguidores`;
+      if (data.pagination && data.pagination.cursor) {
+        followersPaginationCursor = data.pagination.cursor;
+        allFollowersLoaded = false;
+      } else {
+        allFollowersLoaded = true;
+      }
+      renderModList('followers', modData.followers, modData.followers.length);
+    } else if (data && data.data && data.data.error) {
+      const errMsg = data.data.error.message || data.data.error.error || JSON.stringify(data.data.error);
+      document.getElementById('followersList').innerHTML = `<div class="empty-state"><p>Error: ${escapeHtml(errMsg)}</p><p style="margin-top:12px">Cierra sesion y vuelve a loguearte para actualizar los permisos.</p></div>`;
+      countEl.textContent = 'Error';
+      allFollowersLoaded = true;
+    } else {
+      if (!append) {
+        document.getElementById('followersList').innerHTML = '<div class="empty-state"><p>No se pudieron cargar los seguidores.</p></div>';
+        countEl.textContent = '0 seguidores';
+      }
+      allFollowersLoaded = true;
+    }
+  } catch (err) {
+    console.error('Load followers error:', err);
+    if (!append) {
+      document.getElementById('followersList').innerHTML = '<div class="empty-state"><p>Error de conexion</p></div>';
+      countEl.textContent = 'Error';
+    }
+    allFollowersLoaded = true;
+  }
+
+  loadingEl.style.display = 'none';
+  const loadMoreBtn = document.getElementById('loadMoreFollowers');
+  if (loadMoreBtn) loadMoreBtn.style.display = allFollowersLoaded ? 'none' : '';
+}
+
+function loadMoreFollowers() {
+  loadFollowers(true);
 }
