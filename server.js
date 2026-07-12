@@ -1413,17 +1413,7 @@ app.post('/api/appeals', async (req, res) => {
 
 app.get('/api/owner/appeals', requireAuth, async (req, res) => {
   const appeals = await getAppeals();
-  console.log('GET appeals: total=' + appeals.length, 'channelLogin=' + (req.auth.user && req.auth.user.login));
-  const channelLogin = (req.auth.user.login || '').toLowerCase();
-  const mods = [];
-  moderatorAccounts.forEach((val) => {
-    if (val.ownerId === req.auth.user.id) mods.push(val.username.toLowerCase());
-  });
-  const filtered = appeals.filter(a =>
-    a.channelName === channelLogin || mods.includes(a.channelName)
-  );
-  console.log('GET appeals: filtered=' + filtered.length);
-  res.json({ data: filtered });
+  res.json({ data: appeals });
 });
 
 app.post('/api/owner/appeals/:id/review', requireAuth, async (req, res) => {
