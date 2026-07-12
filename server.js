@@ -100,10 +100,11 @@ const moderatorAccounts = new Map();
 const ownerTokens = new Map();
 
 let dataLoaded = false;
+let dataLoadOk = false;
 let dataLoadPromise = null;
 
 async function loadDashboardData() {
-  if (!REDIS_URL) { dataLoaded = true; return; }
+  if (!REDIS_URL) { dataLoaded = true; dataLoadOk = true; return; }
   try {
     const tokensRaw = await redisGet('fav-twitch:ownerTokens');
     const accountsRaw = await redisGet('fav-twitch:moderatorAccounts');
@@ -111,6 +112,7 @@ async function loadDashboardData() {
     const accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : accountsRaw;
     if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
     if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
+    dataLoadOk = true;
   } catch (err) {
     console.error('Failed to load from Redis:', err.message);
   }
@@ -125,6 +127,7 @@ async function waitForData() {
 async function saveDashboardData() {
   if (!REDIS_URL) return;
   await waitForData();
+  if (!dataLoadOk) { console.error('SKIP save: initial Redis load failed, refusing to overwrite with empty data'); return; }
   const obj = { ownerTokens: {}, moderatorAccounts: {} };
   ownerTokens.forEach((v, k) => obj.ownerTokens[k] = v);
   moderatorAccounts.forEach((v, k) => obj.moderatorAccounts[k] = v);
