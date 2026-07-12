@@ -70,24 +70,30 @@ const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
 
 async function redisGet(key) {
   if (!REDIS_URL) return null;
-  const resp = await fetch(`${REDIS_URL}/get/${encodeURIComponent(key)}`, {
-    headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
-  });
-  if (!resp.ok) return null;
-  const data = await resp.json();
-  return data.result;
+  try {
+    const resp = await fetch(`${REDIS_URL}/get/${encodeURIComponent(key)}`, {
+      headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.result;
+  } catch {
+    return null;
+  }
 }
 
 async function redisSet(key, value) {
   if (!REDIS_URL) return;
-  await fetch(`${REDIS_URL}/set/${encodeURIComponent(key)}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${REDIS_TOKEN}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ value: JSON.stringify(value) })
-  });
+  try {
+    await fetch(`${REDIS_URL}/set/${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${REDIS_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ value: JSON.stringify(value) })
+    });
+  } catch {}
 }
 
 const moderatorAccounts = new Map();
@@ -122,7 +128,7 @@ async function saveDashboardData() {
   }
 }
 
-loadDashboardData();
+loadDashboardData().catch(() => {});
 
 app.use(cookieParser());
 app.use(express.json());
