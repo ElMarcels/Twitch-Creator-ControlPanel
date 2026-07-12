@@ -43,7 +43,8 @@ const SCOPES = [
   'user:read:broadcast',
   'user:edit:broadcast',
   'moderation:read',
-  'bits:read'
+  'bits:read',
+  'user:write:chat'
 ].join(' ');
 
 app.use(cookieParser());
@@ -614,6 +615,27 @@ app.delete('/api/mod/vips', requireAuth, async (req, res) => {
 // All tags
 app.get('/api/tags', requireAuth, async (req, res) => {
   const result = await twitchAPI(req, `/tags/streams?broadcaster_id=${req.auth.user.id}`);
+  res.json(result);
+});
+
+// Send chat message
+app.post('/api/chat/send', requireAuth, async (req, res) => {
+  const { message } = req.body;
+  if (!message || !message.trim()) return res.status(400).json({ error: 'Message required' });
+  const result = await twitchAPI(req, '/chat/message', {
+    method: 'POST',
+    body: {
+      broadcaster_id: req.auth.user.id,
+      sender_id: req.auth.user.id,
+      message: message.trim()
+    }
+  });
+  res.json(result);
+});
+
+// Get chatters list with pagination
+app.get('/api/mod/chatters/list', requireAuth, async (req, res) => {
+  const result = await twitchAPI(req, `/chat/chatters?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&first=100`);
   res.json(result);
 });
 

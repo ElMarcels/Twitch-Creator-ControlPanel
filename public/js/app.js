@@ -3,16 +3,19 @@ let currentUser = null;
 let currentPage = 'dashboard-home';
 let allRewards = [];
 let selectedRewardColor = 'primary';
+let currentModTab = 'followers';
+let modData = { followers: [], chatters: [], banned: [], moderators: [], vips: [] };
+let streamRefreshInterval = null;
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
   setupNavigation();
   setupSidebar();
-  setupModTabs();
   setupModSearch();
   setupCategorySearch();
   setupColorBtns();
+  setupChatInput();
 });
 
 // ===== AUTH =====
@@ -41,6 +44,7 @@ function showDashboard() {
   document.getElementById('dashboard').classList.remove('hidden');
   populateUserInfo();
   loadHomeData();
+  startStreamRefresh();
 }
 
 function populateUserInfo() {
@@ -139,6 +143,19 @@ async function loadHomeData() {
   document.getElementById('followersValue').textContent = currentUser.followers_count || '--';
   document.getElementById('viewsValue').textContent = formatNumber(currentUser.view_count);
 
+  await refreshStreamStatus();
+}
+
+function startStreamRefresh() {
+  if (streamRefreshInterval) clearInterval(streamRefreshInterval);
+  streamRefreshInterval = setInterval(async () => {
+    if (currentPage === 'dashboard-home' || currentPage === 'stats') {
+      await refreshStreamStatus();
+    }
+  }, 30000);
+}
+
+async function refreshStreamStatus() {
   const stream = await api('/api/stream');
   if (stream && stream.data && stream.data.length > 0) {
     const s = stream.data[0];
@@ -195,10 +212,6 @@ async function loadHomeData() {
 // ===== MODERATION =====
 let followers = [];
 
-function setupModTabs() {
-  // Single tab, no tab switching needed
-}
-
 function setupModSearch() {
   const input = document.getElementById('modUserSearch');
   let debounce;
@@ -206,70 +219,270 @@ function setupModSearch() {
     clearTimeout(debounce);
     debounce = setTimeout(() => {
       const q = input.value.toLowerCase().trim();
-      if (!q) return renderFollowers(followers.slice(0, 100));
-      const filtered = followers.filter(f => f.user_name.toLowerCase().includes(q) || f.user_login.toLowerCase().includes(q));
-      renderFollowers(filtered.slice(0, 100));
-    }, 300);
+      filterCurrentModTab(q);
+    }, 250);
   });
 }
 
+function switchModTab(tab) {
+  currentModTab = tab;
+  document.querySelectorAll('.mod-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.mod-tab[data-mod-tab="${tab}"]`).classList.add('active');
+  document.querySelectorAll('.mod-tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`modTab-${tab}`).classList.add('active');
+  const q = document.getElementById('modUserSearch').value.toLowerCase().trim();
+  filterCurrentModTab(q);
+}
+
+function refreshCurrentModTab() {
+  switch (currentModTab) {
+    case 'followers': loadFollowers(); break;
+    case 'chatters': loadChatters(); break;
+    case 'banned': loadBanned(); break;
+    case 'moderators': loadModerators(); break;
+    case 'vips': loadVIPs(); break;
+  }
+}
+
+function filterCurrentModTab(q) {
+  switch (currentModTab) {
+    case 'followers': filterAndRender('followers', q); break;
+    case 'chatters': filterAndRender('chatters', q); break;
+    case 'banned': filterAndRender('banned', q); break;
+    case 'moderators': filterAndRender('moderators', q); break;
+    case 'vips': filterAndRender('vips', q); break;
+  }
+}
+
+function filterAndRender(tab, q) {
+  const data = modData[tab];
+  if (!q) {
+    renderModList(tab, data.slice(0, 100), data.length);
+    return;
+  }
+  const filtered = data.filter(item => {
+    const name = (item.user_name || item.login || item.display_name || '').toLowerCase();
+    const login = (item.login || item.user_login || '').toLowerCase();
+    return name.includes(q) || login.includes(q);
+  });
+  renderModList(tab, filtered.slice(0, 100), data.length, filtered.length);
+}
+
+function renderModList(tab, list, total, filtered) {
+  const containerId = {
+    followers: 'followersList',
+    chatters: 'chattersList',
+    banned: 'bannedList',
+    moderators: 'moderatorsList',
+    vips: 'vipsList'
+  }[tab];
+  const countId = 'modFollowerCount';
+  const container = document.getElementById(containerId);
+
+  if (filtered !== undefined) {
+    document.getElementById(countId).textContent = `${filtered} de ${total} resultados`;
+  } else {
+    const labels = { followers: 'seguidores', chatters: 'chatters', banned: 'baneados', moderators: 'moderadores', vips: 'VIPs' };
+    document.getElementById(countId).textContent = `${total} ${labels[tab]}`;
+  }
+
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No se encontraron resultados</p></div>';
+    return;
+  }
+
+  if (tab === 'followers') {
+    container.innerHTML = list.map(f => `
+      <div class="user-item" data-userid="${f.user_id}">
+        <img src="${f.user_profile_image_url || ''}" alt="" onerror="this.style.background='var(--purple-700)';this.style.borderRadius='50%';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%237c3aed%22 width=%2240%22 height=%2240%22 rx=%2220%22/><text x=%2220%22 y=%2226%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2216%22 font-family=%22sans-serif%22>${f.user_name.charAt(0).toUpperCase()}</text></svg>'">
+        <div class="user-item-info">
+          <div class="user-item-name">${escapeHtml(f.user_name)}</div>
+          <div class="user-item-meta">Siguiendo desde ${new Date(f.followed_at).toLocaleDateString('es')}</div>
+        </div>
+        <div class="user-item-actions-inline">
+          <button class="btn btn-danger btn-sm" onclick="showBanModal('${f.user_id}', '${escapeAttr(f.user_name)}')" title="Banear">Ban</button>
+          <button class="btn btn-warning btn-sm" onclick="showTimeoutModal('${f.user_id}', '${escapeAttr(f.user_name)}')" title="Mutear">Mute</button>
+          <button class="btn btn-secondary btn-sm" onclick="showRoleModal('${f.user_id}', '${escapeAttr(f.user_name)}')" title="Rol">Rol</button>
+        </div>
+      </div>
+    `).join('');
+  } else if (tab === 'chatters') {
+    container.innerHTML = list.map(f => `
+      <div class="user-item" data-userid="${f.user_id}">
+        <img src="${f.user_profile_image_url || ''}" alt="" onerror="this.style.background='var(--blue-600)';this.style.borderRadius='50%';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%233b82f6%22 width=%2240%22 height=%2240%22 rx=%2220%22/><text x=%2220%22 y=%2226%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2216%22 font-family=%22sans-serif%22>${(f.user_name||'').charAt(0).toUpperCase()}</text></svg>'">
+        <div class="user-item-info">
+          <div class="user-item-name">${escapeHtml(f.user_name || f.user_login)}</div>
+          <div class="user-item-meta">${f.user_id === currentUser?.id ? 'Tu' : 'Chatter'}</div>
+        </div>
+        <div class="user-item-actions-inline">
+          <button class="btn btn-danger btn-sm" onclick="showBanModal('${f.user_id}', '${escapeAttr(f.user_name || f.user_login)}')" title="Banear">Ban</button>
+          <button class="btn btn-warning btn-sm" onclick="showTimeoutModal('${f.user_id}', '${escapeAttr(f.user_name || f.user_login)}')" title="Mutear">Mute</button>
+          <button class="btn btn-secondary btn-sm" onclick="showRoleModal('${f.user_id}', '${escapeAttr(f.user_name || f.user_login)}')" title="Rol">Rol</button>
+        </div>
+      </div>
+    `).join('');
+  } else if (tab === 'banned') {
+    container.innerHTML = list.map(f => {
+      const expiry = f.expires_at ? new Date(f.expires_at).toLocaleString('es') : 'Permanente';
+      return `
+        <div class="user-item" data-userid="${f.user_id}">
+          <img src="${f.user_profile_image_url || ''}" alt="" onerror="this.style.background='var(--danger)';this.style.borderRadius='50%';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%23ef4444%22 width=%2240%22 height=%2240%22 rx=%2220%22/><text x=%2220%22 y=%2226%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2216%22 font-family=%22sans-serif%22>${(f.user_name||'').charAt(0).toUpperCase()}</text></svg>'">
+          <div class="user-item-info">
+            <div class="user-item-name">${escapeHtml(f.user_name || f.user_login)}</div>
+            <div class="user-item-meta">${f.moderator_name ? `Baneado por ${f.moderator_name}` : ''} ${f.reason ? `| ${escapeHtml(f.reason)}` : ''} | Expira: ${expiry}</div>
+          </div>
+          <div class="user-item-actions-inline">
+            <button class="btn btn-success btn-sm" onclick="unbanUser('${f.user_id}', '${escapeAttr(f.user_name || f.user_login)}')">Desbanear</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else if (tab === 'moderators') {
+    container.innerHTML = list.map(f => `
+      <div class="user-item" data-userid="${f.user_id}">
+        <img src="${f.user_profile_image_url || ''}" alt="" onerror="this.style.background='var(--blue-500)';this.style.borderRadius='50%';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%233b82f6%22 width=%2240%22 height=%2240%22 rx=%2220%22/><text x=%2220%22 y=%2226%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2216%22 font-family=%22sans-serif%22>${(f.user_name||'').charAt(0).toUpperCase()}</text></svg>'">
+        <div class="user-item-info">
+          <div class="user-item-name">${escapeHtml(f.user_name || f.user_login)}</div>
+          <div class="user-item-meta">Moderador</div>
+        </div>
+        <div class="user-item-actions-inline">
+          <button class="btn btn-danger btn-sm" onclick="removeAsMod('${f.user_id}', '${escapeAttr(f.user_name || f.user_login)}')">Quitar Mod</button>
+        </div>
+      </div>
+    `).join('');
+  } else if (tab === 'vips') {
+    container.innerHTML = list.map(f => `
+      <div class="user-item" data-userid="${f.user_id}">
+        <img src="${f.user_profile_image_url || ''}" alt="" onerror="this.style.background='var(--purple-500)';this.style.borderRadius='50%';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%23a855f7%22 width=%2240%22 height=%2240%22 rx=%2220%22/><text x=%2220%22 y=%2226%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2216%22 font-family=%22sans-serif%22>${(f.user_name||'').charAt(0).toUpperCase()}</text></svg>'">
+        <div class="user-item-info">
+          <div class="user-item-name">${escapeHtml(f.user_name || f.user_login)}</div>
+          <div class="user-item-meta">VIP</div>
+        </div>
+        <div class="user-item-actions-inline">
+          <button class="btn btn-danger btn-sm" onclick="removeAsVip('${f.user_id}', '${escapeAttr(f.user_name || f.user_login)}')">Quitar VIP</button>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
 async function loadModerationData() {
-  loadFollowers();
+  refreshCurrentModTab();
 }
 
 async function loadFollowers() {
   const loadingEl = document.getElementById('followersLoading');
-  const listEl = document.getElementById('followersList');
   const countEl = document.getElementById('modFollowerCount');
 
   loadingEl.style.display = '';
-  listEl.innerHTML = '';
   countEl.textContent = 'Cargando...';
 
   try {
     const data = await fetch('/api/mod/followers').then(r => r.json());
 
     if (data && data.data && Array.isArray(data.data.data) && data.data.data.length > 0) {
-      followers = data.data.data;
-      countEl.textContent = `${followers.length} seguidores`;
-      renderFollowers(followers.slice(0, 100));
+      modData.followers = data.data.data;
+      countEl.textContent = `${modData.followers.length} seguidores`;
+      renderModList('followers', modData.followers.slice(0, 100), modData.followers.length);
     } else if (data && data.data && data.data.error) {
       const errMsg = data.data.error.message || data.data.error.error || JSON.stringify(data.data.error);
-      listEl.innerHTML = `<div class="empty-state"><p>Error: ${escapeHtml(errMsg)}</p><p style="margin-top:12px">Cierra sesion y vuelve a loguearte para actualizar los permisos.</p></div>`;
+      document.getElementById('followersList').innerHTML = `<div class="empty-state"><p>Error: ${escapeHtml(errMsg)}</p><p style="margin-top:12px">Cierra sesion y vuelve a loguearte para actualizar los permisos.</p></div>`;
       countEl.textContent = 'Error';
     } else {
-      listEl.innerHTML = '<div class="empty-state"><p>No se pudieron cargar los seguidores. Cierra sesion y vuelve a loguearte.</p></div>';
+      document.getElementById('followersList').innerHTML = '<div class="empty-state"><p>No se pudieron cargar los seguidores.</p></div>';
       countEl.textContent = '0 seguidores';
     }
   } catch (err) {
     console.error('Load followers error:', err);
-    listEl.innerHTML = `<div class="empty-state"><p>Error de conexion: ${escapeHtml(err.message)}</p><p style="margin-top:12px">Asegurate de que el servidor esta corriendo (npm start).</p></div>`;
+    document.getElementById('followersList').innerHTML = `<div class="empty-state"><p>Error de conexion</p></div>`;
     countEl.textContent = 'Error';
   }
 
   loadingEl.style.display = 'none';
 }
 
-function renderFollowers(list) {
-  const container = document.getElementById('followersList');
-  if (list.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>No se encontraron seguidores</p></div>';
-    return;
+async function loadChatters() {
+  const loadingEl = document.getElementById('chattersLoading');
+  loadingEl.style.display = '';
+
+  try {
+    const data = await fetch('/api/mod/chatters/list').then(r => r.json());
+    if (data && data.data && data.data.data && data.data.data.length > 0) {
+      modData.chatters = data.data.data;
+      renderModList('chatters', modData.chatters.slice(0, 100), modData.chatters.length);
+    } else {
+      modData.chatters = [];
+      document.getElementById('chattersList').innerHTML = '<div class="empty-state"><p>No hay chatters en el chat (o el directo no esta activo)</p></div>';
+    }
+  } catch (err) {
+    console.error('Load chatters error:', err);
+    document.getElementById('chattersList').innerHTML = '<div class="empty-state"><p>Error al cargar chatters</p></div>';
   }
-  container.innerHTML = list.map(f => `
-    <div class="user-item" data-userid="${f.user_id}">
-      <img src="${f.user_profile_image_url || ''}" alt="" onerror="this.style.background='var(--purple-700)';this.style.borderRadius='50%';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%237c3aed%22 width=%2240%22 height=%2240%22 rx=%2220%22/><text x=%2220%22 y=%2226%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2216%22 font-family=%22sans-serif%22>${f.user_name.charAt(0).toUpperCase()}</text></svg>'">
-      <div class="user-item-info">
-        <div class="user-item-name">${escapeHtml(f.user_name)}</div>
-        <div class="user-item-meta">Siguiendo desde ${new Date(f.followed_at).toLocaleDateString('es')}</div>
-      </div>
-      <div class="user-item-actions-inline">
-        <button class="btn btn-danger btn-sm" onclick="showBanModal('${f.user_id}', '${escapeAttr(f.user_name)}')" title="Banear">Ban</button>
-        <button class="btn btn-warning btn-sm" onclick="showTimeoutModal('${f.user_id}', '${escapeAttr(f.user_name)}')" title="Mutear">Mute</button>
-        <button class="btn btn-secondary btn-sm" onclick="showRoleModal('${f.user_id}', '${escapeAttr(f.user_name)}')" title="Rol">Rol</button>
-      </div>
-    </div>
-  `).join('');
+
+  loadingEl.style.display = 'none';
+}
+
+async function loadBanned() {
+  const loadingEl = document.getElementById('bannedLoading');
+  loadingEl.style.display = '';
+
+  try {
+    const data = await fetch('/api/mod/bans').then(r => r.json());
+    if (data && data.data && data.data.data && data.data.data.length > 0) {
+      modData.banned = data.data.data;
+      renderModList('banned', modData.banned.slice(0, 100), modData.banned.length);
+    } else {
+      modData.banned = [];
+      document.getElementById('bannedList').innerHTML = '<div class="empty-state"><p>No hay usuarios baneados</p></div>';
+    }
+  } catch (err) {
+    console.error('Load banned error:', err);
+    document.getElementById('bannedList').innerHTML = '<div class="empty-state"><p>Error al cargar baneados</p></div>';
+  }
+
+  loadingEl.style.display = 'none';
+}
+
+async function loadModerators() {
+  const loadingEl = document.getElementById('moderatorsLoading');
+  loadingEl.style.display = '';
+
+  try {
+    const data = await fetch('/api/mod/moderators').then(r => r.json());
+    if (data && data.data && data.data.data && data.data.data.length > 0) {
+      modData.moderators = data.data.data;
+      renderModList('moderators', modData.moderators.slice(0, 100), modData.moderators.length);
+    } else {
+      modData.moderators = [];
+      document.getElementById('moderatorsList').innerHTML = '<div class="empty-state"><p>No hay moderadores asignados</p></div>';
+    }
+  } catch (err) {
+    console.error('Load moderators error:', err);
+    document.getElementById('moderatorsList').innerHTML = '<div class="empty-state"><p>Error al cargar moderadores</p></div>';
+  }
+
+  loadingEl.style.display = 'none';
+}
+
+async function loadVIPs() {
+  const loadingEl = document.getElementById('vipsLoading');
+  loadingEl.style.display = '';
+
+  try {
+    const data = await fetch('/api/mod/vips').then(r => r.json());
+    if (data && data.data && data.data.data && data.data.data.length > 0) {
+      modData.vips = data.data.data;
+      renderModList('vips', modData.vips.slice(0, 100), modData.vips.length);
+    } else {
+      modData.vips = [];
+      document.getElementById('vipsList').innerHTML = '<div class="empty-state"><p>No hay VIPs asignados</p></div>';
+    }
+  } catch (err) {
+    console.error('Load VIPs error:', err);
+    document.getElementById('vipsList').innerHTML = '<div class="empty-state"><p>Error al cargar VIPs</p></div>';
+  }
+
+  loadingEl.style.display = 'none';
 }
 
 // ===== BAN =====
@@ -799,6 +1012,43 @@ async function sendAnnouncement() {
     document.getElementById('announcementMessage').value = '';
   } else {
     showToast('Error al enviar anuncio', 'error');
+  }
+}
+
+// ===== CHAT MESSAGE =====
+function setupChatInput() {
+  const input = document.getElementById('chatMessageInput');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    const count = document.getElementById('chatCharCount');
+    if (count) count.textContent = input.value.length;
+  });
+}
+
+function insertQuickMessage(msg) {
+  const input = document.getElementById('chatMessageInput');
+  if (input) {
+    input.value = msg;
+    input.focus();
+    const count = document.getElementById('chatCharCount');
+    if (count) count.textContent = msg.length;
+  }
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chatMessageInput');
+  const message = input.value.trim();
+  if (!message) return showToast('Escribe un mensaje', 'warning');
+
+  const result = await api('/api/chat/send', { method: 'POST', body: { message } });
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast('Mensaje enviado!', 'success');
+    input.value = '';
+    const count = document.getElementById('chatCharCount');
+    if (count) count.textContent = '0';
+  } else {
+    const errMsg = result?.data?.message || result?.data?.error || 'Error al enviar mensaje';
+    showToast(errMsg, 'error');
   }
 }
 

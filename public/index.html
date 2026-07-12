@@ -212,17 +212,43 @@
           <div class="mod-controls">
             <div class="search-bar">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" id="modUserSearch" placeholder="Buscar seguidor..." autocomplete="off">
+              <input type="text" id="modUserSearch" placeholder="Buscar usuario..." autocomplete="off">
             </div>
-            <button class="btn btn-secondary" onclick="loadFollowers()">
+            <button class="btn btn-secondary" onclick="refreshCurrentModTab()">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
               Actualizar
             </button>
             <span id="modFollowerCount" class="mod-stat-badge">Cargando...</span>
           </div>
 
-          <div class="loading" id="followersLoading">Cargando seguidores...</div>
-          <div class="user-list" id="followersList"></div>
+          <div class="mod-tabs">
+            <button class="mod-tab active" data-mod-tab="followers" onclick="switchModTab('followers')">Seguidores</button>
+            <button class="mod-tab" data-mod-tab="chatters" onclick="switchModTab('chatters')">En el Chat</button>
+            <button class="mod-tab" data-mod-tab="banned" onclick="switchModTab('banned')">Baneados</button>
+            <button class="mod-tab" data-mod-tab="moderators" onclick="switchModTab('moderators')">Moderadores</button>
+            <button class="mod-tab" data-mod-tab="vips" onclick="switchModTab('vips')">VIPs</button>
+          </div>
+
+          <div class="mod-tab-content active" id="modTab-followers">
+            <div class="loading" id="followersLoading">Cargando seguidores...</div>
+            <div class="user-list" id="followersList"></div>
+          </div>
+          <div class="mod-tab-content" id="modTab-chatters">
+            <div class="loading" id="chattersLoading">Cargando chatters...</div>
+            <div class="user-list" id="chattersList"></div>
+          </div>
+          <div class="mod-tab-content" id="modTab-banned">
+            <div class="loading" id="bannedLoading">Cargando baneados...</div>
+            <div class="user-list" id="bannedList"></div>
+          </div>
+          <div class="mod-tab-content" id="modTab-moderators">
+            <div class="loading" id="moderatorsLoading">Cargando moderadores...</div>
+            <div class="user-list" id="moderatorsList"></div>
+          </div>
+          <div class="mod-tab-content" id="modTab-vips">
+            <div class="loading" id="vipsLoading">Cargando VIPs...</div>
+            <div class="user-list" id="vipsList"></div>
+          </div>
         </div>
 
         <!-- CHANNEL POINTS -->
@@ -300,6 +326,28 @@
         <div class="page" id="page-chat-settings">
           <div class="config-grid">
             <div class="card">
+              <div class="card-header"><h3>Enviar Mensaje al Chat</h3></div>
+              <div class="card-body">
+                <div class="chat-send-section">
+                  <div class="chat-input-row">
+                    <input type="text" id="chatMessageInput" class="form-input" placeholder="Escribe un mensaje para el chat..." maxlength="500" onkeydown="if(event.key==='Enter')sendChatMessage()">
+                    <button class="btn btn-primary" onclick="sendChatMessage()">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      Enviar
+                    </button>
+                  </div>
+                  <div class="chat-char-count"><span id="chatCharCount">0</span>/500</div>
+                  <div class="chat-quick-messages" id="chatQuickMessages">
+                    <button class="btn btn-secondary btn-sm" onclick="insertQuickMessage('GG')">GG</button>
+                    <button class="btn btn-secondary btn-sm" onclick="insertQuickMessage('Hola!')">Hola!</button>
+                    <button class="btn btn-secondary btn-sm" onclick="insertQuickMessage('Gracias por el follow!')">Gracias follow</button>
+                    <button class="btn btn-secondary btn-sm" onclick="insertQuickMessage('Bienvenido al canal!')">Bienvenido</button>
+                    <button class="btn btn-secondary btn-sm" onclick="insertQuickMessage('PogChamp')">PogChamp</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
               <div class="card-header"><h3>Configuracion del Chat</h3></div>
               <div class="card-body">
                 <div class="settings-list" id="chatSettings">
@@ -307,6 +355,8 @@
                 </div>
               </div>
             </div>
+          </div>
+          <div class="config-grid" style="margin-top:16px">
             <div class="card">
               <div class="card-header"><h3>Anuncio</h3></div>
               <div class="card-body">
