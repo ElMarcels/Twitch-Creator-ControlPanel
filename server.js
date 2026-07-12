@@ -99,8 +99,11 @@ async function redisSet(key, value) {
 const moderatorAccounts = new Map();
 const ownerTokens = new Map();
 
+let dataLoaded = false;
+let dataLoadPromise = null;
+
 async function loadDashboardData() {
-  if (!REDIS_URL) return;
+  if (!REDIS_URL) { dataLoaded = true; return; }
   try {
     const tokensRaw = await redisGet('fav-twitch:ownerTokens');
     const accountsRaw = await redisGet('fav-twitch:moderatorAccounts');
@@ -111,10 +114,17 @@ async function loadDashboardData() {
   } catch (err) {
     console.error('Failed to load from Redis:', err.message);
   }
+  dataLoaded = true;
+}
+
+async function waitForData() {
+  if (dataLoaded) return;
+  if (dataLoadPromise) await dataLoadPromise;
 }
 
 async function saveDashboardData() {
   if (!REDIS_URL) return;
+  await waitForData();
   const obj = { ownerTokens: {}, moderatorAccounts: {} };
   ownerTokens.forEach((v, k) => obj.ownerTokens[k] = v);
   moderatorAccounts.forEach((v, k) => obj.moderatorAccounts[k] = v);
@@ -128,7 +138,7 @@ async function saveDashboardData() {
   }
 }
 
-loadDashboardData().catch(() => {});
+dataLoadPromise = loadDashboardData().catch(() => { dataLoaded = true; });
 
 app.use(cookieParser());
 app.use(express.json());
