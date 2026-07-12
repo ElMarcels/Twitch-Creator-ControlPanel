@@ -1386,8 +1386,8 @@ async function getAppeals() {
 }
 
 async function saveAppeals(appeals) {
-  if (!REDIS_URL) return;
-  try { await redisSet(APPEALS_KEY, appeals); } catch {}
+  if (!REDIS_URL) { console.error('No REDIS_URL, appeals not saved'); return false; }
+  try { await redisSet(APPEALS_KEY, appeals); return true; } catch (err) { console.error('Failed to save appeals:', err.message); return false; }
 }
 
 app.post('/api/appeals', async (req, res) => {
@@ -1406,13 +1406,15 @@ app.post('/api/appeals', async (req, res) => {
     createdAt: new Date().toISOString()
   };
   appeals.push(appeal);
-  await saveAppeals(appeals);
+  const saved = await saveAppeals(appeals);
+  if (!saved) return res.status(500).json({ error: 'Error al guardar en base de datos' });
   res.json({ data: { id: appeal.id, status: 'pending' } });
 });
 
 app.get('/api/owner/appeals', requireAuth, async (req, res) => {
   const appeals = await getAppeals();
-  const channelLogin = req.auth.user.login.toLowerCase();
+  console.log('GET appeals: total=' + appeals.length, 'channelLogin=' + (req.auth.user && req.auth.user.login));
+  const channelLogin = (req.auth.user.login || '').toLowerCase();
   const mods = [];
   moderatorAccounts.forEach((val) => {
     if (val.ownerId === req.auth.user.id) mods.push(val.username.toLowerCase());
@@ -1420,6 +1422,7 @@ app.get('/api/owner/appeals', requireAuth, async (req, res) => {
   const filtered = appeals.filter(a =>
     a.channelName === channelLogin || mods.includes(a.channelName)
   );
+  console.log('GET appeals: filtered=' + filtered.length);
   res.json({ data: filtered });
 });
 
