@@ -1717,9 +1717,10 @@ async function searchRaidChannels() {
   if (!q) return;
   const container = document.getElementById('raidSearchResults');
   container.innerHTML = '<div class="loading">Buscando...</div>';
-  const data = await api(`/api/raids/search?query=${encodeURIComponent(q)}`);
-  if (data && data.data && data.data.length > 0) {
-    container.innerHTML = data.data.map(ch => `
+  const result = await api(`/api/raids/search?query=${encodeURIComponent(q)}`);
+  const channels = result?.data?.data || result?.data || [];
+  if (channels.length > 0) {
+    container.innerHTML = channels.map(ch => `
       <div class="raid-result-item">
         <img src="${ch.thumbnail_url || ''}" alt="" class="raid-result-thumb" onerror="this.style.background='var(--purple-500)';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%239333ea%22 width=%2240%22 height=%2240%22/><text x=%2220%22 y=%2226%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2216%22>${(ch.display_name||'').charAt(0)}</text></svg>'">
         <div class="raid-result-info">
@@ -1831,39 +1832,49 @@ async function createClip() {
 // ===== SHIELD MODE =====
 async function loadShieldStatus() {
   const data = await api('/api/shield-mode');
-  const toggleBtn = document.getElementById('shieldToggleBtn');
+  const activateBtn = document.getElementById('shieldActivateBtn');
+  const deactivateBtn = document.getElementById('shieldDeactivateBtn');
   const statusText = document.getElementById('shieldStatusText');
   const icon = document.getElementById('shieldIcon');
   const lastAct = document.getElementById('shieldLastActivated');
 
-  if (data && data.data && data.data[0]) {
-    const s = data.data[0];
-    if (s.is_active) {
-      statusText.textContent = 'Modo Escudo Activo';
-      icon.classList.add('active');
-      toggleBtn.textContent = 'Desactivar Modo Escudo';
-      toggleBtn.className = 'btn btn-danger btn-lg';
-    } else {
-      statusText.textContent = 'Modo Escudo Desactivado';
-      icon.classList.remove('active');
-      toggleBtn.textContent = 'Activar Modo Escudo';
-      toggleBtn.className = 'btn btn-primary btn-lg';
-    }
-    if (s.last_activated_at) {
-      lastAct.textContent = 'Ultima activacion: ' + new Date(s.last_activated_at).toLocaleString('es');
-    }
+  const isActive = data?.data?.data?.[0]?.is_active || data?.data?.[0]?.is_active || false;
+
+  if (isActive) {
+    statusText.textContent = 'Modo Escudo Activo';
+    icon.classList.add('active');
+    activateBtn.style.display = 'none';
+    deactivateBtn.style.display = '';
+  } else {
+    statusText.textContent = 'Modo Escudo Desactivado';
+    icon.classList.remove('active');
+    activateBtn.style.display = '';
+    deactivateBtn.style.display = 'none';
+  }
+
+  const lastActivated = data?.data?.data?.[0]?.last_activated_at || data?.data?.[0]?.last_activated_at;
+  if (lastActivated) {
+    lastAct.textContent = 'Ultima activacion: ' + new Date(lastActivated).toLocaleString('es');
   }
 }
 
-async function toggleShieldMode() {
-  const data = await api('/api/shield-mode');
-  const isActive = data?.data?.[0]?.is_active || false;
-  const result = await api('/api/shield-mode', { method: 'PUT', body: { is_active: !isActive } });
+async function activateShield() {
+  const result = await api('/api/shield-mode', { method: 'PUT', body: { is_active: true } });
   if (result && (result.status === 200 || result.data)) {
-    showToast(`Modo Escudo ${!isActive ? 'activado' : 'desactivado'}`, 'success');
+    showToast('Modo Escudo activado', 'success');
     loadShieldStatus();
   } else {
-    showToast('Error al cambiar Modo Escudo', 'error');
+    showToast('Error al activar Modo Escudo', 'error');
+  }
+}
+
+async function deactivateShield() {
+  const result = await api('/api/shield-mode', { method: 'PUT', body: { is_active: false } });
+  if (result && (result.status === 200 || result.data)) {
+    showToast('Modo Escudo desactivado', 'success');
+    loadShieldStatus();
+  } else {
+    showToast('Error al desactivar Modo Escudo', 'error');
   }
 }
 

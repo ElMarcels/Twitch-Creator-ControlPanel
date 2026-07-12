@@ -21,6 +21,7 @@ const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
 const SCOPES = [
   'user:read:email',
+  'user:read:follows',
   'channel:moderate',
   'chat:edit',
   'chat:read',
@@ -818,7 +819,9 @@ app.delete('/api/raids/cancel', requireAuth, async (req, res) => {
 app.get('/api/raids/search', requireAuth, async (req, res) => {
   const q = req.query.query;
   if (!q) return res.json({ data: [] });
+  console.log('Raid search:', q);
   const result = await twitchAPI(req, res, `/search/channels?query=${encodeURIComponent(q)}&first=10`);
+  console.log('Raid search result:', JSON.stringify(result).substring(0, 500));
   res.json(result);
 });
 
