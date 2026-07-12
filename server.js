@@ -5,7 +5,6 @@ const jwt = require('jsonwebtoken');
 const fetch = require('node-fetch');
 const path = require('path');
 const crypto = require('crypto');
-const { Redis } = require('@upstash/redis');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -66,19 +65,41 @@ let lastViewerSampleTime = 0;
 let lastFollowerSampleTime = 0;
 
 // Moderator access system
-const redis = process.env.UPSTASH_REDIS_REST_URL ? new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-}) : null;
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || '';
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
+
+async function redisGet(key) {
+  if (!REDIS_URL) return null;
+  const resp = await fetch(`${REDIS_URL}/get/${encodeURIComponent(key)}`, {
+    headers: { Authorization: `Bearer ${REDIS_TOKEN}` }
+  });
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  return data.result;
+}
+
+async function redisSet(key, value) {
+  if (!REDIS_URL) return;
+  await fetch(`${REDIS_URL}/set/${encodeURIComponent(key)}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${REDIS_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ value: JSON.stringify(value) })
+  });
+}
 
 const moderatorAccounts = new Map();
 const ownerTokens = new Map();
 
 async function loadDashboardData() {
-  if (!redis) return;
+  if (!REDIS_URL) return;
   try {
-    const tokens = await redis.get('fav-twitch:ownerTokens');
-    const accounts = await redis.get('fav-twitch:moderatorAccounts');
+    const tokensRaw = await redisGet('fav-twitch:ownerTokens');
+    const accountsRaw = await redisGet('fav-twitch:moderatorAccounts');
+    const tokens = typeof tokensRaw === 'string' ? JSON.parse(tokensRaw) : tokensRaw;
+    const accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : accountsRaw;
     if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
     if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
   } catch (err) {
@@ -87,13 +108,15 @@ async function loadDashboardData() {
 }
 
 async function saveDashboardData() {
-  if (!redis) return;
+  if (!REDIS_URL) return;
   const obj = { ownerTokens: {}, moderatorAccounts: {} };
   ownerTokens.forEach((v, k) => obj.ownerTokens[k] = v);
   moderatorAccounts.forEach((v, k) => obj.moderatorAccounts[k] = v);
   try {
-    await redis.set('fav-twitch:ownerTokens', obj.ownerTokens);
-    await redis.set('fav-twitch:moderatorAccounts', obj.moderatorAccounts);
+    await Promise.all([
+      redisSet('fav-twitch:ownerTokens', obj.ownerTokens),
+      redisSet('fav-twitch:moderatorAccounts', obj.moderatorAccounts)
+    ]);
   } catch (err) {
     console.error('Failed to save to Redis:', err.message);
   }
