@@ -131,33 +131,9 @@
           <span data-i18n="nav_chat_log">Log Chat</span>
         </a>
         <div class="nav-divider"></div>
-        <a href="#" class="nav-item" data-page="chatbot">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
-          <span data-i18n="nav_chatbot">Chat Bot</span>
-        </a>
         <a href="#" class="nav-item" data-page="spam">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span data-i18n="nav_spam">Spam Detector</span>
-        </a>
-        <a href="#" class="nav-item" data-page="viewer-chart">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          <span data-i18n="nav_viewer_chart">Grafico Viewers</span>
-        </a>
-        <a href="#" class="nav-item" data-page="top-chatters">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span data-i18n="nav_top_chatters">Top Chatters</span>
-        </a>
-        <a href="#" class="nav-item" data-page="growth">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-          <span data-i18n="nav_growth">Crecimiento</span>
-        </a>
-        <a href="#" class="nav-item" data-page="scenes">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polygon points="10 8 15 12 10 16 10 8"/></svg>
-          <span data-i18n="nav_scenes">Escenas OBS</span>
-        </a>
-        <a href="#" class="nav-item" data-page="tweets">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg>
-          <span data-i18n="nav_tweets">Tweets</span>
         </a>
         <a href="#" class="nav-item" data-page="alerts-widget">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -776,47 +752,6 @@
           </div>
         </div>
 
-        <!-- CHAT BOT -->
-        <div class="page" id="page-chatbot">
-          <div class="page-actions">
-            <button class="btn btn-primary" onclick="loadBotCommands()" data-i18n="btn_refresh">Refrescar</button>
-          </div>
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-header"><h3 data-i18n="chatbot_send">Enviar mensaje al chat</h3></div>
-            <div class="card-body">
-              <div class="chatbot-input-row">
-                <input type="text" class="form-input" id="botMessageInput" placeholder="Escribe un mensaje..." data-i18n-placeholder="chatbot_placeholder">
-                <button class="btn btn-primary" onclick="sendBotMessage()" data-i18n="btn_send">Enviar</button>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header"><h3 data-i18n="chatbot_quick">Comandos rapidos</h3></div>
-            <div class="card-body">
-              <div class="chatbot-commands-grid" id="botCommandsGrid">
-                <button class="btn btn-secondary" onclick="sendBotCmd('/followers')">/followers</button>
-                <button class="btn btn-secondary" onclick="sendBotCmd('/vips')">/vips</button>
-                <button class="btn btn-secondary" onclick="sendBotCmd('/mod')">/mod</button>
-                <button class="btn btn-secondary" onclick="sendBotCmd('/unmod')">/unmod</button>
-                <button class="btn btn-secondary" onclick="sendBotCmd('/timeout')">/timeout</button>
-                <button class="btn btn-secondary" onclick="sendBotCmd('/untimeout')">/untimeout</button>
-                <button class="btn btn-secondary" onclick="sendBotCmd('/ban')">/ban</button>
-                <button class="btn btn-secondary" onclick="sendBotCmd('/unban')">/unban</button>
-                <button class="btn btn-secondary" onclick="sendBotCmd('/clear')">/clear</button>
-                <button class="btn btn-secondary" onclick="sendBotCmd('/announce')">/announce</button>
-                <button class="btn btn-secondary" onclick="sendBotCmd('/slow')">/slow</button>
-                <button class="btn btn-secondary" onclick="sendBotCmd('/subscribers')">/subscribers</button>
-              </div>
-            </div>
-          </div>
-          <div class="card" style="margin-top:16px">
-            <div class="card-header"><h3 data-i18n="chatbot_history">Historial de mensajes</h3></div>
-            <div class="card-body" style="max-height:300px;overflow-y:auto">
-              <div id="botMessageLog"></div>
-            </div>
-          </div>
-        </div>
-
         <!-- SPAM DETECTOR -->
         <div class="page" id="page-spam">
           <div class="page-actions">
@@ -855,115 +790,6 @@
             <div class="card-header"><h3 data-i18n="spam_log_title">Registro de spam detectado</h3></div>
             <div class="card-body" style="max-height:400px;overflow-y:auto">
               <div id="spamLogList" class="loading">Cargando...</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- VIEWER CHART -->
-        <div class="page" id="page-viewer-chart">
-          <div class="page-actions">
-            <button class="btn btn-primary" onclick="loadViewerChart()" data-i18n="btn_refresh">Refrescar</button>
-            <button class="btn btn-secondary" onclick="takeViewerSnapshot()" data-i18n="viewer_snapshot">Tomar muestra</button>
-          </div>
-          <div class="card">
-            <div class="card-header"><h3 data-i18n="viewer_chart_title">Viewers en tiempo real</h3></div>
-            <div class="card-body">
-              <div class="chart-container">
-                <canvas id="viewerChart"></canvas>
-              </div>
-              <div class="viewer-chart-stats">
-                <div class="viewer-stat"><span class="viewer-stat-label" data-i18n="viewer_current">Actual</span><span class="viewer-stat-value" id="viewerStatCurrent">--</span></div>
-                <div class="viewer-stat"><span class="viewer-stat-label" data-i18n="viewer_max">Maximo</span><span class="viewer-stat-value" id="viewerStatMax">--</span></div>
-                <div class="viewer-stat"><span class="viewer-stat-label" data-i18n="viewer_min">Minimo</span><span class="viewer-stat-value" id="viewerStatMin">--</span></div>
-                <div class="viewer-stat"><span class="viewer-stat-label" data-i18n="viewer_avg">Promedio</span><span class="viewer-stat-value" id="viewerStatAvg">--</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TOP CHATTERS -->
-        <div class="page" id="page-top-chatters">
-          <div class="page-actions">
-            <button class="btn btn-primary" onclick="loadTopChatters()" data-i18n="btn_refresh">Refrescar</button>
-            <select class="form-input" id="chattersTimeRange" style="width:auto" onchange="loadTopChatters()">
-              <option value="1">1 hora</option>
-              <option value="3">3 horas</option>
-              <option value="6">6 horas</option>
-              <option value="24">24 horas</option>
-            </select>
-          </div>
-          <div class="card">
-            <div class="card-header"><h3 data-i18n="top_chatters_title">Ranking de chatters</h3></div>
-            <div class="card-body">
-              <div id="topChattersList" class="loading">Cargando...</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- GROWTH ANALYSIS -->
-        <div class="page" id="page-growth">
-          <div class="page-actions">
-            <button class="btn btn-primary" onclick="loadGrowthAnalysis()" data-i18n="btn_refresh">Refrescar</button>
-            <button class="btn btn-secondary" onclick="takeFollowerSnapshot()" data-i18n="growth_snapshot">Capturar seguidores</button>
-          </div>
-          <div class="stats-grid">
-            <div class="stat-card"><div class="stat-icon purple"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div class="stat-content"><span class="stat-value" id="growthTotalFollowers">--</span><span class="stat-label" data-i18n="growth_total">Total seguidores</span></div></div>
-            <div class="stat-card"><div class="stat-icon green"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div><div class="stat-content"><span class="stat-value" id="growthRecent">--</span><span class="stat-label" data-i18n="growth_recent">Nuevos (ultimas muestras)</span></div></div>
-            <div class="stat-card"><div class="stat-icon blue"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="stat-content"><span class="stat-value" id="growthRate">--</span><span class="stat-label" data-i18n="growth_rate">Tasa de crecimiento</span></div></div>
-            <div class="stat-card"><div class="stat-icon magenta"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="stat-content"><span class="stat-value" id="growthProjection">--</span><span class="stat-label" data-i18n="growth_projection">Proyeccion 30 dias</span></div></div>
-          </div>
-          <div class="card">
-            <div class="card-header"><h3 data-i18n="growth_chart_title">Crecimiento de seguidores</h3></div>
-            <div class="card-body">
-              <div class="chart-container"><canvas id="growthChart"></canvas></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SCENE SWITCHER -->
-        <div class="page" id="page-scenes">
-          <div class="page-actions">
-            <button class="btn btn-primary" onclick="loadOBSScenes()" data-i18n="btn_refresh">Refrescar</button>
-          </div>
-          <div class="card">
-            <div class="card-header"><h3 data-i18n="scenes_title">Escenas de OBS</h3></div>
-            <div class="card-body">
-              <p class="text-muted" style="margin-bottom:16px" data-i18n="scenes_desc">Selecciona una escena para cambiarla en OBS</p>
-              <div id="obsScenesList" class="scenes-grid"></div>
-            </div>
-          </div>
-          <div class="card" style="margin-top:16px">
-            <div class="card-header"><h3 data-i18n="scenes_custom">Escenas personalizadas</h3></div>
-            <div class="card-body">
-              <div class="chatbot-input-row">
-                <input type="text" class="form-input" id="customSceneName" placeholder="Nombre de escena..." data-i18n-placeholder="scenes_placeholder">
-                <button class="btn btn-primary" onclick="switchToScene(document.getElementById('customSceneName').value)" data-i18n="btn_switch">Cambiar</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TWEET SCHEDULER -->
-        <div class="page" id="page-tweets">
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-header"><h3 data-i18n="tweets_new">Programar tweet</h3></div>
-            <div class="card-body">
-              <div class="form-group">
-                <label data-i18n="tweets_content">Contenido</label>
-                <textarea class="form-input" id="tweetContent" rows="3" placeholder="Escribe tu tweet..." data-i18n-placeholder="tweets_placeholder"></textarea>
-                <div class="tweet-char-count"><span id="tweetCharCount">0</span>/280</div>
-              </div>
-              <div class="form-group">
-                <label data-i18n="tweets_schedule_at">Programar para</label>
-                <input type="datetime-local" class="form-input" id="tweetScheduleAt">
-              </div>
-              <button class="btn btn-primary" onclick="scheduleTweet()" data-i18n="tweets_schedule_btn">Programar</button>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header"><h3 data-i18n="tweets_scheduled">Tweets programados</h3></div>
-            <div class="card-body" style="max-height:400px;overflow-y:auto">
-              <div id="scheduledTweetsList" class="loading">Cargando...</div>
             </div>
           </div>
         </div>

@@ -628,21 +628,6 @@ app.get('/api/tags', requireAuth, async (req, res) => {
   res.json(result);
 });
 
-// Send chat message
-app.post('/api/chat/send', requireAuth, async (req, res) => {
-  const { message } = req.body;
-  if (!message || !message.trim()) return res.status(400).json({ error: 'Message required' });
-  const result = await twitchAPI(req, res, '/chat/messages', {
-    method: 'POST',
-    body: {
-      broadcaster_id: req.auth.user.id,
-      sender_id: req.auth.user.id,
-      message: message.trim()
-    }
-  });
-  res.json(result);
-});
-
 // Get chatters list with pagination
 app.get('/api/mod/chatters/list', requireAuth, async (req, res) => {
   const result = await twitchAPI(req, res, `/chat/chatters?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&first=100`);
@@ -996,34 +981,6 @@ app.get('/api/mod/spam-log', requireAuth, (req, res) => {
   res.json({ data: spamLog.slice(-100) });
 });
 
-// ===== TWEET SCHEDULER =====
-const scheduledTweets = [];
-app.get('/api/tweets/scheduled', requireAuth, (req, res) => {
-  res.json({ data: scheduledTweets.filter(t => t.userId === req.auth.userId) });
-});
-
-app.post('/api/tweets/schedule', requireAuth, (req, res) => {
-  const { content, scheduledAt } = req.body;
-  if (!content) return res.status(400).json({ error: 'Content required' });
-  const tweet = {
-    id: 'tw_' + Date.now(),
-    userId: req.auth.userId,
-    content,
-    scheduledAt: scheduledAt || null,
-    status: 'pending',
-    createdAt: new Date().toISOString()
-  };
-  scheduledTweets.push(tweet);
-  res.json({ data: tweet });
-});
-
-app.delete('/api/tweets/schedule/:id', requireAuth, (req, res) => {
-  const idx = scheduledTweets.findIndex(t => t.id === req.params.id && t.userId === req.auth.userId);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  scheduledTweets.splice(idx, 1);
-  res.json({ status: 204 });
-});
-
 // ===== DASHBOARD SHARING =====
 const sharedDashboards = new Map();
 app.post('/api/share', requireAuth, (req, res) => {
@@ -1049,17 +1006,6 @@ app.delete('/api/share/:token', requireAuth, (req, res) => {
   if (!entry || entry.userId !== req.auth.userId) return res.status(404).json({ error: 'Not found' });
   sharedDashboards.delete(req.params.token);
   res.json({ status: 204 });
-});
-
-// ===== OBS SCENE SWITCHER (bridge) =====
-app.post('/api/obs/scene', requireAuth, (req, res) => {
-  const { sceneName } = req.body;
-  if (!sceneName) return res.status(400).json({ error: 'sceneName required' });
-  res.json({ data: { sceneName, switched: true, timestamp: new Date().toISOString() } });
-});
-
-app.get('/api/obs/scenes', requireAuth, (req, res) => {
-  res.json({ data: ['Just Chatting', 'Gaming', 'BRB', 'Starting Soon', 'Ending'] });
 });
 
 // ===== ALERTS WIDGET =====

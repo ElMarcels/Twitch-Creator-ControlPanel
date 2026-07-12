@@ -2822,30 +2822,6 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
   white-space: nowrap;
 }
 
-/* Chat Bot */
-.chatbot-input-row {
-  display: flex;
-  gap: 8px;
-}
-
-.chatbot-input-row .form-input { flex: 1; }
-
-.chatbot-commands-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 8px;
-}
-
-.bot-msg-entry {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--glass-border);
-  font-size: 0.85rem;
-}
-
-.bot-msg-entry .bot-msg-user { color: var(--purple-400); font-weight: 600; }
-.bot-msg-entry .bot-msg-text { color: var(--text-secondary); margin-left: 8px; }
-.bot-msg-entry .bot-msg-time { color: var(--text-muted); font-size: 0.75rem; float: right; }
-
 /* Spam Log */
 .spam-entry {
   display: flex;
@@ -2876,116 +2852,6 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
 }
 
 .chart-container canvas { width: 100% !important; height: 100% !important; }
-
-.viewer-chart-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--glass-border);
-}
-
-.viewer-stat { text-align: center; }
-.viewer-stat-label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
-.viewer-stat-value { font-size: 1.2rem; font-weight: 700; color: var(--purple-400); }
-
-/* Top Chatters */
-.chatter-rank {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--glass-border);
-  transition: background 0.15s;
-}
-
-.chatter-rank:hover { background: rgba(168, 85, 247, 0.05); }
-.chatter-rank:last-child { border-bottom: none; }
-
-.chatter-rank-num {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.8rem;
-  flex-shrink: 0;
-}
-
-.chatter-rank-num.gold { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-.chatter-rank-num.silver { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
-.chatter-rank-num.bronze { background: rgba(180, 83, 9, 0.2); color: #d97706; }
-.chatter-rank-num.normal { background: var(--glass-bg-light); color: var(--text-muted); }
-
-.chatter-rank-name { flex: 1; font-weight: 500; }
-.chatter-rank-count { color: var(--purple-400); font-weight: 700; }
-
-/* Scenes Grid */
-.scenes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
-}
-
-.scene-btn {
-  padding: 20px 16px;
-  text-align: center;
-  border-radius: var(--radius-md);
-  background: var(--glass-bg-light);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  cursor: pointer;
-  transition: all 0.25s;
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.scene-btn:hover {
-  border-color: var(--purple-500);
-  background: rgba(168, 85, 247, 0.1);
-  transform: translateY(-2px);
-  box-shadow: var(--glass-shadow);
-}
-
-.scene-btn.active-scene {
-  border-color: var(--purple-500);
-  background: rgba(168, 85, 247, 0.15);
-  box-shadow: 0 0 16px rgba(168, 85, 247, 0.2);
-}
-
-/* Tweet Scheduler */
-.tweet-char-count {
-  text-align: right;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-.tweet-entry {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  border-bottom: 1px solid var(--glass-border);
-}
-
-.tweet-entry:last-child { border-bottom: none; }
-
-.tweet-entry-content { flex: 1; font-size: 0.9rem; }
-.tweet-entry-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
-.tweet-entry-status {
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 0.7rem;
-  font-weight: 500;
-}
-
-.tweet-entry-status.pending { background: var(--warning-bg); color: var(--warning); }
-.tweet-entry-status.sent { background: var(--success-bg); color: var(--success); }
 
 /* Alerts Widget */
 .alerts-preview-box {
@@ -3073,7 +2939,6 @@ body.compact-mode .stats-grid { gap: 10px; margin-bottom: 14px; }
 body.compact-mode .home-grid { gap: 10px; }
 body.compact-mode .quick-action-btn { padding: 12px; }
 body.compact-mode .chat-log-entry { padding: 3px 6px; }
-body.compact-mode .chatter-rank { padding: 6px 10px; }
 body.compact-mode .clip-card .clip-thumb { height: 120px; }
 
 /* ===== ANIMATIONS ===== */
