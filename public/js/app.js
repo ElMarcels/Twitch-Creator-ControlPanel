@@ -232,10 +232,9 @@ function switchModTab(tab) {
   document.querySelector(`.mod-tab[data-mod-tab="${tab}"]`).classList.add('active');
   document.querySelectorAll('.mod-tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById(`modTab-${tab}`).classList.add('active');
-  const q = document.getElementById('modUserSearch').value.toLowerCase().trim();
   if (tab === 'automod') { loadBannedWords(); return; }
   if (tab === 'actionlog') { loadActionLog(); return; }
-  filterCurrentModTab(q);
+  refreshCurrentModTab();
 }
 
 function refreshCurrentModTab() {
