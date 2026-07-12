@@ -12,6 +12,38 @@
 </head>
 <body>
 
+  <!-- APPEAL FORM (public, no auth) -->
+  <div id="appeal-screen" class="login-screen" style="display:none">
+    <div class="login-bg">
+      <div class="login-orb login-orb-1"></div>
+      <div class="login-orb login-orb-2"></div>
+    </div>
+    <div class="login-card" style="max-width:500px">
+      <h2 style="margin-bottom:8px;text-align:center">Solicitar Apelacion</h2>
+      <p style="text-align:center;color:var(--text-secondary);margin-bottom:20px;font-size:0.9rem">Si fuiste baneado de un canal, envia tu solicitud aqui.</p>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Canal (login de Twitch)</label>
+        <input type="text" id="appealChannel" class="form-input" placeholder="Ej: tu_streamer">
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Tu usuario de Twitch</label>
+        <input type="text" id="appealUser" class="form-input" placeholder="Tu usuario">
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Razon del ban (opcional)</label>
+        <input type="text" id="appealBanReason" class="form-input" placeholder="Si la conoces">
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Tu mensaje</label>
+        <textarea id="appealMessage" class="form-input" rows="4" placeholder="Explica por que deberian darte otra oportunidad..."></textarea>
+      </div>
+      <button class="btn-twitch-login" onclick="submitAppeal()" style="width:100%;justify-content:center">
+        Enviar solicitud
+      </button>
+      <p style="text-align:center;margin-top:12px"><a href="/" style="color:var(--accent);font-size:0.85rem">Volver al login</a></p>
+    </div>
+  </div>
+
   <!-- LOGIN SCREEN -->
   <div id="login-screen" class="login-screen">
     <div class="login-bg">
@@ -177,6 +209,10 @@
         <a href="#" class="nav-item" data-page="alerts-widget">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span data-i18n="nav_alerts_widget">Alertas</span>
+        </a>
+        <a href="#" class="nav-item" data-page="appeals">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          <span>Solicitudes</span>
         </a>
       </nav>
 
@@ -860,6 +896,32 @@
           </div>
         </div>
 
+        <!-- APPEALS -->
+        <div class="page" id="page-appeals">
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="loadAppeals()">Refrescar</button>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>Solicitudes de Apelacion</h3>
+              <span class="badge" id="appealsPendingCount">0 pendientes</span>
+            </div>
+            <div class="card-body">
+              <div id="appealsList" class="loading">Cargando...</div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-header"><h3>Link para usuarios baneados</h3></div>
+            <div class="card-body">
+              <p style="margin-bottom:8px;color:var(--text-secondary);font-size:0.85rem">Comparte este link con usuarios baneados para que envien su solicitud:</p>
+              <div style="display:flex;gap:8px">
+                <input type="text" class="form-input" id="appealLink" readonly style="flex:1">
+                <button class="btn btn-secondary" onclick="copyAppealLink()">Copiar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- MOD ACTIVITY DASHBOARD -->
         <div class="page" id="page-mod-activity">
           <div class="page-actions">
@@ -1100,7 +1162,7 @@
                 <div class="settings-row">
                   <div class="settings-info">
                     <h3 data-i18n="settings_version">Version</h3>
-                    <p>v1.0.0</p>
+                    <p>v1.1</p>
                   </div>
                 </div>
               </div>
@@ -1114,7 +1176,7 @@
             <div class="about-hero">
               <img src="/img/twitchcommandcente.png" alt="Logo" class="about-logo">
               <h1 class="about-title">TwitchMod <span class="gradient-text">Dashboard</span></h1>
-              <p class="about-version">v1.0.6</p>
+              <p class="about-version">v1.1</p>
             </div>
 
             <div class="about-section">

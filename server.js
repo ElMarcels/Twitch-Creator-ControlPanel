@@ -1363,12 +1363,81 @@ app.post('/api/alerts/push', requireAuth, (req, res) => {
   res.json({ data: alert });
 });
 
+// ===== APPEALS SYSTEM =====
+const APPEALS_KEY = 'fav-twitch:appeals';
+
+async function getAppeals() {
+  if (!REDIS_URL) return [];
+  try {
+    const raw = await redisGet(APPEALS_KEY);
+    const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Array.isArray(data) ? data : [];
+  } catch { return []; }
+}
+
+async function saveAppeals(appeals) {
+  if (!REDIS_URL) return;
+  try { await redisSet(APPEALS_KEY, appeals); } catch {}
+}
+
+app.post('/api/appeals', async (req, res) => {
+  const { channelName, bannedUser, banReason, appealMessage } = req.body;
+  if (!channelName || !bannedUser || !appealMessage) {
+    return res.status(400).json({ error: 'Canal, usuario y mensaje requeridos' });
+  }
+  const appeals = await getAppeals();
+  const appeal = {
+    id: 'app_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    channelName: channelName.toLowerCase().trim(),
+    bannedUser: bannedUser.trim(),
+    banReason: (banReason || '').trim(),
+    appealMessage: appealMessage.trim(),
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+  appeals.push(appeal);
+  await saveAppeals(appeals);
+  res.json({ data: { id: appeal.id, status: 'pending' } });
+});
+
+app.get('/api/owner/appeals', requireAuth, async (req, res) => {
+  const appeals = await getAppeals();
+  const channelLogin = req.auth.user.login.toLowerCase();
+  const mods = [];
+  moderatorAccounts.forEach((val) => {
+    if (val.ownerId === req.auth.user.id) mods.push(val.username.toLowerCase());
+  });
+  const filtered = appeals.filter(a =>
+    a.channelName === channelLogin || mods.includes(a.channelName)
+  );
+  res.json({ data: filtered });
+});
+
+app.post('/api/owner/appeals/:id/review', requireAuth, async (req, res) => {
+  const { action } = req.body;
+  if (!action || !['approved', 'denied'].includes(action)) {
+    return res.status(400).json({ error: 'action must be approved or denied' });
+  }
+  const appeals = await getAppeals();
+  const appeal = appeals.find(a => a.id === req.params.id);
+  if (!appeal) return res.status(404).json({ error: 'Appeal not found' });
+  appeal.status = action;
+  appeal.reviewedBy = req.auth.user.login;
+  appeal.reviewedAt = new Date().toISOString();
+  await saveAppeals(appeals);
+  res.json({ data: appeal });
+});
+
 // Dashboard SPA fallback
 app.get('/dashboard', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/appeal', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

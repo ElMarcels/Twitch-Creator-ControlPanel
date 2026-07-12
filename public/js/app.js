@@ -508,6 +508,7 @@ function setupLanguage() {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
+  if (checkAppealRoute()) return;
   applyTheme(localStorage.getItem('theme') || 'dark');
   setupTheme();
   setupLanguage();
@@ -611,6 +612,7 @@ function navigateTo(page) {
     'suspicious': t('title_suspicious'),
     'chat-rules': t('title_chat_rules'),
     'alerts-widget': t('title_alerts_widget'),
+    'appeals': 'Solicitudes',
     'share': t('title_share'),
     'settings': t('title_settings'),
     'about': t('title_about')
@@ -645,6 +647,7 @@ function loadPageData(page) {
     case 'suspicious': loadSuspiciousUsers(); break;
     case 'chat-rules': loadChatRules(); break;
     case 'alerts-widget': loadAlerts(); break;
+    case 'appeals': loadAppeals(); break;
     case 'share': loadShareLinks(); break;
     case 'settings': loadModeratorAccounts(); break;
   }
@@ -3200,4 +3203,115 @@ async function loadFollowers(append = false) {
 
 function loadMoreFollowers() {
   loadFollowers(true);
+}
+
+// ============================================================
+// FEATURE: APPEALS SYSTEM
+// ============================================================
+
+function checkAppealRoute() {
+  if (window.location.pathname === '/appeal') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('appeal-screen').style.display = '';
+    return true;
+  }
+  return false;
+}
+
+async function submitAppeal() {
+  const channel = document.getElementById('appealChannel').value.trim();
+  const user = document.getElementById('appealUser').value.trim();
+  const banReason = document.getElementById('appealBanReason').value.trim();
+  const message = document.getElementById('appealMessage').value.trim();
+  if (!channel || !user || !message) return showToast('Canal, usuario y mensaje son requeridos', 'error');
+  try {
+    const resp = await fetch('/api/appeals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelName: channel, bannedUser: user, banReason, appealMessage: message })
+    });
+    const data = await resp.json();
+    if (data.data) {
+      document.getElementById('appeal-screen').innerHTML = `
+        <div class="login-bg">
+          <div class="login-orb login-orb-1"></div>
+          <div class="login-orb login-orb-2"></div>
+        </div>
+        <div class="login-card" style="text-align:center;max-width:500px">
+          <h2 style="margin-bottom:12px;color:#10b981">Solicitud enviada</h2>
+          <p style="color:var(--text-secondary);margin-bottom:16px">Tu solicitud ha sido enviada al moderador del canal. Espera su respuesta.</p>
+          <a href="/" class="btn-twitch-login" style="display:inline-flex;justify-content:center;text-decoration:none">Volver al login</a>
+        </div>`;
+    } else {
+      showToast(data.error || 'Error al enviar', 'error');
+    }
+  } catch {
+    showToast('Error de conexion', 'error');
+  }
+}
+
+async function loadAppeals() {
+  const container = document.getElementById('appealsList');
+  if (!container) return;
+  const data = await api('/api/owner/appeals');
+  if (!data || !data.data) {
+    container.innerHTML = '<div class="empty-state"><p>Error al cargar solicitudes</p></div>';
+    return;
+  }
+  const appeals = data.data;
+  const pending = appeals.filter(a => a.status === 'pending');
+  document.getElementById('appealsPendingCount').textContent = pending.length + ' pendientes';
+  if (appeals.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No hay solicitudes de apelacion.</p></div>';
+    return;
+  }
+  const sorted = [...appeals].sort((a, b) => {
+    if (a.status === 'pending' && b.status !== 'pending') return -1;
+    if (a.status !== 'pending' && b.status === 'pending') return 1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+  container.innerHTML = sorted.map(a => {
+    const statusColors = { pending: '#f59e0b', approved: '#10b981', denied: '#ef4444' };
+    const statusLabels = { pending: 'Pendiente', approved: 'Aprobada', denied: 'Rechazada' };
+    return `
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:12px">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
+          <div>
+            <h3 style="display:flex;align-items:center;gap:8px">
+              ${escapeHtml(a.bannedUser)}
+              <span style="font-size:0.75rem;padding:2px 8px;border-radius:12px;background:${statusColors[a.status]}20;color:${statusColors[a.status]};font-weight:600">${statusLabels[a.status]}</span>
+            </h3>
+            <p style="font-size:0.8rem;color:var(--text-muted)">Canal: ${escapeHtml(a.channelName)} · ${new Date(a.createdAt).toLocaleString('es')}</p>
+          </div>
+          ${a.status === 'pending' ? `
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="reviewAppeal('${a.id}','approved')">Aprobar</button>
+              <button class="btn btn-danger btn-sm" onclick="reviewAppeal('${a.id}','denied')">Rechazar</button>
+            </div>
+          ` : `<p style="font-size:0.8rem;color:var(--text-muted)">Revisado por: ${escapeHtml(a.reviewedBy || '-')}</p>`}
+        </div>
+        ${a.banReason ? `<p style="font-size:0.85rem;color:var(--text-secondary)"><strong>Razon del ban:</strong> ${escapeHtml(a.banReason)}</p>` : ''}
+        <p style="font-size:0.85rem;color:var(--text-secondary)"><strong>Mensaje:</strong> ${escapeHtml(a.appealMessage)}</p>
+      </div>`;
+  }).join('');
+}
+
+async function reviewAppeal(id, action) {
+  const result = await api(`/api/owner/appeals/${id}/review`, {
+    method: 'POST',
+    body: { action }
+  });
+  if (result && result.data) {
+    showToast(action === 'approved' ? 'Solicitud aprobada' : 'Solicitud rechazada', 'success');
+    loadAppeals();
+  } else {
+    showToast('Error al revisar', 'error');
+  }
+}
+
+function copyAppealLink() {
+  const url = window.location.origin + '/appeal';
+  navigator.clipboard.writeText(url);
+  showToast('Link copiado', 'success');
 }
