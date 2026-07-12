@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const fetch = require('node-fetch');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -65,8 +66,30 @@ let lastViewerSampleTime = 0;
 let lastFollowerSampleTime = 0;
 
 // Moderator access system
+const DATA_FILE = path.join(__dirname, '.dashboard-data.json');
+let dashboardData = { ownerTokens: {}, moderatorAccounts: {} };
+try {
+  if (fs.existsSync(DATA_FILE)) {
+    dashboardData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  }
+} catch {}
+
 const moderatorAccounts = new Map();
 const ownerTokens = new Map();
+
+if (dashboardData.moderatorAccounts) {
+  Object.entries(dashboardData.moderatorAccounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
+}
+if (dashboardData.ownerTokens) {
+  Object.entries(dashboardData.ownerTokens).forEach(([k, v]) => ownerTokens.set(k, v));
+}
+
+function saveDashboardData() {
+  const obj = { ownerTokens: {}, moderatorAccounts: {} };
+  ownerTokens.forEach((v, k) => obj.ownerTokens[k] = v);
+  moderatorAccounts.forEach((v, k) => obj.moderatorAccounts[k] = v);
+  try { fs.writeFileSync(DATA_FILE, JSON.stringify(obj, null, 2)); } catch {}
+}
 
 app.use(cookieParser());
 app.use(express.json());
@@ -256,6 +279,7 @@ async function twitchAPI(req, res, endpoint, options = {}) {
       if (refreshed) {
         if (req.moderatorSession) {
           ownerTokens.set(req.moderatorSession.ownerId, refreshed);
+          saveDashboardData();
         } else {
           req.auth = refreshed;
           setAuthCookie(res, refreshed);
@@ -334,6 +358,7 @@ app.get('/auth/twitch/callback', async (req, res) => {
 
     setAuthCookie(res, authData);
     ownerTokens.set(authData.user.id, authData);
+    saveDashboardData();
     res.redirect('/dashboard');
   } catch (err) {
     console.error('Auth error:', err);
@@ -346,6 +371,7 @@ app.get('/auth/logout', (req, res) => {
   const decoded = token ? verifyToken(token) : null;
   if (decoded && !decoded.role) {
     ownerTokens.delete(decoded.user.id);
+    saveDashboardData();
   }
   res.clearCookie(COOKIE_NAME, { path: '/' });
   res.redirect('/');
@@ -405,6 +431,7 @@ app.post('/api/owner/moderators', requireAuth, requireOwner, (req, res) => {
     createdAt: new Date().toISOString()
   };
   moderatorAccounts.set(key, mod);
+  saveDashboardData();
   res.json({ data: { id: mod.id, username: mod.username, createdAt: mod.createdAt } });
 });
 
@@ -413,6 +440,7 @@ app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, (req, res) =>
   moderatorAccounts.forEach((val, key) => {
     if (val.id === req.params.id && val.ownerId === req.auth.user.id) {
       moderatorAccounts.delete(key);
+      saveDashboardData();
       found = true;
     }
   });
