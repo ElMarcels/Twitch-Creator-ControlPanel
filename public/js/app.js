@@ -8,6 +8,16 @@ let modData = { followers: [], chatters: [], banned: [], moderators: [], vips: [
 let streamRefreshInterval = null;
 let currentLang = localStorage.getItem('lang') || 'es';
 
+// ===== PAGE LOAD HOOKS =====
+function setupTweetCharCount() {
+  document.addEventListener('input', (e) => {
+    if (e.target.id === 'tweetContent') {
+      const count = document.getElementById('tweetCharCount');
+      if (count) count.textContent = e.target.value.length;
+    }
+  });
+}
+
 // ===== I18N =====
 const translations = {
   es: {
@@ -17,6 +27,9 @@ const translations = {
     nav_ads: 'Anuncios', nav_clips: 'Clips', nav_shield: 'Modo Escudo',
     nav_commands: 'Comandos', nav_goals: 'Metas', nav_chat_log: 'Log Chat',
     nav_settings: 'Ajustes', nav_about: 'Acerca de', nav_logout: 'Cerrar sesion',
+    nav_chatbot: 'Chat Bot', nav_spam: 'Spam Detector', nav_viewer_chart: 'Grafico Viewers',
+    nav_top_chatters: 'Top Chatters', nav_growth: 'Crecimiento', nav_scenes: 'Escenas OBS',
+    nav_tweets: 'Tweets', nav_alerts_widget: 'Alertas', nav_share: 'Compartir',
     settings_appearance: 'Apariencia', settings_theme: 'Tema',
     settings_theme_desc: 'Cambia entre tema oscuro y claro',
     theme_dark: 'Oscuro', theme_light: 'Claro',
@@ -29,13 +42,47 @@ const translations = {
     title_ads: 'Anuncios', title_clips: 'Clips', title_shield: 'Modo Escudo',
     title_custom_commands: 'Comandos', title_goals: 'Metas', title_chat_log: 'Log del Chat',
     title_settings: 'Ajustes', title_about: 'Acerca de',
+    title_chatbot: 'Chat Bot', title_spam: 'Spam Detector',
+    title_viewer_chart: 'Grafico Viewers', title_top_chatters: 'Top Chatters',
+    title_growth: 'Crecimiento', title_scenes: 'Escenas OBS',
+    title_tweets: 'Tweets', title_alerts_widget: 'Alertas en Vivo',
+    title_share: 'Compartir Dashboard',
     stat_followers: 'Seguidores', stat_views: 'Visitas totales',
     stat_viewers: 'Espectadores', stat_stream_time: 'Tiempo en directo',
     login_subtitle: 'Administra tu canal con estilo. Moderacion, recompensas, estadisticas y mas.',
     login_btn: 'Iniciar sesion con Twitch',
     login_feat_mod: 'Moderacion avanzada', login_feat_stats: 'Estadisticas en vivo',
     login_feat_rewards: 'Recompensas totales',
-    offline: 'Offline', online: 'En vivo'
+    offline: 'Offline', online: 'En vivo',
+    chatbot_send: 'Enviar mensaje al chat', chatbot_placeholder: 'Escribe un mensaje...',
+    chatbot_quick: 'Comandos rapidos', chatbot_history: 'Historial de mensajes',
+    spam_config: 'Configuracion del detector', spam_enabled: 'Detector activo',
+    spam_enabled_desc: 'Detectar mensajes repetitivos automaticamente',
+    spam_max_msgs: 'Mensajes maximos', spam_max_msgs_desc: 'Mensajes permitidos en ventana de tiempo',
+    spam_window: 'Ventana de tiempo (seg)', spam_window_desc: 'Segundos para contar mensajes',
+    spam_log_title: 'Registro de spam detectado',
+    viewer_chart_title: 'Viewers en tiempo real', viewer_snapshot: 'Tomar muestra',
+    viewer_current: 'Actual', viewer_max: 'Maximo', viewer_min: 'Minimo', viewer_avg: 'Promedio',
+    top_chatters_title: 'Top Chatters por actividad',
+    growth_chart_title: 'Crecimiento de seguidores', growth_total: 'Total actual',
+    growth_rate: 'Tasa diaria', growth_recent: 'Ultimos 7 dias',
+    growth_projection: 'Proyeccion 30 dias', growth_snapshot: 'Tomar muestra',
+    scenes_title: 'Escenas de OBS', scenes_desc: 'Cambiar entre escenas',
+    scenes_placeholder: 'Selecciona una escena...', scenes_custom: 'Escena personalizada',
+    tweets_new: 'Nuevo tweet', tweets_content: 'Contenido',
+    tweets_placeholder: 'Escribe tu tweet...', tweets_schedule_at: 'Programar para',
+    tweets_schedule_btn: 'Programar', tweets_scheduled: 'Tweets programados',
+    alerts_title: 'Alertas en vivo', alerts_preview: 'Vista previa',
+    alerts_test_sub: 'Test Sub', alerts_test_follow: 'Test Follow',
+    alerts_test_bits: 'Test Bits', alerts_history: 'Historial',
+    share_new: 'Compartir vista', share_desc: 'Crear enlace de tu configuracion actual',
+    share_create: 'Crear enlace', share_active: 'Enlaces activos',
+    settings_display: 'Pantalla', settings_compact: 'Modo compacto',
+    settings_compact_desc: 'Reducir espaciado y tamano de elementos',
+    settings_shortcuts: 'Atajos de teclado', settings_shortcuts_enable: 'Activar atajos',
+    settings_shortcuts_enable_desc: 'Usar Alt+tecla para navegar',
+    shortcut_1: 'Inicio', shortcut_29: 'Ajustes', shortcut_d: 'Dashboard',
+    shortcut_r: 'Refrescar', shortcut_s: 'Configuracion', shortcut_esc: 'Cerrar modal'
   },
   en: {
     nav_home: 'Home', nav_moderation: 'Moderation', nav_channel_points: 'Channel Points',
@@ -44,6 +91,9 @@ const translations = {
     nav_ads: 'Ads', nav_clips: 'Clips', nav_shield: 'Shield Mode',
     nav_commands: 'Commands', nav_goals: 'Goals', nav_chat_log: 'Chat Log',
     nav_settings: 'Settings', nav_about: 'About', nav_logout: 'Log out',
+    nav_chatbot: 'Chat Bot', nav_spam: 'Spam Detector', nav_viewer_chart: 'Viewer Chart',
+    nav_top_chatters: 'Top Chatters', nav_growth: 'Growth', nav_scenes: 'OBS Scenes',
+    nav_tweets: 'Tweets', nav_alerts_widget: 'Alerts', nav_share: 'Share',
     settings_appearance: 'Appearance', settings_theme: 'Theme',
     settings_theme_desc: 'Switch between dark and light theme',
     theme_dark: 'Dark', theme_light: 'Light',
@@ -56,13 +106,47 @@ const translations = {
     title_ads: 'Ads', title_clips: 'Clips', title_shield: 'Shield Mode',
     title_custom_commands: 'Commands', title_goals: 'Goals', title_chat_log: 'Chat Log',
     title_settings: 'Settings', title_about: 'About',
+    title_chatbot: 'Chat Bot', title_spam: 'Spam Detector',
+    title_viewer_chart: 'Viewer Chart', title_top_chatters: 'Top Chatters',
+    title_growth: 'Growth Analysis', title_scenes: 'OBS Scenes',
+    title_tweets: 'Tweet Scheduler', title_alerts_widget: 'Live Alerts',
+    title_share: 'Share Dashboard',
     stat_followers: 'Followers', stat_views: 'Total Views',
     stat_viewers: 'Viewers', stat_stream_time: 'Stream Time',
     login_subtitle: 'Manage your channel with style. Moderation, rewards, statistics and more.',
     login_btn: 'Log in with Twitch',
     login_feat_mod: 'Advanced moderation', login_feat_stats: 'Live statistics',
     login_feat_rewards: 'Full rewards',
-    offline: 'Offline', online: 'Live'
+    offline: 'Offline', online: 'Live',
+    chatbot_send: 'Send message to chat', chatbot_placeholder: 'Type a message...',
+    chatbot_quick: 'Quick commands', chatbot_history: 'Message history',
+    spam_config: 'Detector configuration', spam_enabled: 'Detector active',
+    spam_enabled_desc: 'Automatically detect repetitive messages',
+    spam_max_msgs: 'Max messages', spam_max_msgs_desc: 'Messages allowed in time window',
+    spam_window: 'Time window (sec)', spam_window_desc: 'Seconds to count messages',
+    spam_log_title: 'Spam detection log',
+    viewer_chart_title: 'Live viewer chart', viewer_snapshot: 'Take snapshot',
+    viewer_current: 'Current', viewer_max: 'Max', viewer_min: 'Min', viewer_avg: 'Average',
+    top_chatters_title: 'Top Chatters by activity',
+    growth_chart_title: 'Follower growth', growth_total: 'Current total',
+    growth_rate: 'Daily rate', growth_recent: 'Last 7 days',
+    growth_projection: '30 day projection', growth_snapshot: 'Take snapshot',
+    scenes_title: 'OBS Scenes', scenes_desc: 'Switch between scenes',
+    scenes_placeholder: 'Select a scene...', scenes_custom: 'Custom scene',
+    tweets_new: 'New tweet', tweets_content: 'Content',
+    tweets_placeholder: 'Write your tweet...', tweets_schedule_at: 'Schedule for',
+    tweets_schedule_btn: 'Schedule', tweets_scheduled: 'Scheduled tweets',
+    alerts_title: 'Live alerts', alerts_preview: 'Preview',
+    alerts_test_sub: 'Test Sub', alerts_test_follow: 'Test Follow',
+    alerts_test_bits: 'Test Bits', alerts_history: 'History',
+    share_new: 'Share view', share_desc: 'Create link to your current setup',
+    share_create: 'Create link', share_active: 'Active links',
+    settings_display: 'Display', settings_compact: 'Compact mode',
+    settings_compact_desc: 'Reduce spacing and element size',
+    settings_shortcuts: 'Keyboard shortcuts', settings_shortcuts_enable: 'Enable shortcuts',
+    settings_shortcuts_enable_desc: 'Use Alt+key to navigate',
+    shortcut_1: 'Home', shortcut_29: 'Settings', shortcut_d: 'Dashboard',
+    shortcut_r: 'Refresh', shortcut_s: 'Settings', shortcut_esc: 'Close modal'
   },
   de: {
     nav_home: 'Startseite', nav_moderation: 'Moderation', nav_channel_points: 'Kanalpunkte',
@@ -71,6 +155,9 @@ const translations = {
     nav_ads: 'Werbung', nav_clips: 'Clips', nav_shield: 'Schutzmodus',
     nav_commands: 'Befehle', nav_goals: 'Ziele', nav_chat_log: 'Chat-Log',
     nav_settings: 'Einstellungen', nav_about: 'Uber', nav_logout: 'Abmelden',
+    nav_chatbot: 'Chat Bot', nav_spam: 'Spam Detektor', nav_viewer_chart: 'Zuschauer Graph',
+    nav_top_chatters: 'Top Chatter', nav_growth: 'Wachstum', nav_scenes: 'OBS Szenen',
+    nav_tweets: 'Tweets', nav_alerts_widget: 'Alerten', nav_share: 'Teilen',
     settings_appearance: 'Darstellung', settings_theme: 'Thema',
     settings_theme_desc: 'Zwischen dunklem und hellem Thema wechseln',
     theme_dark: 'Dunkel', theme_light: 'Hell',
@@ -83,13 +170,47 @@ const translations = {
     title_ads: 'Werbung', title_clips: 'Clips', title_shield: 'Schutzmodus',
     title_custom_commands: 'Befehle', title_goals: 'Ziele', title_chat_log: 'Chat-Log',
     title_settings: 'Einstellungen', title_about: 'Uber',
+    title_chatbot: 'Chat Bot', title_spam: 'Spam Detektor',
+    title_viewer_chart: 'Zuschauer Graph', title_top_chatters: 'Top Chatter',
+    title_growth: 'Wachstum', title_scenes: 'OBS Szenen',
+    title_tweets: 'Tweet Planer', title_alerts_widget: 'Live Alerten',
+    title_share: 'Dashboard Teilen',
     stat_followers: 'Follower', stat_views: 'Gesamtaufrufe',
     stat_viewers: 'Zuschauer', stat_stream_time: 'Streamzeit',
     login_subtitle: 'Verwalte deinen Kanal mit Stil. Moderation, Belohnungen, Statistiken und mehr.',
     login_btn: 'Mit Twitch anmelden',
     login_feat_mod: 'Erweiterte Moderation', login_feat_stats: 'Live-Statistiken',
     login_feat_rewards: 'Volle Belohnungen',
-    offline: 'Offline', online: 'Live'
+    offline: 'Offline', online: 'Live',
+    chatbot_send: 'Nachricht an Chat senden', chatbot_placeholder: 'Nachricht eingeben...',
+    chatbot_quick: 'Schnellbefehle', chatbot_history: 'Nachrichtenverlauf',
+    spam_config: 'Detektor Konfiguration', spam_enabled: 'Detektor aktiv',
+    spam_enabled_desc: 'Wiederholte Nachrichten automatisch erkennen',
+    spam_max_msgs: 'Max Nachrichten', spam_max_msgs_desc: 'Nachrichten im Zeitfenster erlaubt',
+    spam_window: 'Zeitfenster (Sek)', spam_window_desc: 'Sekunden zum Zaehlen',
+    spam_log_title: 'Spam-Erkennungslog',
+    viewer_chart_title: 'Live-Zuschauer', viewer_snapshot: 'Aufnahme',
+    viewer_current: 'Aktuell', viewer_max: 'Max', viewer_min: 'Min', viewer_avg: 'Durchschnitt',
+    top_chatters_title: 'Top Chatter nach Aktivitaet',
+    growth_chart_title: 'Follower Wachstum', growth_total: 'Aktueller Total',
+    growth_rate: 'Tagesrate', growth_recent: 'Letzte 7 Tage',
+    growth_projection: '30-Tage-Projektion', growth_snapshot: 'Aufnahme',
+    scenes_title: 'OBS Szenen', scenes_desc: 'Zwischen Szenen wechseln',
+    scenes_placeholder: 'Szene waehlen...', scenes_custom: 'Eigene Szene',
+    tweets_new: 'Neuer Tweet', tweets_content: 'Inhalt',
+    tweets_placeholder: 'Tweet schreiben...', tweets_schedule_at: 'Planen fuer',
+    tweets_schedule_btn: 'Planen', tweets_scheduled: 'Geplante Tweets',
+    alerts_title: 'Live-Alerten', alerts_preview: 'Vorschau',
+    alerts_test_sub: 'Test Sub', alerts_test_follow: 'Test Follow',
+    alerts_test_bits: 'Test Bits', alerts_history: 'Verlauf',
+    share_new: 'Ansicht teilen', share_desc: 'Link zu deinem aktuellen Setup erstellen',
+    share_create: 'Link erstellen', share_active: 'Aktive Links',
+    settings_display: 'Anzeige', settings_compact: 'Kompakter Modus',
+    settings_compact_desc: 'Abstaende und Elementgroesse reduzieren',
+    settings_shortcuts: 'Tastenkuerzel', settings_shortcuts_enable: 'Kuerzel aktivieren',
+    settings_shortcuts_enable_desc: 'Alt+Taste zum Navigieren nutzen',
+    shortcut_1: 'Start', shortcut_29: 'Einstellungen', shortcut_d: 'Dashboard',
+    shortcut_r: 'Aktualisieren', shortcut_s: 'Einstellungen', shortcut_esc: 'Modal schliessen'
   },
   fr: {
     nav_home: 'Accueil', nav_moderation: 'Moderation', nav_channel_points: 'Points de chaine',
@@ -98,6 +219,9 @@ const translations = {
     nav_ads: 'Publicites', nav_clips: 'Clips', nav_shield: 'Mode Bouclier',
     nav_commands: 'Commandes', nav_goals: 'Objectifs', nav_chat_log: 'Journal Chat',
     nav_settings: 'Parametres', nav_about: 'A propos', nav_logout: 'Deconnexion',
+    nav_chatbot: 'Chat Bot', nav_spam: 'Detecteur Spam', nav_viewer_chart: 'Graphique',
+    nav_top_chatters: 'Top Chatters', nav_growth: 'Croissance', nav_scenes: 'Scenes OBS',
+    nav_tweets: 'Tweets', nav_alerts_widget: 'Alertes', nav_share: 'Partager',
     settings_appearance: 'Apparence', settings_theme: 'Theme',
     settings_theme_desc: 'Basculer entre le theme sombre et clair',
     theme_dark: 'Sombre', theme_light: 'Clair',
@@ -110,13 +234,47 @@ const translations = {
     title_ads: 'Publicites', title_clips: 'Clips', title_shield: 'Mode Bouclier',
     title_custom_commands: 'Commandes', title_goals: 'Objectifs', title_chat_log: 'Journal Chat',
     title_settings: 'Parametres', title_about: 'A propos',
+    title_chatbot: 'Chat Bot', title_spam: 'Detecteur Spam',
+    title_viewer_chart: 'Graphique Viewers', title_top_chatters: 'Top Chatters',
+    title_growth: 'Croissance', title_scenes: 'Scenes OBS',
+    title_tweets: 'Planificateur', title_alerts_widget: 'Alertes En Direct',
+    title_share: 'Partager Dashboard',
     stat_followers: 'Abonnes', stat_views: 'Vues totales',
     stat_viewers: 'Spectateurs', stat_stream_time: 'Temps en direct',
     login_subtitle: 'Gerez votre chaine avec style. Moderation, recompenses, statistiques et plus.',
     login_btn: 'Se connecter avec Twitch',
     login_feat_mod: 'Moderation avancee', login_feat_stats: 'Statistiques en direct',
     login_feat_rewards: 'Recompenses completes',
-    offline: 'Hors ligne', online: 'En direct'
+    offline: 'Hors ligne', online: 'En direct',
+    chatbot_send: 'Envoyer un message', chatbot_placeholder: 'Ecrire un message...',
+    chatbot_quick: 'Commandes rapides', chatbot_history: 'Historique des messages',
+    spam_config: 'Configuration du detecteur', spam_enabled: 'Detecteur actif',
+    spam_enabled_desc: 'Detecter automatiquement les messages repetitifs',
+    spam_max_msgs: 'Messages max', spam_max_msgs_desc: 'Messages autorises dans la fenetre',
+    spam_window: 'Fenetre de temps (sec)', spam_window_desc: 'Secondes pour compter',
+    spam_log_title: 'Journal de spam detecte',
+    viewer_chart_title: 'Viewers en direct', viewer_snapshot: 'Capturer',
+    viewer_current: 'Actuel', viewer_max: 'Max', viewer_min: 'Min', viewer_avg: 'Moyenne',
+    top_chatters_title: 'Top Chatters par activite',
+    growth_chart_title: 'Croissance des abonnes', growth_total: 'Total actuel',
+    growth_rate: 'Taux journalier', growth_recent: '7 derniers jours',
+    growth_projection: 'Projection 30 jours', growth_snapshot: 'Capturer',
+    scenes_title: 'Scenes OBS', scenes_desc: 'Changer de scene',
+    scenes_placeholder: 'Choisir une scene...', scenes_custom: 'Scene personnalisee',
+    tweets_new: 'Nouveau tweet', tweets_content: 'Contenu',
+    tweets_placeholder: 'Ecrire votre tweet...', tweets_schedule_at: 'Programmer pour',
+    tweets_schedule_btn: 'Programmer', tweets_scheduled: 'Tweets programmes',
+    alerts_title: 'Alertes en direct', alerts_preview: 'Apercu',
+    alerts_test_sub: 'Test Sub', alerts_test_follow: 'Test Follow',
+    alerts_test_bits: 'Test Bits', alerts_history: 'Historique',
+    share_new: 'Partager la vue', share_desc: 'Creer un lien de votre configuration',
+    share_create: 'Creer le lien', share_active: 'Liens actifs',
+    settings_display: 'Affichage', settings_compact: 'Mode compact',
+    settings_compact_desc: 'Reduire l\'espacement et la taille',
+    settings_shortcuts: 'Raccourcis clavier', settings_shortcuts_enable: 'Activer les raccourcis',
+    settings_shortcuts_enable_desc: 'Utiliser Alt+touche pour naviguer',
+    shortcut_1: 'Accueil', shortcut_29: 'Reglages', shortcut_d: 'Tableau de bord',
+    shortcut_r: 'Actualiser', shortcut_s: 'Reglages', shortcut_esc: 'Fermer la modale'
   },
   pt: {
     nav_home: 'Inicio', nav_moderation: 'Moderacao', nav_channel_points: 'Pontos do Canal',
@@ -125,6 +283,9 @@ const translations = {
     nav_ads: 'Anuncios', nav_clips: 'Clips', nav_shield: 'Modo Escudo',
     nav_commands: 'Comandos', nav_goals: 'Metas', nav_chat_log: 'Log do Chat',
     nav_settings: 'Configuracoes', nav_about: 'Sobre', nav_logout: 'Sair',
+    nav_chatbot: 'Chat Bot', nav_spam: 'Detector Spam', nav_viewer_chart: 'Grafico Viewers',
+    nav_top_chatters: 'Top Chatters', nav_growth: 'Crescimento', nav_scenes: 'Cenas OBS',
+    nav_tweets: 'Tweets', nav_alerts_widget: 'Alertas', nav_share: 'Compartilhar',
     settings_appearance: 'Aparencia', settings_theme: 'Tema',
     settings_theme_desc: 'Alternar entre tema escuro e claro',
     theme_dark: 'Escuro', theme_light: 'Claro',
@@ -137,13 +298,47 @@ const translations = {
     title_ads: 'Anuncios', title_clips: 'Clips', title_shield: 'Modo Escudo',
     title_custom_commands: 'Comandos', title_goals: 'Metas', title_chat_log: 'Log do Chat',
     title_settings: 'Configuracoes', title_about: 'Sobre',
+    title_chatbot: 'Chat Bot', title_spam: 'Detector Spam',
+    title_viewer_chart: 'Grafico de Viewers', title_top_chatters: 'Top Chatters',
+    title_growth: 'Crescimento', title_scenes: 'Cenas OBS',
+    title_tweets: 'Agendador de Tweets', title_alerts_widget: 'Alertas ao Vivo',
+    title_share: 'Compartilhar Dashboard',
     stat_followers: 'Seguidores', stat_views: 'Visualizacoes',
     stat_viewers: 'Espectadores', stat_stream_time: 'Tempo ao vivo',
     login_subtitle: 'Gerencie seu canal com estilo. Moderacao, recompensas, estatisticas e mais.',
     login_btn: 'Entrar com Twitch',
     login_feat_mod: 'Moderacao avancada', login_feat_stats: 'Estatisticas ao vivo',
     login_feat_rewards: 'Recompensas completas',
-    offline: 'Offline', online: 'Ao vivo'
+    offline: 'Offline', online: 'Ao vivo',
+    chatbot_send: 'Enviar mensagem para o chat', chatbot_placeholder: 'Escreva uma mensagem...',
+    chatbot_quick: 'Comandos rapidos', chatbot_history: 'Historico de mensagens',
+    spam_config: 'Configuracao do detector', spam_enabled: 'Detector ativo',
+    spam_enabled_desc: 'Detectar automaticamente mensagens repetitivas',
+    spam_max_msgs: 'Maximo de msgs', spam_max_msgs_desc: 'Mensagens permitidas na janela',
+    spam_window: 'Janela de tempo (seg)', spam_window_desc: 'Segundos para contar',
+    spam_log_title: 'Registro de spam detectado',
+    viewer_chart_title: 'Viewers ao vivo', viewer_snapshot: 'Capturar',
+    viewer_current: 'Atual', viewer_max: 'Max', viewer_min: 'Min', viewer_avg: 'Media',
+    top_chatters_title: 'Top Chatters por atividade',
+    growth_chart_title: 'Crescimento de seguidores', growth_total: 'Total atual',
+    growth_rate: 'Taxa diaria', growth_recent: 'Ultimos 7 dias',
+    growth_projection: 'Projecao 30 dias', growth_snapshot: 'Capturar',
+    scenes_title: 'Cenas OBS', scenes_desc: 'Alternar entre cenas',
+    scenes_placeholder: 'Selecionar cena...', scenes_custom: 'Cena personalizada',
+    tweets_new: 'Novo tweet', tweets_content: 'Conteudo',
+    tweets_placeholder: 'Escreva seu tweet...', tweets_schedule_at: 'Agendar para',
+    tweets_schedule_btn: 'Agendar', tweets_scheduled: 'Tweets agendados',
+    alerts_title: 'Alertas ao vivo', alerts_preview: 'Visualizar',
+    alerts_test_sub: 'Testar Sub', alerts_test_follow: 'Testar Follow',
+    alerts_test_bits: 'Testar Bits', alerts_history: 'Historico',
+    share_new: 'Compartilhar vista', share_desc: 'Criar link da sua configuracao',
+    share_create: 'Criar link', share_active: 'Links ativos',
+    settings_display: 'Tela', settings_compact: 'Modo compacto',
+    settings_compact_desc: 'Reduzir espacamento e tamanho',
+    settings_shortcuts: 'Atalhos de teclado', settings_shortcuts_enable: 'Ativar atalhos',
+    settings_shortcuts_enable_desc: 'Usar Alt+tecla para navegar',
+    shortcut_1: 'Inicio', shortcut_29: 'Configuracoes', shortcut_d: 'Painel',
+    shortcut_r: 'Atualizar', shortcut_s: 'Configuracoes', shortcut_esc: 'Fechar modal'
   },
   ja: {
     nav_home: 'ホーム', nav_moderation: 'モデレーション', nav_channel_points: 'チャンネルポイント',
@@ -152,6 +347,9 @@ const translations = {
     nav_ads: '広告', nav_clips: 'クリップ', nav_shield: 'シールドモード',
     nav_commands: 'コマンド', nav_goals: '目標', nav_chat_log: 'チャット履歴',
     nav_settings: '設定', nav_about: '概要', nav_logout: 'ログアウト',
+    nav_chatbot: 'チャットボット', nav_spam: 'スパム検出', nav_viewer_chart: '視聴者チャート',
+    nav_top_chatters: 'トップチャッター', nav_growth: '成長', nav_scenes: 'OBSシーン',
+    nav_tweets: 'ツイート', nav_alerts_widget: 'アラート', nav_share: '共有',
     settings_appearance: '外観', settings_theme: 'テーマ',
     settings_theme_desc: 'ダークテーマとライトテーマを切り替え',
     theme_dark: 'ダーク', theme_light: 'ライト',
@@ -164,13 +362,47 @@ const translations = {
     title_ads: '広告', title_clips: 'クリップ', title_shield: 'シールドモード',
     title_custom_commands: 'コマンド', title_goals: '目標', title_chat_log: 'チャット履歴',
     title_settings: '設定', title_about: '概要',
+    title_chatbot: 'チャットボット', title_spam: 'スパム検出',
+    title_viewer_chart: '視聴者チャート', title_top_chatters: 'トップチャッター',
+    title_growth: '成長分析', title_scenes: 'OBSシーン',
+    title_tweets: 'ツイートスケジューラー', title_alerts_widget: 'ライブアラート',
+    title_share: 'ダッシュボード共有',
     stat_followers: 'フォロワー', stat_views: '総視聴数',
     stat_viewers: '視聴者', stat_stream_time: '配信時間',
     login_subtitle: 'チャンネルをスタイリッシュに管理。モデレーション、報酬、統計など。',
     login_btn: 'Twitchでログイン',
     login_feat_mod: '高度なモデレーション', login_feat_stats: 'ライブ統計',
     login_feat_rewards: '完全な報酬',
-    offline: 'オフライン', online: 'ライブ'
+    offline: 'オフライン', online: 'ライブ',
+    chatbot_send: 'チャットにメッセージ送信', chatbot_placeholder: 'メッセージを入力...',
+    chatbot_quick: 'クイックコマンド', chatbot_history: 'メッセージ履歴',
+    spam_config: '検出器設定', spam_enabled: '検出器有効',
+    spam_enabled_desc: '繰り返しメッセージを自動検出',
+    spam_max_msgs: '最大メッセージ数', spam_max_msgs_desc: '時間枠内の許可メッセージ数',
+    spam_window: '時間枠（秒）', spam_window_desc: 'カウントする秒数',
+    spam_log_title: 'スパム検出ログ',
+    viewer_chart_title: 'ライブ視聴者チャート', viewer_snapshot: 'スナップショット',
+    viewer_current: '現在', viewer_max: '最大', viewer_min: '最小', viewer_avg: '平均',
+    top_chatters_title: 'アクティビティ別トップチャッター',
+    growth_chart_title: 'フォロワー成長', growth_total: '現在の合計',
+    growth_rate: '日次率', growth_recent: '過去7日',
+    growth_projection: '30日予測', growth_snapshot: 'スナップショット',
+    scenes_title: 'OBSシーン', scenes_desc: 'シーンを切り替え',
+    scenes_placeholder: 'シーンを選択...', scenes_custom: 'カスタムシーン',
+    tweets_new: '新しいツイート', tweets_content: '内容',
+    tweets_placeholder: 'ツイートを入力...', tweets_schedule_at: 'スケジュール',
+    tweets_schedule_btn: 'スケジュール', tweets_scheduled: 'スケジュール済みツイート',
+    alerts_title: 'ライブアラート', alerts_preview: 'プレビュー',
+    alerts_test_sub: 'テストSub', alerts_test_follow: 'テストFollow',
+    alerts_test_bits: 'テストBits', alerts_history: '履歴',
+    share_new: 'ビューを共有', share_desc: '現在のセットアップのリンクを作成',
+    share_create: 'リンク作成', share_active: 'アクティブリンク',
+    settings_display: '表示', settings_compact: 'コンパクトモード',
+    settings_compact_desc: '間隔と要素サイズを縮小',
+    settings_shortcuts: 'キーボードショートカット', settings_shortcuts_enable: 'ショートカット有効',
+    settings_shortcuts_enable_desc: 'Alt+キーでナビゲート',
+    shortcut_1: 'ホーム', shortcut_29: '設定', shortcut_d: 'ダッシュボード',
+    shortcut_r: '更新', shortcut_s: '設定', shortcut_esc: 'モーダルを閉じる'
   },
   ko: {
     nav_home: '홈', nav_moderation: '채팅 관리', nav_channel_points: '채널 포인트',
@@ -179,6 +411,9 @@ const translations = {
     nav_ads: '광고', nav_clips: '클립', nav_shield: '실드 모드',
     nav_commands: '명령어', nav_goals: '목표', nav_chat_log: '채팅 기록',
     nav_settings: '설정', nav_about: '정보', nav_logout: '로그아웃',
+    nav_chatbot: '채팅봇', nav_spam: '스팸 감지', nav_viewer_chart: '시청자 차트',
+    nav_top_chatters: '탑 채터', nav_growth: '성장', nav_scenes: 'OBS 장면',
+    nav_tweets: '트윗', nav_alerts_widget: '알림', nav_share: '공유',
     settings_appearance: '외관', settings_theme: '테마',
     settings_theme_desc: '다크 테마와 라이트 테마 전환',
     theme_dark: '다크', theme_light: '라이트',
@@ -191,13 +426,47 @@ const translations = {
     title_ads: '광고', title_clips: '클립', title_shield: '실드 모드',
     title_custom_commands: '명령어', title_goals: '목표', title_chat_log: '채팅 기록',
     title_settings: '설정', title_about: '정보',
+    title_chatbot: '채팅봇', title_spam: '스팸 감지',
+    title_viewer_chart: '시청자 차트', title_top_chatters: '탑 채터',
+    title_growth: '성장 분석', title_scenes: 'OBS 장면',
+    title_tweets: '트윗 스케줄러', title_alerts_widget: '실시간 알림',
+    title_share: '대시보드 공유',
     stat_followers: '팔로워', stat_views: '총 조회수',
     stat_viewers: '시청자', stat_stream_time: '방송 시간',
     login_subtitle: '채널을 스타일리시하게 관리. 채팅 관리, 보상, 통계 등.',
     login_btn: 'Twitch로 로그인',
     login_feat_mod: '고급 채팅 관리', login_feat_stats: '실시간 통계',
     login_feat_rewards: '완전한 보상',
-    offline: '오프라인', online: '라이브'
+    offline: '오프라인', online: '라이브',
+    chatbot_send: '채팅에 메시지 보내기', chatbot_placeholder: '메시지를 입력하세요...',
+    chatbot_quick: '빠른 명령어', chatbot_history: '메시지 기록',
+    spam_config: '스팸 감지 설정', spam_enabled: '감지기 활성화',
+    spam_enabled_desc: '반복 메시지를 자동 감지',
+    spam_max_msgs: '최대 메시지 수', spam_max_msgs_desc: '시간 창에서 허용되는 메시지',
+    spam_window: '시간 창 (초)', spam_window_desc: '메시지를 셀 초',
+    spam_log_title: '스팸 감지 로그',
+    viewer_chart_title: '실시간 시청자 차트', viewer_snapshot: '스냅샷',
+    viewer_current: '현재', viewer_max: '최대', viewer_min: '최소', viewer_avg: '평균',
+    top_chatters_title: '활동별 탑 채터',
+    growth_chart_title: '팔로워 성장', growth_total: '현재 합계',
+    growth_rate: '일일 비율', growth_recent: '최근 7일',
+    growth_projection: '30일 예측', growth_snapshot: '스냅샷',
+    scenes_title: 'OBS 장면', scenes_desc: '장면 전환',
+    scenes_placeholder: '장면 선택...', scenes_custom: '사용자 지정 장면',
+    tweets_new: '새 트윗', tweets_content: '내용',
+    tweets_placeholder: '트윗을 작성하세요...', tweets_schedule_at: '스케줄',
+    tweets_schedule_btn: '스케줄', tweets_scheduled: '스케줄된 트윗',
+    alerts_title: '실시간 알림', alerts_preview: '미리보기',
+    alerts_test_sub: '테스트 Sub', alerts_test_follow: '테스트 Follow',
+    alerts_test_bits: '테스트 Bits', alerts_history: '기록',
+    share_new: '보기 공유', share_desc: '현재 설정의 링크 만들기',
+    share_create: '링크 만들기', share_active: '활성 링크',
+    settings_display: '화면', settings_compact: '컴팩트 모드',
+    settings_compact_desc: '간격과 요소 크기 축소',
+    settings_shortcuts: '키보드 단축키', settings_shortcuts_enable: '단축키 활성화',
+    settings_shortcuts_enable_desc: 'Alt+키로 탐색',
+    shortcut_1: '홈', shortcut_29: '설정', shortcut_d: '대시보드',
+    shortcut_r: '새로고침', shortcut_s: '설정', shortcut_esc: '모달 닫기'
   }
 };
 
@@ -260,6 +529,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTheme();
   setupLanguage();
   applyTranslations();
+  loadCompactMode();
+  loadShortcutsSettings();
+  setupKeyboardShortcuts();
+  setupTweetCharCount();
   checkAuth();
   setupNavigation();
   setupSidebar();
@@ -344,6 +617,15 @@ function navigateTo(page) {
     'custom-commands': t('title_custom_commands'),
     'goals': t('title_goals'),
     'chat-log': t('title_chat_log'),
+    'chatbot': t('title_chatbot'),
+    'spam': t('title_spam'),
+    'viewer-chart': t('title_viewer_chart'),
+    'top-chatters': t('title_top_chatters'),
+    'growth': t('title_growth'),
+    'scenes': t('title_scenes'),
+    'tweets': t('title_tweets'),
+    'alerts-widget': t('title_alerts_widget'),
+    'share': t('title_share'),
     'settings': t('title_settings'),
     'about': t('title_about')
   };
@@ -372,6 +654,14 @@ function loadPageData(page) {
     case 'custom-commands': loadCommands(); break;
     case 'goals': loadGoals(); break;
     case 'chat-log': loadChatLog(); break;
+    case 'spam': loadSpamLog(); break;
+    case 'viewer-chart': loadViewerChart(); break;
+    case 'top-chatters': loadTopChatters(); break;
+    case 'growth': loadGrowthAnalysis(); break;
+    case 'scenes': loadOBSScenes(); break;
+    case 'tweets': loadScheduledTweets(); break;
+    case 'alerts-widget': loadAlerts(); break;
+    case 'share': loadShareLinks(); break;
   }
 }
 
@@ -2387,4 +2677,548 @@ function filterChatLog() {
   const q = document.getElementById('chatLogSearch').value.toLowerCase().trim();
   if (!q) return renderChatLog(chatLogData);
   renderChatLog(chatLogData.filter(m => m.user.toLowerCase().includes(q) || m.message.toLowerCase().includes(q)));
+}
+
+// ============================================================
+// FEATURE: CHAT BOT EMBEDIDO
+// ============================================================
+function sendBotMessage() {
+  const input = document.getElementById('botMessageInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  sendToChat(msg);
+  logBotMessage(currentUser?.display_name || 'Bot', msg);
+  input.value = '';
+}
+
+function sendBotCmd(cmd) {
+  const input = document.getElementById('botMessageInput');
+  input.value = cmd + ' ';
+  input.focus();
+}
+
+async function sendToChat(message) {
+  try {
+    await fetch('/api/chat/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    showToast('Mensaje enviado al chat', 'success');
+  } catch (e) {
+    showToast('Error al enviar mensaje', 'error');
+  }
+}
+
+function logBotMessage(user, message) {
+  const log = document.getElementById('botMessageLog');
+  if (!log) return;
+  const entry = document.createElement('div');
+  entry.className = 'bot-msg-entry';
+  entry.innerHTML = `<span class="bot-msg-time">${new Date().toLocaleTimeString()}</span><span class="bot-msg-user">${escapeHtml(user)}</span><span class="bot-msg-text">${escapeHtml(message)}</span>`;
+  log.prepend(entry);
+  if (log.children.length > 50) log.lastChild.remove();
+}
+
+function loadBotCommands() { showToast('Comandos cargados', 'info'); }
+
+// ============================================================
+// FEATURE: SPAM DETECTOR
+// ============================================================
+let spamCheckInterval = null;
+
+function startSpamDetector() {
+  if (spamCheckInterval) clearInterval(spamCheckInterval);
+  const enabled = document.getElementById('spamDetectorEnabled');
+  if (enabled && !enabled.checked) return;
+  spamCheckInterval = setInterval(checkRecentSpam, 5000);
+}
+
+function stopSpamDetector() {
+  if (spamCheckInterval) { clearInterval(spamCheckInterval); spamCheckInterval = null; }
+}
+
+async function checkRecentSpam() {
+  if (!currentUser) return;
+  const enabled = document.getElementById('spamDetectorEnabled');
+  if (enabled && !enabled.checked) return;
+  try {
+    const data = await api('/api/chat/log');
+    if (!data || !data.data) return;
+    const maxMsgs = parseInt(document.getElementById('spamMaxMsgs')?.value) || 5;
+    const windowSec = parseInt(document.getElementById('spamWindowSec')?.value) || 10;
+    const now = Date.now();
+    const userCounts = {};
+    data.data.forEach(m => {
+      const age = now - new Date(m.timestamp).getTime();
+      if (age < windowSec * 1000) {
+        userCounts[m.user] = (userCounts[m.user] || 0) + 1;
+      }
+    });
+    Object.entries(userCounts).forEach(([user, count]) => {
+      if (count >= maxMsgs) {
+        showToast(`${user} esta enviando mensajes rapidamente (${count})`, 'warning');
+        fetch('/api/mod/spam-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user, message: `${count} mensajes en ${windowSec}s`, action: 'flag' })
+        });
+      }
+    });
+  } catch (e) {}
+}
+
+async function loadSpamLog() {
+  const container = document.getElementById('spamLogList');
+  if (!container) return;
+  const data = await api('/api/mod/spam-log');
+  if (data && data.data && data.data.length > 0) {
+    container.innerHTML = data.data.reverse().map(s => `
+      <div class="spam-entry">
+        <span class="spam-user">${escapeHtml(s.user)}</span>
+        <span class="spam-msg">${escapeHtml(s.message)}</span>
+        <span class="spam-action ${s.action}">${s.action}</span>
+      </div>
+    `).join('');
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No se ha detectado spam aun.</p></div>';
+  }
+}
+
+// ============================================================
+// FEATURE: GRAFICO DE VIEWERS EN TIEMPO REAL
+// ============================================================
+let viewerChart = null;
+let viewerHistoryData = [];
+let viewerAutoRefresh = null;
+
+async function takeViewerSnapshot() {
+  if (!currentUser) return;
+  try {
+    const streamData = await api('/api/stream');
+    if (streamData && streamData.data && streamData.data.data && streamData.data.data[0]) {
+      const viewers = streamData.data.data[0].viewer_count;
+      await fetch('/api/stats/viewer-sample', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ viewers })
+      });
+      showToast(`Muestra tomada: ${viewers} viewers`, 'success');
+      loadViewerChart();
+    } else {
+      showToast('No hay stream activo', 'info');
+    }
+  } catch (e) {
+    showToast('Error al tomar muestra', 'error');
+  }
+}
+
+async function loadViewerChart() {
+  const data = await api('/api/stats/viewer-history');
+  if (!data || !data.data) return;
+  viewerHistoryData = data.data;
+  renderViewerChart(viewerHistoryData);
+}
+
+function renderViewerChart(history) {
+  const canvas = document.getElementById('viewerChart');
+  if (!canvas || !history || history.length === 0) return;
+  const labels = history.map(h => new Date(h.timestamp).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }));
+  const values = history.map(h => h.viewers);
+
+  const current = values[values.length - 1] || 0;
+  const max = values.length > 0 ? Math.max(...values) : 0;
+  const min = values.length > 0 ? Math.min(...values) : 0;
+  const avg = values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
+
+  document.getElementById('viewerStatCurrent').textContent = current;
+  document.getElementById('viewerStatMax').textContent = max;
+  document.getElementById('viewerStatMin').textContent = min;
+  document.getElementById('viewerStatAvg').textContent = avg;
+
+  if (viewerChart) viewerChart.destroy();
+  viewerChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Viewers',
+        data: values,
+        borderColor: '#a855f7',
+        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 2,
+        pointHoverRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(168,85,247,0.08)' }, ticks: { color: '#6b5f8a', maxTicksLimit: 8, font: { size: 11 } } },
+        y: { grid: { color: 'rgba(168,85,247,0.08)' }, ticks: { color: '#6b5f8a', font: { size: 11 } }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+// ============================================================
+// FEATURE: TOP CHATTERS RANKING
+// ============================================================
+async function loadTopChatters() {
+  const container = document.getElementById('topChattersList');
+  if (!container) return;
+  const hours = document.getElementById('chattersTimeRange')?.value || 1;
+  const data = await api(`/api/stats/top-chatters?hours=${hours}`);
+  if (data && data.data && data.data.length > 0) {
+    container.innerHTML = data.data.map((c, i) => {
+      let rankClass = 'normal';
+      if (i === 0) rankClass = 'gold';
+      else if (i === 1) rankClass = 'silver';
+      else if (i === 2) rankClass = 'bronze';
+      return `
+        <div class="chatter-rank">
+          <span class="chatter-rank-num ${rankClass}">${i + 1}</span>
+          <span class="chatter-rank-name">${escapeHtml(c.user)}</span>
+          <span class="chatter-rank-count">${c.messages} msgs</span>
+        </div>`;
+    }).join('');
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No hay datos de chatters aun. Los mensajes se registran cuando pasan por el chat.</p></div>';
+  }
+}
+
+// ============================================================
+// FEATURE: ANALISIS DE CRECIMIENTO
+// ============================================================
+let growthChart = null;
+
+async function takeFollowerSnapshot() {
+  if (!currentUser) return;
+  try {
+    const data = await api('/api/user');
+    if (data && data.data) {
+      const followers = data.data.followers_count || 0;
+      await fetch('/api/stats/follower-snapshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ followers })
+      });
+      showToast(`Captura: ${followers} seguidores`, 'success');
+      loadGrowthAnalysis();
+    }
+  } catch (e) {
+    showToast('Error al capturar seguidores', 'error');
+  }
+}
+
+async function loadGrowthAnalysis() {
+  const data = await api('/api/stats/follower-history');
+  if (!data || !data.data || data.data.length === 0) return;
+  const history = data.data;
+  const values = history.map(h => h.followers);
+  const labels = history.map(h => new Date(h.timestamp).toLocaleDateString('es', { day: '2-digit', month: 'short' }));
+
+  document.getElementById('growthTotalFollowers').textContent = values[values.length - 1] || '--';
+
+  if (values.length >= 2) {
+    const diff = values[values.length - 1] - values[0];
+    document.getElementById('growthRecent').textContent = (diff >= 0 ? '+' : '') + diff;
+    const days = Math.max(1, (new Date(history[history.length - 1].timestamp) - new Date(history[0].timestamp)) / 86400000);
+    const rate = ((diff / Math.max(1, values[0])) * 100).toFixed(1);
+    document.getElementById('growthRate').textContent = rate + '%';
+    const projection = Math.round(values[values.length - 1] + (diff / days) * 30);
+    document.getElementById('growthProjection').textContent = projection;
+  }
+
+  if (growthChart) growthChart.destroy();
+  const canvas = document.getElementById('growthChart');
+  if (!canvas) return;
+  growthChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Seguidores',
+        data: values,
+        borderColor: '#ec4899',
+        backgroundColor: 'rgba(236, 72, 153, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(168,85,247,0.08)' }, ticks: { color: '#6b5f8a', font: { size: 11 } } },
+        y: { grid: { color: 'rgba(168,85,247,0.08)' }, ticks: { color: '#6b5f8a', font: { size: 11 } }, beginAtZero: false }
+      }
+    }
+  });
+}
+
+// ============================================================
+// FEATURE: SCENE SWITCHER REMOTO
+// ============================================================
+async function loadOBSScenes() {
+  const container = document.getElementById('obsScenesList');
+  if (!container) return;
+  const data = await api('/api/obs/scenes');
+  if (data && data.data) {
+    container.innerHTML = data.data.map(scene => `
+      <button class="scene-btn" onclick="switchToScene('${escapeHtml(scene)}')">${escapeHtml(scene)}</button>
+    `).join('');
+  }
+}
+
+async function switchToScene(sceneName) {
+  if (!sceneName || !sceneName.trim()) {
+    showToast('Ingresa un nombre de escena', 'warning');
+    return;
+  }
+  try {
+    await fetch('/api/obs/scene', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sceneName: sceneName.trim() })
+    });
+    showToast(`Escena cambiada a: ${sceneName}`, 'success');
+    document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active-scene'));
+  } catch (e) {
+    showToast('Error al cambiar escena', 'error');
+  }
+}
+
+// ============================================================
+// FEATURE: TWEET SCHEDULER
+// ============================================================
+async function scheduleTweet() {
+  const content = document.getElementById('tweetContent').value.trim();
+  const scheduledAt = document.getElementById('tweetScheduleAt').value;
+  if (!content) { showToast('Escribe el contenido del tweet', 'warning'); return; }
+  if (content.length > 280) { showToast('El tweet no puede exceder 280 caracteres', 'warning'); return; }
+  try {
+    await fetch('/api/tweets/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, scheduledAt: scheduledAt || null })
+    });
+    showToast('Tweet programado', 'success');
+    document.getElementById('tweetContent').value = '';
+    document.getElementById('tweetScheduleAt').value = '';
+    document.getElementById('tweetCharCount').textContent = '0';
+    loadScheduledTweets();
+  } catch (e) {
+    showToast('Error al programar tweet', 'error');
+  }
+}
+
+async function loadScheduledTweets() {
+  const container = document.getElementById('scheduledTweetsList');
+  if (!container) return;
+  const data = await api('/api/tweets/scheduled');
+  if (data && data.data && data.data.length > 0) {
+    container.innerHTML = data.data.reverse().map(t => `
+      <div class="tweet-entry">
+        <div class="tweet-entry-content">
+          <div>${escapeHtml(t.content)}</div>
+          <div class="tweet-entry-meta">
+            ${t.scheduledAt ? `Programado: ${new Date(t.scheduledAt).toLocaleString('es')}` : 'Envio inmediato'}
+          </div>
+        </div>
+        <span class="tweet-entry-status ${t.status}">${t.status}</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteTweet('${t.id}')">X</button>
+      </div>
+    `).join('');
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No hay tweets programados.</p></div>';
+  }
+}
+
+async function deleteTweet(id) {
+  try {
+    await fetch(`/api/tweets/schedule/${id}`, { method: 'DELETE' });
+    showToast('Tweet eliminado', 'info');
+    loadScheduledTweets();
+  } catch (e) {}
+}
+
+// ============================================================
+// FEATURE: WIDGET DE ALERTAS EN VIVO
+// ============================================================
+let alertsAutoRefresh = null;
+
+async function testAlert(type) {
+  const detail = type === 'follow' ? 'TestUser' : type === 'sub' ? 'TestSub' : '100';
+  try {
+    await fetch('/api/alerts/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, user: 'TestUser', detail })
+    });
+    showToast(`Alerta de test: ${type}`, 'success');
+    loadAlerts();
+  } catch (e) {}
+}
+
+async function loadAlerts() {
+  const data = await api('/api/alerts/recent');
+  const preview = document.getElementById('alertsWidgetPreview');
+  const history = document.getElementById('alertsHistoryList');
+
+  if (data && data.data && data.data.length > 0) {
+    const latest = data.data[data.data.length - 1];
+    showFloatingAlert(latest);
+
+    if (preview) {
+      preview.innerHTML = renderAlertItem(latest);
+    }
+    if (history) {
+      history.innerHTML = data.data.reverse().map(a => renderAlertItem(a)).join('');
+    }
+  } else {
+    if (preview) preview.innerHTML = '<p class="text-muted" data-i18n="alerts_preview">Las alertas apareceran aqui</p>';
+    if (history) history.innerHTML = '<div class="empty-state"><p>No hay alertas aun.</p></div>';
+  }
+}
+
+function renderAlertItem(a) {
+  const icons = {
+    follow: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+    sub: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
+    bits: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>',
+    raid: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>'
+  };
+  const labels = { follow: 'Follow', sub: 'Sub', bits: 'Bits', raid: 'Raid' };
+  return `
+    <div class="alert-item">
+      <div class="alert-item-icon ${a.type}">${icons[a.type] || ''}</div>
+      <span><strong>${escapeHtml(a.user)}</strong> - ${labels[a.type] || a.type} ${a.detail ? '(' + escapeHtml(a.detail) + ')' : ''}</span>
+    </div>`;
+}
+
+function showFloatingAlert(alert) {
+  const existing = document.querySelector('.alert-floating');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'alert-floating glass';
+  el.innerHTML = renderAlertItem(alert);
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+}
+
+// ============================================================
+// FEATURE: COMPACT MODE
+// ============================================================
+function toggleCompactMode() {
+  const enabled = document.getElementById('compactModeToggle')?.checked;
+  document.body.classList.toggle('compact-mode', enabled);
+  localStorage.setItem('compactMode', enabled ? '1' : '0');
+}
+
+function loadCompactMode() {
+  const saved = localStorage.getItem('compactMode') === '1';
+  document.body.classList.toggle('compact-mode', saved);
+  const toggle = document.getElementById('compactModeToggle');
+  if (toggle) toggle.checked = saved;
+}
+
+// ============================================================
+// FEATURE: DASHBOARD COMPARTIDO
+// ============================================================
+async function createShareLink() {
+  try {
+    const data = await api('/api/share', { method: 'POST' });
+    if (data && data.data) {
+      const box = document.getElementById('shareResult');
+      box.innerHTML = `
+        <div class="share-link-box">
+          <input type="text" readonly value="${window.location.origin}${data.data.url}" id="shareUrlInput">
+          <button class="btn btn-secondary btn-sm" onclick="copyShareLink()">Copiar</button>
+        </div>`;
+      loadShareLinks();
+    }
+  } catch (e) {
+    showToast('Error al crear enlace', 'error');
+  }
+}
+
+function copyShareLink() {
+  const input = document.getElementById('shareUrlInput');
+  if (input) {
+    input.select();
+    document.execCommand('copy');
+    showToast('Enlace copiado', 'success');
+  }
+}
+
+async function loadShareLinks() {
+  const container = document.getElementById('shareLinksList');
+  if (!container) return;
+  const data = await api('/api/share');
+  if (data && data.data && data.data.length > 0) {
+    container.innerHTML = data.data.map(s => `
+      <div class="settings-row">
+        <div class="settings-info">
+          <h3>${escapeHtml(s.userName)}</h3>
+          <p>Creado: ${new Date(s.createdAt).toLocaleString('es')}</p>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="deleteShareLink('${s.token}')">Eliminar</button>
+      </div>
+    `).join('');
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No hay enlaces compartidos activos.</p></div>';
+  }
+}
+
+async function deleteShareLink(token) {
+  try {
+    await fetch(`/api/share/${token}`, { method: 'DELETE' });
+    showToast('Enlace eliminado', 'info');
+    loadShareLinks();
+  } catch (e) {}
+}
+
+// ============================================================
+// FEATURE: KEYBOARD SHORTCUTS
+// ============================================================
+const shortcutPages = ['dashboard-home', 'moderation', 'channel-points', 'stream-config', 'chat-settings', 'stats', 'predictions', 'polls'];
+
+function setupKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    const enabled = document.getElementById('shortcutsEnabled');
+    if (enabled && !enabled.checked) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (!e.altKey) {
+      if (e.key === 'Escape') { closeModal(); return; }
+      return;
+    }
+    const key = e.key;
+    if (key >= '1' && key <= '8') {
+      e.preventDefault();
+      const idx = parseInt(key) - 1;
+      if (shortcutPages[idx]) navigateTo(shortcutPages[idx]);
+    } else if (key.toLowerCase() === 's') { e.preventDefault(); navigateTo('settings'); }
+    else if (key.toLowerCase() === 'r') { e.preventDefault(); location.reload(); }
+    else if (key.toLowerCase() === 'd') { e.preventDefault(); navigateTo('dashboard-home'); }
+  });
+}
+
+function saveShortcuts() {
+  const enabled = document.getElementById('shortcutsEnabled')?.checked;
+  localStorage.setItem('shortcutsEnabled', enabled ? '1' : '0');
+}
+
+function loadShortcutsSettings() {
+  const saved = localStorage.getItem('shortcutsEnabled');
+  const toggle = document.getElementById('shortcutsEnabled');
+  if (toggle && saved !== null) toggle.checked = saved === '1';
 }

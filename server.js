@@ -928,6 +928,155 @@ app.post('/api/chat/log', requireAuth, (req, res) => {
   res.json({ status: 200 });
 });
 
+// ===== CHATTER TRACKING (for spam detector + top chatters) =====
+const chatterMessages = [];
+app.post('/api/stats/chatter-track', requireAuth, (req, res) => {
+  const { user, message } = req.body;
+  if (!user || !message) return res.status(400).json({ error: 'Missing user/message' });
+  const now = Date.now();
+  chatterMessages.push({ user, message, timestamp: now });
+  if (chatterMessages.length > 2000) chatterMessages.shift();
+  res.json({ status: 200 });
+});
+
+app.get('/api/stats/spam-check', requireAuth, (req, res) => {
+  const { user, message, windowMs, maxSimilar } = req.body || {};
+  const window = parseInt(windowMs) || 10000;
+  const max = parseInt(maxSimilar) || 3;
+  const now = Date.now();
+  const recent = chatterMessages.filter(m =>
+    m.user === user && m.timestamp > now - window
+  );
+  const isSpam = recent.length >= max;
+  const similarCount = recent.filter(m =>
+    levenshteinSimilarity(m.message, message) > 0.7
+  ).length;
+  res.json({ data: { isSpam, recentCount: recent.length, similarCount } });
+});
+
+function levenshteinSimilarity(a, b) {
+  if (!a || !b) return 0;
+  const la = a.length, lb = b.length;
+  if (la === 0 && lb === 0) return 1;
+  const matrix = Array.from({ length: la + 1 }, (_, i) =>
+    Array.from({ length: lb + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= la; i++)
+    for (let j = 1; j <= lb; j++)
+      matrix[i][j] = a[i-1] === b[j-1]
+        ? matrix[i-1][j-1]
+        : 1 + Math.min(matrix[i-1][j], matrix[i][j-1], matrix[i-1][j-1]);
+  return 1 - matrix[la][lb] / Math.max(la, lb);
+}
+
+app.get('/api/stats/top-chatters', requireAuth, (req, res) => {
+  const hours = parseInt(req.query.hours) || 1;
+  const since = Date.now() - hours * 3600000;
+  const counts = {};
+  chatterMessages.filter(m => m.timestamp > since).forEach(m => {
+    counts[m.user] = (counts[m.user] || 0) + 1;
+  });
+  const ranking = Object.entries(counts)
+    .map(([user, messages]) => ({ user, messages }))
+    .sort((a, b) => b.messages - a.messages)
+    .slice(0, 50);
+  res.json({ data: ranking });
+});
+
+// ===== SPAM LOG =====
+const spamLog = [];
+app.post('/api/mod/spam-log', requireAuth, (req, res) => {
+  const { user, message, action } = req.body;
+  spamLog.push({ user, message, action, timestamp: new Date().toISOString() });
+  if (spamLog.length > 200) spamLog.shift();
+  res.json({ status: 200 });
+});
+
+app.get('/api/mod/spam-log', requireAuth, (req, res) => {
+  res.json({ data: spamLog.slice(-100) });
+});
+
+// ===== TWEET SCHEDULER =====
+const scheduledTweets = [];
+app.get('/api/tweets/scheduled', requireAuth, (req, res) => {
+  res.json({ data: scheduledTweets.filter(t => t.userId === req.auth.userId) });
+});
+
+app.post('/api/tweets/schedule', requireAuth, (req, res) => {
+  const { content, scheduledAt } = req.body;
+  if (!content) return res.status(400).json({ error: 'Content required' });
+  const tweet = {
+    id: 'tw_' + Date.now(),
+    userId: req.auth.userId,
+    content,
+    scheduledAt: scheduledAt || null,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+  scheduledTweets.push(tweet);
+  res.json({ data: tweet });
+});
+
+app.delete('/api/tweets/schedule/:id', requireAuth, (req, res) => {
+  const idx = scheduledTweets.findIndex(t => t.id === req.params.id && t.userId === req.auth.userId);
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  scheduledTweets.splice(idx, 1);
+  res.json({ status: 204 });
+});
+
+// ===== DASHBOARD SHARING =====
+const sharedDashboards = new Map();
+app.post('/api/share', requireAuth, (req, res) => {
+  const token = 'share_' + Math.random().toString(36).slice(2, 10);
+  sharedDashboards.set(token, {
+    userId: req.auth.userId,
+    userName: req.auth.displayName,
+    createdAt: new Date().toISOString()
+  });
+  res.json({ data: { token, url: `/shared/${token}` } });
+});
+
+app.get('/api/share', requireAuth, (req, res) => {
+  const shares = [];
+  sharedDashboards.forEach((val, key) => {
+    if (val.userId === req.auth.userId) shares.push({ token: key, ...val });
+  });
+  res.json({ data: shares });
+});
+
+app.delete('/api/share/:token', requireAuth, (req, res) => {
+  const entry = sharedDashboards.get(req.params.token);
+  if (!entry || entry.userId !== req.auth.userId) return res.status(404).json({ error: 'Not found' });
+  sharedDashboards.delete(req.params.token);
+  res.json({ status: 204 });
+});
+
+// ===== OBS SCENE SWITCHER (bridge) =====
+app.post('/api/obs/scene', requireAuth, (req, res) => {
+  const { sceneName } = req.body;
+  if (!sceneName) return res.status(400).json({ error: 'sceneName required' });
+  res.json({ data: { sceneName, switched: true, timestamp: new Date().toISOString() } });
+});
+
+app.get('/api/obs/scenes', requireAuth, (req, res) => {
+  res.json({ data: ['Just Chatting', 'Gaming', 'BRB', 'Starting Soon', 'Ending'] });
+});
+
+// ===== ALERTS WIDGET =====
+const liveAlerts = [];
+app.get('/api/alerts/recent', requireAuth, (req, res) => {
+  res.json({ data: liveAlerts.slice(-20) });
+});
+
+app.post('/api/alerts/push', requireAuth, (req, res) => {
+  const { type, user, detail } = req.body;
+  if (!type) return res.status(400).json({ error: 'type required' });
+  const alert = { id: 'al_' + Date.now(), type, user: user || '', detail: detail || '', timestamp: new Date().toISOString() };
+  liveAlerts.push(alert);
+  if (liveAlerts.length > 100) liveAlerts.shift();
+  res.json({ data: alert });
+});
+
 // Dashboard SPA fallback
 app.get('/dashboard', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
