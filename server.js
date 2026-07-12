@@ -497,17 +497,26 @@ app.post('/api/owner/moderators', requireAuth, requireOwner, async (req, res) =>
   };
   moderatorAccounts.set(key, mod);
   await saveDashboardData();
+  res.json({ data: { id: mod.id, username: mod.username, createdAt: mod.createdAt } });
+});
+
+app.get('/api/owner/moderators/:id/token', requireAuth, requireOwner, (req, res) => {
+  let found = null;
+  moderatorAccounts.forEach((val) => {
+    if (val.id === req.params.id && val.ownerId === req.auth.user.id) found = val;
+  });
+  if (!found) return res.status(404).json({ error: 'Moderator not found' });
   const accessCard = signToken({
     type: 'moderator_access_card',
-    username: mod.username,
-    passwordHash: hash,
-    salt,
+    username: found.username,
+    passwordHash: found.passwordHash,
+    salt: found.salt,
     ownerId: req.auth.user.id,
     ownerUser: req.auth.user,
     ownerAccessToken: req.auth.accessToken,
     ownerRefreshToken: req.auth.refreshToken
   });
-  res.json({ data: { id: mod.id, username: mod.username, createdAt: mod.createdAt, accessCard } });
+  res.json({ data: { accessCard } });
 });
 
 app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, async (req, res) => {

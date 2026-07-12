@@ -3077,11 +3077,24 @@ async function loadModeratorAccounts() {
           <h3>${escapeHtml(mod.username)}</h3>
           <p>Creado: ${new Date(mod.createdAt).toLocaleString('es')}</p>
         </div>
-        <button class="btn btn-danger btn-sm" onclick="removeModeratorAccount('${mod.id}')">Eliminar</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="copyModToken('${mod.id}')">Copiar token</button>
+          <button class="btn btn-danger btn-sm" onclick="removeModeratorAccount('${mod.id}')">Eliminar</button>
+        </div>
       </div>
     `).join('');
   } else {
     container.innerHTML = '<div class="empty-state"><p>No hay moderadores configurados. Agrega uno con el boton de arriba.</p></div>';
+  }
+}
+
+async function copyModToken(id) {
+  const result = await api(`/api/owner/moderators/${id}/token`);
+  if (result && result.data && result.data.accessCard) {
+    await navigator.clipboard.writeText(result.data.accessCard);
+    showToast('Token copiado al portapapeles', 'success');
+  } else {
+    showToast('Error al obtener el token', 'error');
   }
 }
 
@@ -3108,18 +3121,8 @@ async function addModeratorAccount() {
   const result = await api('/api/owner/moderators', { method: 'POST', body: { username, password } });
   closeModal();
   if (result && result.data) {
-    showToast(`Moderador ${username} agregado`, 'success');
+    showToast(`Moderador ${username} agregado. Usa "Copiar token" para obtener su codigo de acceso.`, 'success');
     loadModeratorAccounts();
-    if (result.data.accessCard) {
-      showModal('Codigo de Acceso', `
-        <p style="margin-bottom:12px;color:var(--text-secondary)">Comparte este codigo con <strong>${escapeHtml(username)}</strong> para que pueda iniciar sesion:</p>
-        <textarea id="modAccessCardCode" class="form-input" readonly rows="4" style="font-size:0.7rem;word-break:break-all;cursor:pointer" onclick="this.select()">${escapeHtml(result.data.accessCard)}</textarea>
-        <p style="margin-top:10px;font-size:0.8rem;color:var(--text-muted)">Haz click en el codigo para seleccionarlo, luego copialo y enviaselo al moderador.</p>
-      `, [
-        { text: 'Copiar', class: 'btn-primary', action: "navigator.clipboard.writeText(document.getElementById('modAccessCardCode').value);showToast('Copiado','success')" },
-        { text: 'Cerrar', class: 'btn-secondary', action: 'closeModal()' }
-      ]);
-    }
   } else {
     showToast(result?.error || 'Error al agregar moderador', 'error');
   }
