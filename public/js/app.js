@@ -6,9 +6,260 @@ let selectedRewardColor = 'primary';
 let currentModTab = 'followers';
 let modData = { followers: [], chatters: [], banned: [], moderators: [], vips: [] };
 let streamRefreshInterval = null;
+let currentLang = localStorage.getItem('lang') || 'es';
+
+// ===== I18N =====
+const translations = {
+  es: {
+    nav_home: 'Inicio', nav_moderation: 'Moderacion', nav_channel_points: 'Puntos del Canal',
+    nav_stream_config: 'Configurar Directo', nav_chat: 'Chat', nav_stats: 'Estadisticas',
+    nav_predictions: 'Predicciones', nav_polls: 'Encuestas', nav_raids: 'Raids',
+    nav_ads: 'Anuncios', nav_clips: 'Clips', nav_shield: 'Modo Escudo',
+    nav_commands: 'Comandos', nav_goals: 'Metas', nav_chat_log: 'Log Chat',
+    nav_settings: 'Ajustes', nav_about: 'Acerca de', nav_logout: 'Cerrar sesion',
+    settings_appearance: 'Apariencia', settings_theme: 'Tema',
+    settings_theme_desc: 'Cambia entre tema oscuro y claro',
+    theme_dark: 'Oscuro', theme_light: 'Claro',
+    settings_language_title: 'Idioma', settings_language: 'Idioma',
+    settings_language_desc: 'Selecciona el idioma de la interfaz',
+    settings_info_title: 'Informacion', settings_version: 'Version',
+    title_home: 'Inicio', title_moderation: 'Moderacion', title_channel_points: 'Puntos del Canal',
+    title_stream_config: 'Configurar Directo', title_chat: 'Chat', title_stats: 'Estadisticas',
+    title_predictions: 'Predicciones', title_polls: 'Encuestas', title_raid: 'Raids',
+    title_ads: 'Anuncios', title_clips: 'Clips', title_shield: 'Modo Escudo',
+    title_custom_commands: 'Comandos', title_goals: 'Metas', title_chat_log: 'Log del Chat',
+    title_settings: 'Ajustes', title_about: 'Acerca de',
+    stat_followers: 'Seguidores', stat_views: 'Visitas totales',
+    stat_viewers: 'Espectadores', stat_stream_time: 'Tiempo en directo',
+    login_subtitle: 'Administra tu canal con estilo. Moderacion, recompensas, estadisticas y mas.',
+    login_btn: 'Iniciar sesion con Twitch',
+    login_feat_mod: 'Moderacion avanzada', login_feat_stats: 'Estadisticas en vivo',
+    login_feat_rewards: 'Recompensas totales',
+    offline: 'Offline', online: 'En vivo'
+  },
+  en: {
+    nav_home: 'Home', nav_moderation: 'Moderation', nav_channel_points: 'Channel Points',
+    nav_stream_config: 'Stream Config', nav_chat: 'Chat', nav_stats: 'Statistics',
+    nav_predictions: 'Predictions', nav_polls: 'Polls', nav_raids: 'Raids',
+    nav_ads: 'Ads', nav_clips: 'Clips', nav_shield: 'Shield Mode',
+    nav_commands: 'Commands', nav_goals: 'Goals', nav_chat_log: 'Chat Log',
+    nav_settings: 'Settings', nav_about: 'About', nav_logout: 'Log out',
+    settings_appearance: 'Appearance', settings_theme: 'Theme',
+    settings_theme_desc: 'Switch between dark and light theme',
+    theme_dark: 'Dark', theme_light: 'Light',
+    settings_language_title: 'Language', settings_language: 'Language',
+    settings_language_desc: 'Select the interface language',
+    settings_info_title: 'Information', settings_version: 'Version',
+    title_home: 'Home', title_moderation: 'Moderation', title_channel_points: 'Channel Points',
+    title_stream_config: 'Stream Config', title_chat: 'Chat', title_stats: 'Statistics',
+    title_predictions: 'Predictions', title_polls: 'Polls', title_raid: 'Raids',
+    title_ads: 'Ads', title_clips: 'Clips', title_shield: 'Shield Mode',
+    title_custom_commands: 'Commands', title_goals: 'Goals', title_chat_log: 'Chat Log',
+    title_settings: 'Settings', title_about: 'About',
+    stat_followers: 'Followers', stat_views: 'Total Views',
+    stat_viewers: 'Viewers', stat_stream_time: 'Stream Time',
+    login_subtitle: 'Manage your channel with style. Moderation, rewards, statistics and more.',
+    login_btn: 'Log in with Twitch',
+    login_feat_mod: 'Advanced moderation', login_feat_stats: 'Live statistics',
+    login_feat_rewards: 'Full rewards',
+    offline: 'Offline', online: 'Live'
+  },
+  de: {
+    nav_home: 'Startseite', nav_moderation: 'Moderation', nav_channel_points: 'Kanalpunkte',
+    nav_stream_config: 'Stream-Konfig', nav_chat: 'Chat', nav_stats: 'Statistiken',
+    nav_predictions: 'Vorhersagen', nav_polls: 'Umfragen', nav_raids: 'Raids',
+    nav_ads: 'Werbung', nav_clips: 'Clips', nav_shield: 'Schutzmodus',
+    nav_commands: 'Befehle', nav_goals: 'Ziele', nav_chat_log: 'Chat-Log',
+    nav_settings: 'Einstellungen', nav_about: 'Uber', nav_logout: 'Abmelden',
+    settings_appearance: 'Darstellung', settings_theme: 'Thema',
+    settings_theme_desc: 'Zwischen dunklem und hellem Thema wechseln',
+    theme_dark: 'Dunkel', theme_light: 'Hell',
+    settings_language_title: 'Sprache', settings_language: 'Sprache',
+    settings_language_desc: 'Wahle die Oberflachensprache',
+    settings_info_title: 'Information', settings_version: 'Version',
+    title_home: 'Startseite', title_moderation: 'Moderation', title_channel_points: 'Kanalpunkte',
+    title_stream_config: 'Stream-Konfig', title_chat: 'Chat', title_stats: 'Statistiken',
+    title_predictions: 'Vorhersagen', title_polls: 'Umfragen', title_raid: 'Raids',
+    title_ads: 'Werbung', title_clips: 'Clips', title_shield: 'Schutzmodus',
+    title_custom_commands: 'Befehle', title_goals: 'Ziele', title_chat_log: 'Chat-Log',
+    title_settings: 'Einstellungen', title_about: 'Uber',
+    stat_followers: 'Follower', stat_views: 'Gesamtaufrufe',
+    stat_viewers: 'Zuschauer', stat_stream_time: 'Streamzeit',
+    login_subtitle: 'Verwalte deinen Kanal mit Stil. Moderation, Belohnungen, Statistiken und mehr.',
+    login_btn: 'Mit Twitch anmelden',
+    login_feat_mod: 'Erweiterte Moderation', login_feat_stats: 'Live-Statistiken',
+    login_feat_rewards: 'Volle Belohnungen',
+    offline: 'Offline', online: 'Live'
+  },
+  fr: {
+    nav_home: 'Accueil', nav_moderation: 'Moderation', nav_channel_points: 'Points de chaine',
+    nav_stream_config: 'Config Stream', nav_chat: 'Chat', nav_stats: 'Statistiques',
+    nav_predictions: 'Predictions', nav_polls: 'Sondages', nav_raids: 'Raids',
+    nav_ads: 'Publicites', nav_clips: 'Clips', nav_shield: 'Mode Bouclier',
+    nav_commands: 'Commandes', nav_goals: 'Objectifs', nav_chat_log: 'Journal Chat',
+    nav_settings: 'Parametres', nav_about: 'A propos', nav_logout: 'Deconnexion',
+    settings_appearance: 'Apparence', settings_theme: 'Theme',
+    settings_theme_desc: 'Basculer entre le theme sombre et clair',
+    theme_dark: 'Sombre', theme_light: 'Clair',
+    settings_language_title: 'Langue', settings_language: 'Langue',
+    settings_language_desc: 'Selectionnez la langue de l\'interface',
+    settings_info_title: 'Information', settings_version: 'Version',
+    title_home: 'Accueil', title_moderation: 'Moderation', title_channel_points: 'Points de chaine',
+    title_stream_config: 'Config Stream', title_chat: 'Chat', title_stats: 'Statistiques',
+    title_predictions: 'Predictions', title_polls: 'Sondages', title_raid: 'Raids',
+    title_ads: 'Publicites', title_clips: 'Clips', title_shield: 'Mode Bouclier',
+    title_custom_commands: 'Commandes', title_goals: 'Objectifs', title_chat_log: 'Journal Chat',
+    title_settings: 'Parametres', title_about: 'A propos',
+    stat_followers: 'Abonnes', stat_views: 'Vues totales',
+    stat_viewers: 'Spectateurs', stat_stream_time: 'Temps en direct',
+    login_subtitle: 'Gerez votre chaine avec style. Moderation, recompenses, statistiques et plus.',
+    login_btn: 'Se connecter avec Twitch',
+    login_feat_mod: 'Moderation avancee', login_feat_stats: 'Statistiques en direct',
+    login_feat_rewards: 'Recompenses completes',
+    offline: 'Hors ligne', online: 'En direct'
+  },
+  pt: {
+    nav_home: 'Inicio', nav_moderation: 'Moderacao', nav_channel_points: 'Pontos do Canal',
+    nav_stream_config: 'Config da Live', nav_chat: 'Chat', nav_stats: 'Estatisticas',
+    nav_predictions: 'Previsoes', nav_polls: 'Enquetes', nav_raids: 'Raids',
+    nav_ads: 'Anuncios', nav_clips: 'Clips', nav_shield: 'Modo Escudo',
+    nav_commands: 'Comandos', nav_goals: 'Metas', nav_chat_log: 'Log do Chat',
+    nav_settings: 'Configuracoes', nav_about: 'Sobre', nav_logout: 'Sair',
+    settings_appearance: 'Aparencia', settings_theme: 'Tema',
+    settings_theme_desc: 'Alternar entre tema escuro e claro',
+    theme_dark: 'Escuro', theme_light: 'Claro',
+    settings_language_title: 'Idioma', settings_language: 'Idioma',
+    settings_language_desc: 'Selecione o idioma da interface',
+    settings_info_title: 'Informacao', settings_version: 'Versao',
+    title_home: 'Inicio', title_moderation: 'Moderacao', title_channel_points: 'Pontos do Canal',
+    title_stream_config: 'Config da Live', title_chat: 'Chat', title_stats: 'Estatisticas',
+    title_predictions: 'Previsoes', title_polls: 'Enquetes', title_raid: 'Raids',
+    title_ads: 'Anuncios', title_clips: 'Clips', title_shield: 'Modo Escudo',
+    title_custom_commands: 'Comandos', title_goals: 'Metas', title_chat_log: 'Log do Chat',
+    title_settings: 'Configuracoes', title_about: 'Sobre',
+    stat_followers: 'Seguidores', stat_views: 'Visualizacoes',
+    stat_viewers: 'Espectadores', stat_stream_time: 'Tempo ao vivo',
+    login_subtitle: 'Gerencie seu canal com estilo. Moderacao, recompensas, estatisticas e mais.',
+    login_btn: 'Entrar com Twitch',
+    login_feat_mod: 'Moderacao avancada', login_feat_stats: 'Estatisticas ao vivo',
+    login_feat_rewards: 'Recompensas completas',
+    offline: 'Offline', online: 'Ao vivo'
+  },
+  ja: {
+    nav_home: 'ホーム', nav_moderation: 'モデレーション', nav_channel_points: 'チャンネルポイント',
+    nav_stream_config: '配信設定', nav_chat: 'チャット', nav_stats: '統計',
+    nav_predictions: '予測', nav_polls: 'アンケート', nav_raids: 'レイド',
+    nav_ads: '広告', nav_clips: 'クリップ', nav_shield: 'シールドモード',
+    nav_commands: 'コマンド', nav_goals: '目標', nav_chat_log: 'チャット履歴',
+    nav_settings: '設定', nav_about: '概要', nav_logout: 'ログアウト',
+    settings_appearance: '外観', settings_theme: 'テーマ',
+    settings_theme_desc: 'ダークテーマとライトテーマを切り替え',
+    theme_dark: 'ダーク', theme_light: 'ライト',
+    settings_language_title: '言語', settings_language: '言語',
+    settings_language_desc: 'インターフェースの言語を選択',
+    settings_info_title: '情報', settings_version: 'バージョン',
+    title_home: 'ホーム', title_moderation: 'モデレーション', title_channel_points: 'チャンネルポイント',
+    title_stream_config: '配信設定', title_chat: 'チャット', title_stats: '統計',
+    title_predictions: '予測', title_polls: 'アンケート', title_raid: 'レイド',
+    title_ads: '広告', title_clips: 'クリップ', title_shield: 'シールドモード',
+    title_custom_commands: 'コマンド', title_goals: '目標', title_chat_log: 'チャット履歴',
+    title_settings: '設定', title_about: '概要',
+    stat_followers: 'フォロワー', stat_views: '総視聴数',
+    stat_viewers: '視聴者', stat_stream_time: '配信時間',
+    login_subtitle: 'チャンネルをスタイリッシュに管理。モデレーション、報酬、統計など。',
+    login_btn: 'Twitchでログイン',
+    login_feat_mod: '高度なモデレーション', login_feat_stats: 'ライブ統計',
+    login_feat_rewards: '完全な報酬',
+    offline: 'オフライン', online: 'ライブ'
+  },
+  ko: {
+    nav_home: '홈', nav_moderation: '채팅 관리', nav_channel_points: '채널 포인트',
+    nav_stream_config: '방송 설정', nav_chat: '채팅', nav_stats: '통계',
+    nav_predictions: '예측', nav_polls: '투표', nav_raids: '레이드',
+    nav_ads: '광고', nav_clips: '클립', nav_shield: '실드 모드',
+    nav_commands: '명령어', nav_goals: '목표', nav_chat_log: '채팅 기록',
+    nav_settings: '설정', nav_about: '정보', nav_logout: '로그아웃',
+    settings_appearance: '외관', settings_theme: '테마',
+    settings_theme_desc: '다크 테마와 라이트 테마 전환',
+    theme_dark: '다크', theme_light: '라이트',
+    settings_language_title: '언어', settings_language: '언어',
+    settings_language_desc: '인터페이스 언어 선택',
+    settings_info_title: '정보', settings_version: '버전',
+    title_home: '홈', title_moderation: '채팅 관리', title_channel_points: '채널 포인트',
+    title_stream_config: '방송 설정', title_chat: '채팅', title_stats: '통계',
+    title_predictions: '예측', title_polls: '투표', title_raid: '레이드',
+    title_ads: '광고', title_clips: '클립', title_shield: '실드 모드',
+    title_custom_commands: '명령어', title_goals: '목표', title_chat_log: '채팅 기록',
+    title_settings: '설정', title_about: '정보',
+    stat_followers: '팔로워', stat_views: '총 조회수',
+    stat_viewers: '시청자', stat_stream_time: '방송 시간',
+    login_subtitle: '채널을 스타일리시하게 관리. 채팅 관리, 보상, 통계 등.',
+    login_btn: 'Twitch로 로그인',
+    login_feat_mod: '고급 채팅 관리', login_feat_stats: '실시간 통계',
+    login_feat_rewards: '완전한 보상',
+    offline: '오프라인', online: '라이브'
+  }
+};
+
+function t(key) {
+  return (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const translated = t(key);
+    if (el.tagName === 'INPUT' && el.type !== 'submit') {
+      el.placeholder = translated;
+    } else {
+      el.textContent = translated;
+    }
+  });
+  document.documentElement.lang = currentLang;
+  const titleKey = 'title_' + currentPage.replace('dashboard-home', 'home');
+  document.getElementById('pageTitle').textContent = t(titleKey) || t('title_home');
+}
+
+// ===== THEME =====
+function applyTheme(theme) {
+  if (theme === 'light') {
+    document.body.classList.add('light-theme');
+  } else {
+    document.body.classList.remove('light-theme');
+  }
+  localStorage.setItem('theme', theme);
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+}
+
+function setupTheme() {
+  const saved = localStorage.getItem('theme') || 'dark';
+  applyTheme(saved);
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+  });
+}
+
+// ===== LANGUAGE =====
+function setupLanguage() {
+  const select = document.getElementById('languageSelect');
+  if (select) {
+    select.value = currentLang;
+    select.addEventListener('change', () => {
+      currentLang = select.value;
+      localStorage.setItem('lang', currentLang);
+      applyTranslations();
+    });
+  }
+}
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
+  applyTheme(localStorage.getItem('theme') || 'dark');
+  setupTheme();
+  setupLanguage();
+  applyTranslations();
   checkAuth();
   setupNavigation();
   setupSidebar();
@@ -53,7 +304,7 @@ function populateUserInfo() {
   if (!currentUser) return;
   document.getElementById('userAvatar').src = currentUser.profile_image_url;
   document.getElementById('userName').textContent = currentUser.display_name;
-  document.getElementById('pageTitle').textContent = 'Inicio';
+  document.getElementById('pageTitle').textContent = t('title_home');
 }
 
 // ===== NAVIGATION =====
@@ -78,22 +329,23 @@ function navigateTo(page) {
   if (pageEl) pageEl.classList.add('active');
 
   const titles = {
-    'dashboard-home': 'Inicio',
-    'moderation': 'Moderacion',
-    'channel-points': 'Puntos del Canal',
-    'stream-config': 'Configurar Directo',
-    'chat-settings': 'Chat',
-    'stats': 'Estadisticas',
-    'predictions': 'Predicciones',
-    'polls': 'Encuestas',
-    'raid': 'Raids',
-    'ads': 'Anuncios',
-    'clips': 'Clips',
-    'shield': 'Modo Escudo',
-    'custom-commands': 'Comandos',
-    'goals': 'Metas',
-    'chat-log': 'Log del Chat',
-    'about': 'Acerca de'
+    'dashboard-home': t('title_home'),
+    'moderation': t('title_moderation'),
+    'channel-points': t('title_channel_points'),
+    'stream-config': t('title_stream_config'),
+    'chat-settings': t('title_chat'),
+    'stats': t('title_stats'),
+    'predictions': t('title_predictions'),
+    'polls': t('title_polls'),
+    'raid': t('title_raid'),
+    'ads': t('title_ads'),
+    'clips': t('title_clips'),
+    'shield': t('title_shield'),
+    'custom-commands': t('title_custom_commands'),
+    'goals': t('title_goals'),
+    'chat-log': t('title_chat_log'),
+    'settings': t('title_settings'),
+    'about': t('title_about')
   };
   document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
 

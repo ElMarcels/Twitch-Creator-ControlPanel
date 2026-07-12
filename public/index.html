@@ -23,23 +23,23 @@
         <img src="/img/twitchcommandcente.png" alt="Logo" style="width:60px;height:60px;object-fit:contain">
       </div>
       <h1 class="login-title">Moderador <span class="gradient-text">Twitch</span></h1>
-      <p class="login-subtitle">Administra tu canal con estilo. Moderación, recompensas, estadísticas y más.</p>
+      <p class="login-subtitle" data-i18n="login_subtitle">Administra tu canal con estilo. Moderación, recompensas, estadísticas y más.</p>
       <a href="/auth/twitch" class="btn-twitch-login">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
-        Iniciar sesion con Twitch
+        <span data-i18n="login_btn">Iniciar sesion con Twitch</span>
       </a>
       <div class="login-features">
         <div class="login-feature">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span>Moderacion avanzada</span>
+          <span data-i18n="login_feat_mod">Moderacion avanzada</span>
         </div>
         <div class="login-feature">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          <span>Estadisticas en vivo</span>
+          <span data-i18n="login_feat_stats">Estadisticas en vivo</span>
         </div>
         <div class="login-feature">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-          <span>Recompensas totales</span>
+          <span data-i18n="login_feat_rewards">Recompensas totales</span>
         </div>
       </div>
     </div>
@@ -63,82 +63,86 @@
         <img id="userAvatar" class="user-avatar" src="" alt="avatar">
         <div class="user-info">
           <span class="user-name" id="userName"></span>
-          <span class="user-status offline" id="userStatus">Offline</span>
+          <span class="user-status offline" id="userStatus" data-i18n="offline">Offline</span>
         </div>
       </div>
 
       <nav class="sidebar-nav">
         <a href="#" class="nav-item active" data-page="dashboard-home">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <span>Inicio</span>
+          <span data-i18n="nav_home">Inicio</span>
         </a>
         <a href="#" class="nav-item" data-page="moderation">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span>Moderacion</span>
+          <span data-i18n="nav_moderation">Moderacion</span>
         </a>
         <a href="#" class="nav-item" data-page="channel-points">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v2m0 8v2"/></svg>
-          <span>Puntos del Canal</span>
+          <span data-i18n="nav_channel_points">Puntos del Canal</span>
         </a>
         <a href="#" class="nav-item" data-page="stream-config">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span>Configurar Directo</span>
+          <span data-i18n="nav_stream_config">Configurar Directo</span>
         </a>
         <a href="#" class="nav-item" data-page="chat-settings">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span>Chat</span>
+          <span data-i18n="nav_chat">Chat</span>
         </a>
         <a href="#" class="nav-item" data-page="stats">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          <span>Estadisticas</span>
+          <span data-i18n="nav_stats">Estadisticas</span>
         </a>
         <a href="#" class="nav-item" data-page="predictions">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-          <span>Predicciones</span>
+          <span data-i18n="nav_predictions">Predicciones</span>
         </a>
         <a href="#" class="nav-item" data-page="polls">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          <span>Encuestas</span>
+          <span data-i18n="nav_polls">Encuestas</span>
         </a>
         <div class="nav-divider"></div>
         <a href="#" class="nav-item" data-page="raid">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
-          <span>Raids</span>
+          <span data-i18n="nav_raids">Raids</span>
         </a>
         <a href="#" class="nav-item" data-page="ads">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
-          <span>Anuncios</span>
+          <span data-i18n="nav_ads">Anuncios</span>
         </a>
         <a href="#" class="nav-item" data-page="clips">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-          <span>Clips</span>
+          <span data-i18n="nav_clips">Clips</span>
         </a>
         <a href="#" class="nav-item" data-page="shield">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-          <span>Modo Escudo</span>
+          <span data-i18n="nav_shield">Modo Escudo</span>
         </a>
         <a href="#" class="nav-item" data-page="custom-commands">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-          <span>Comandos</span>
+          <span data-i18n="nav_commands">Comandos</span>
         </a>
         <a href="#" class="nav-item" data-page="goals">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          <span>Metas</span>
+          <span data-i18n="nav_goals">Metas</span>
         </a>
         <a href="#" class="nav-item" data-page="chat-log">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          <span>Log Chat</span>
+          <span data-i18n="nav_chat_log">Log Chat</span>
         </a>
       </nav>
 
       <div class="sidebar-footer">
+        <a href="#" class="nav-item" data-page="settings">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span data-i18n="nav_settings">Ajustes</span>
+        </a>
         <a href="#" class="nav-item" data-page="about">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-          <span>Acerca de</span>
+          <span data-i18n="nav_about">Acerca de</span>
         </a>
         <a href="/auth/logout" class="nav-item logout">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          <span>Cerrar sesion</span>
+          <span data-i18n="nav_logout">Cerrar sesion</span>
         </a>
       </div>
     </aside>
@@ -175,28 +179,28 @@
               <div class="stat-icon purple"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
               <div class="stat-content">
                 <span class="stat-value" id="followersValue">--</span>
-                <span class="stat-label">Seguidores</span>
+                <span class="stat-label" data-i18n="stat_followers">Seguidores</span>
               </div>
             </div>
             <div class="stat-card" id="statViews">
               <div class="stat-icon magenta"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
               <div class="stat-content">
                 <span class="stat-value" id="viewsValue">--</span>
-                <span class="stat-label">Visitas totales</span>
+                <span class="stat-label" data-i18n="stat_views">Visitas totales</span>
               </div>
             </div>
             <div class="stat-card" id="statViewers">
               <div class="stat-icon blue"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
               <div class="stat-content">
                 <span class="stat-value" id="currentViewersValue">--</span>
-                <span class="stat-label">Espectadores</span>
+                <span class="stat-label" data-i18n="stat_viewers">Espectadores</span>
               </div>
             </div>
             <div class="stat-card" id="statStreamTime">
               <div class="stat-icon teal"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
               <div class="stat-content">
                 <span class="stat-value" id="streamTimeValue">--</span>
-                <span class="stat-label">Tiempo en directo</span>
+                <span class="stat-label" data-i18n="stat_stream_time">Tiempo en directo</span>
               </div>
             </div>
           </div>
@@ -734,13 +738,75 @@
           </div>
         </div>
 
+        <!-- SETTINGS -->
+        <div class="page" id="page-settings">
+          <div class="settings-container">
+            <div class="settings-section">
+              <h2 class="settings-section-title" data-i18n="settings_appearance">Apariencia</h2>
+              <div class="settings-card">
+                <div class="settings-row">
+                  <div class="settings-info">
+                    <h3 data-i18n="settings_theme">Tema</h3>
+                    <p data-i18n="settings_theme_desc">Cambia entre tema oscuro y claro</p>
+                  </div>
+                  <div class="theme-toggle" id="themeToggle">
+                    <button class="theme-btn active" data-theme="dark">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                      <span data-i18n="theme_dark">Oscuro</span>
+                    </button>
+                    <button class="theme-btn" data-theme="light">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                      <span data-i18n="theme_light">Claro</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h2 class="settings-section-title" data-i18n="settings_language_title">Idioma</h2>
+              <div class="settings-card">
+                <div class="settings-row">
+                  <div class="settings-info">
+                    <h3 data-i18n="settings_language">Idioma</h3>
+                    <p data-i18n="settings_language_desc">Selecciona el idioma de la interfaz</p>
+                  </div>
+                  <div class="language-selector">
+                    <select id="languageSelect" class="form-input">
+                      <option value="es">🇪🇸 Espanol</option>
+                      <option value="en">🇬🇧 English</option>
+                      <option value="de">🇩🇪 Deutsch</option>
+                      <option value="fr">🇫🇷 Francais</option>
+                      <option value="pt">🇧🇷 Portugues</option>
+                      <option value="ja">🇯🇵 Japanese</option>
+                      <option value="ko">🇰🇷 Korean</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h2 class="settings-section-title" data-i18n="settings_info_title">Informacion</h2>
+              <div class="settings-card">
+                <div class="settings-row">
+                  <div class="settings-info">
+                    <h3 data-i18n="settings_version">Version</h3>
+                    <p>v1.0.0</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- ABOUT -->
         <div class="page" id="page-about">
           <div class="about-container">
             <div class="about-hero">
               <img src="/img/twitchcommandcente.png" alt="Logo" class="about-logo">
               <h1 class="about-title">TwitchMod <span class="gradient-text">Dashboard</span></h1>
-              <p class="about-version">v1.0.0</p>
+              <p class="about-version">v1.0.6</p>
             </div>
 
             <div class="about-section">
