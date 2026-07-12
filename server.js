@@ -84,16 +84,15 @@ async function redisGet(key) {
 
 async function redisSet(key, value) {
   if (!REDIS_URL) return;
-  try {
-    await fetch(`${REDIS_URL}/set/${encodeURIComponent(key)}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${REDIS_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ value: JSON.stringify(value) })
-    });
-  } catch {}
+  const resp = await fetch(`${REDIS_URL}/set/${encodeURIComponent(key)}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${REDIS_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ value: JSON.stringify(value) })
+  });
+  if (!resp.ok) throw new Error(`Redis SET failed: ${resp.status}`);
 }
 
 const moderatorAccounts = new Map();
