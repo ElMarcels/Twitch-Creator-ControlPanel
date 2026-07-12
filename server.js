@@ -29,6 +29,7 @@ const SCOPES = [
   'moderator:manage:announcements',
   'moderator:manage:chat_settings',
   'moderator:read:followers',
+  'moderator:manage:shield_mode',
   'channel:manage:moderators',
   'channel:manage:vips',
   'channel:manage:polls',
@@ -39,6 +40,11 @@ const SCOPES = [
   'channel:manage:redemptions',
   'channel:read:redemptions',
   'channel:read:stream_key',
+  'channel:read:ads',
+  'channel:manage:ads',
+  'channel:edit:commercial',
+  'channel:read:goals',
+  'clips:edit',
   'user:edit:follows',
   'user:read:broadcast',
   'user:edit:broadcast',
@@ -557,13 +563,6 @@ app.post('/api/raids/start', requireAuth, async (req, res) => {
   res.json(result);
 });
 
-app.delete('/api/raids/cancel', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, res, `/raids?from_broadcaster_id=${req.auth.user.id}`, {
-    method: 'DELETE'
-  });
-  res.json(result);
-});
-
 // Hype Train
 app.get('/api/hype-train', requireAuth, async (req, res) => {
   const result = await twitchAPI(req, res, `/hypetrain/events?broadcaster_id=${req.auth.user.id}`);
@@ -776,6 +775,112 @@ app.post('/api/mod/action-log', requireAuth, (req, res) => {
     moderator: req.auth.user.display_name || req.auth.user.login
   });
   if (actionLog.length > 200) actionLog.shift();
+  res.json({ status: 200 });
+});
+
+// ===== SHIELD MODE =====
+app.get('/api/shield-mode', requireAuth, async (req, res) => {
+  const result = await twitchAPI(req, res, `/moderation/shield_mode?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`);
+  res.json(result);
+});
+
+app.put('/api/shield-mode', requireAuth, async (req, res) => {
+  const { is_active } = req.body;
+  const result = await twitchAPI(req, res, `/moderation/shield_mode?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`, {
+    method: 'PUT',
+    body: { is_active: !!is_active }
+  });
+  res.json(result);
+});
+
+// ===== RAIDS =====
+app.get('/api/raids/current', requireAuth, async (req, res) => {
+  const result = await twitchAPI(req, res, `/raids?broadcaster_id=${req.auth.user.id}`);
+  res.json(result);
+});
+
+app.post('/api/raids/start', requireAuth, async (req, res) => {
+  const { to_broadcaster_id } = req.body;
+  if (!to_broadcaster_id) return res.status(400).json({ error: 'to_broadcaster_id required' });
+  const result = await twitchAPI(req, res, `/raids?from_broadcaster_id=${req.auth.user.id}&to_broadcaster_id=${to_broadcaster_id}`, {
+    method: 'POST'
+  });
+  res.json(result);
+});
+
+app.delete('/api/raids/cancel', requireAuth, async (req, res) => {
+  const result = await twitchAPI(req, res, `/raids?broadcaster_id=${req.auth.user.id}`, {
+    method: 'DELETE'
+  });
+  res.json(result);
+});
+
+app.get('/api/raids/search', requireAuth, async (req, res) => {
+  const q = req.query.query;
+  if (!q) return res.json({ data: [] });
+  const result = await twitchAPI(req, res, `/search/channels?query=${encodeURIComponent(q)}&first=10`);
+  res.json(result);
+});
+
+// ===== CLIPS =====
+app.get('/api/clips', requireAuth, async (req, res) => {
+  const result = await twitchAPI(req, res, `/clips?broadcaster_id=${req.auth.user.id}&first=20`);
+  res.json(result);
+});
+
+app.post('/api/clips/create', requireAuth, async (req, res) => {
+  const result = await twitchAPI(req, res, `/clips?broadcaster_id=${req.auth.user.id}`, {
+    method: 'POST'
+  });
+  res.json(result);
+});
+
+// ===== GOALS =====
+app.get('/api/goals', requireAuth, async (req, res) => {
+  const result = await twitchAPI(req, res, `/goals?broadcaster_id=${req.auth.user.id}`);
+  res.json(result);
+});
+
+// ===== ADS =====
+app.get('/api/ads/schedule', requireAuth, async (req, res) => {
+  const result = await twitchAPI(req, res, `/channels/ads?broadcaster_id=${req.auth.user.id}`);
+  res.json(result);
+});
+
+app.post('/api/ads/start', requireAuth, async (req, res) => {
+  const { length } = req.body;
+  const result = await twitchAPI(req, res, '/channels/commercial', {
+    method: 'POST',
+    body: { broadcaster_id: req.auth.user.id, length: length || 60 }
+  });
+  res.json(result);
+});
+
+app.post('/api/ads/snooze', requireAuth, async (req, res) => {
+  const result = await twitchAPI(req, res, `/channels/ads/schedule/snooze?broadcaster_id=${req.auth.user.id}`, {
+    method: 'POST'
+  });
+  res.json(result);
+});
+
+// ===== POLLS HISTORY =====
+app.get('/api/polls/history', requireAuth, async (req, res) => {
+  const result = await twitchAPI(req, res, `/polls?broadcaster_id=${req.auth.user.id}&first=20`);
+  res.json(result);
+});
+
+// ===== CHAT LOG =====
+const chatLog = [];
+app.get('/api/chat/log', requireAuth, (req, res) => {
+  res.json({ data: chatLog.slice(-200) });
+});
+
+app.post('/api/chat/log', requireAuth, (req, res) => {
+  const { user, message, color } = req.body;
+  if (user && message) {
+    chatLog.push({ user, message, color: color || '', timestamp: new Date().toISOString() });
+    if (chatLog.length > 500) chatLog.shift();
+  }
   res.json({ status: 200 });
 });
 

@@ -100,6 +100,35 @@
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           <span>Encuestas</span>
         </a>
+        <div class="nav-divider"></div>
+        <a href="#" class="nav-item" data-page="raid">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+          <span>Raids</span>
+        </a>
+        <a href="#" class="nav-item" data-page="ads">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+          <span>Anuncios</span>
+        </a>
+        <a href="#" class="nav-item" data-page="clips">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          <span>Clips</span>
+        </a>
+        <a href="#" class="nav-item" data-page="shield">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          <span>Modo Escudo</span>
+        </a>
+        <a href="#" class="nav-item" data-page="custom-commands">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          <span>Comandos</span>
+        </a>
+        <a href="#" class="nav-item" data-page="goals">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span>Metas</span>
+        </a>
+        <a href="#" class="nav-item" data-page="chat-log">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Log Chat</span>
+        </a>
       </nav>
 
       <div class="sidebar-footer">
@@ -545,6 +574,148 @@
           </div>
           <div class="polls-list" id="pollsList">
             <div class="loading">Cargando encuestas...</div>
+          </div>
+        </div>
+
+        <!-- RAIDS -->
+        <div class="page" id="page-raid">
+          <div class="page-actions">
+            <button class="btn btn-danger" onclick="cancelRaid()" id="cancelRaidBtn" style="display:none">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Cancelar Raid
+            </button>
+          </div>
+          <div class="raid-search-section">
+            <h3>Iniciar Raid</h3>
+            <p class="text-muted">Busca un canal para hacer raid</p>
+            <div class="raid-search-bar">
+              <input type="text" id="raidSearchInput" class="form-input" placeholder="Buscar canal..." onkeydown="if(event.key==='Enter')searchRaidChannels()">
+              <button class="btn btn-primary" onclick="searchRaidChannels()">Buscar</button>
+            </div>
+            <div id="raidSearchResults" class="raid-results"></div>
+          </div>
+        </div>
+
+        <!-- ADS -->
+        <div class="page" id="page-ads">
+          <div class="ads-schedule-card" id="adsScheduleCard">
+            <h3>Programa de Anuncios</h3>
+            <div class="ads-info-grid" id="adsInfo">
+              <div class="ads-info-item">
+                <span class="ads-info-label">Proximo anuncio</span>
+                <span class="ads-info-value" id="adsNextAd">--</span>
+              </div>
+              <div class="ads-info-item">
+                <span class="ads-info-label">Duracion</span>
+                <span class="ads-info-value" id="adsDuration">--</span>
+              </div>
+              <div class="ads-info-item">
+                <span class="ads-info-label">Sin pre-roll</span>
+                <span class="ads-info-value" id="adsPreroll">--</span>
+              </div>
+              <div class="ads-info-item">
+                <span class="ads-info-label">Snoozes</span>
+                <span class="ads-info-value" id="adsSnooze">--</span>
+              </div>
+            </div>
+            <div class="ads-actions">
+              <button class="btn btn-primary" onclick="snoozeAd()" id="snoozeAdBtn">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Posponer (+5 min)
+              </button>
+            </div>
+          </div>
+          <div class="ads-start-section">
+            <h3>Iniciar Comercial</h3>
+            <p class="text-muted">Elige la duracion del comercial</p>
+            <div class="ads-duration-grid">
+              <button class="btn btn-secondary" onclick="startCommercial(30)">30s</button>
+              <button class="btn btn-secondary" onclick="startCommercial(60)">60s</button>
+              <button class="btn btn-secondary" onclick="startCommercial(90)">90s</button>
+              <button class="btn btn-secondary" onclick="startCommercial(120)">2min</button>
+              <button class="btn btn-secondary" onclick="startCommercial(180)">3min</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CLIPS -->
+        <div class="page" id="page-clips">
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="createClip()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              Crear Clip
+            </button>
+            <button class="btn btn-secondary" onclick="loadClips()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Actualizar
+            </button>
+          </div>
+          <div class="clips-grid" id="clipsGrid">
+            <div class="loading">Cargando clips...</div>
+          </div>
+        </div>
+
+        <!-- SHIELD MODE -->
+        <div class="page" id="page-shield">
+          <div class="shield-container">
+            <div class="shield-status-card" id="shieldStatusCard">
+              <div class="shield-icon" id="shieldIcon">
+                <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <h2 id="shieldStatusText">Modo Escudo Desactivado</h2>
+              <p class="text-muted" id="shieldLastActivated">--</p>
+              <button class="btn btn-primary btn-lg" onclick="toggleShieldMode()" id="shieldToggleBtn">
+                Activar Modo Escudo
+              </button>
+            </div>
+            <div class="shield-info">
+              <h3>Que es el Modo Escudo?</h3>
+              <p>El Modo Escudo bloquea automaticamente los mensajes de usuarios nuevos o no seguidores en tu chat. Es util para proteger tu chat durante raids no deseados o ataques de spam.</p>
+              <ul>
+                <li>Bloquea mensajes de cuentas nuevas</li>
+                <li>Bloquea mensajes de usuarios que no siguen el canal</li>
+                <li>Los moderadores pueden seguir escribiendo</li>
+                <li>Puede activarse/desactivarse en cualquier momento</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- CUSTOM COMMANDS -->
+        <div class="page" id="page-custom-commands">
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="showAddCommandModal()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nuevo Comando
+            </button>
+          </div>
+          <div class="commands-list" id="commandsList"></div>
+        </div>
+
+        <!-- GOALS -->
+        <div class="page" id="page-goals">
+          <div class="page-actions">
+            <button class="btn btn-secondary" onclick="loadGoals()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Actualizar
+            </button>
+          </div>
+          <div class="goals-grid" id="goalsGrid">
+            <div class="loading">Cargando metas...</div>
+          </div>
+        </div>
+
+        <!-- CHAT LOG -->
+        <div class="page" id="page-chat-log">
+          <div class="page-actions">
+            <input type="text" id="chatLogSearch" class="form-input" placeholder="Buscar en el chat..." oninput="filterChatLog()" style="max-width:300px">
+            <button class="btn btn-secondary" onclick="loadChatLog()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Actualizar
+            </button>
+          </div>
+          <div class="chat-log-container" id="chatLogContainer">
+            <div class="loading">Cargando log del chat...</div>
           </div>
         </div>
 

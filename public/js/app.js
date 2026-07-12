@@ -86,6 +86,13 @@ function navigateTo(page) {
     'stats': 'Estadisticas',
     'predictions': 'Predicciones',
     'polls': 'Encuestas',
+    'raid': 'Raids',
+    'ads': 'Anuncios',
+    'clips': 'Clips',
+    'shield': 'Modo Escudo',
+    'custom-commands': 'Comandos',
+    'goals': 'Metas',
+    'chat-log': 'Log del Chat',
     'about': 'Acerca de'
   };
   document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
@@ -106,6 +113,13 @@ function loadPageData(page) {
     case 'stats': loadStats(); break;
     case 'predictions': loadPredictions(); break;
     case 'polls': loadPolls(); break;
+    case 'raid': loadRaidPage(); break;
+    case 'ads': loadAdsSchedule(); break;
+    case 'clips': loadClips(); break;
+    case 'shield': loadShieldStatus(); break;
+    case 'custom-commands': loadCommands(); break;
+    case 'goals': loadGoals(); break;
+    case 'chat-log': loadChatLog(); break;
   }
 }
 
@@ -1684,4 +1698,293 @@ function getTimeSince(date) {
   const m = Math.floor((diff % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
+}
+
+// ===== RAIDS =====
+async function loadRaidPage() {
+  const data = await api('/api/raids/current');
+  const btn = document.getElementById('cancelRaidBtn');
+  if (data && data.data && data.data.length > 0) {
+    btn.style.display = '';
+    btn.textContent = 'Cancelar Raid Activo';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+async function searchRaidChannels() {
+  const q = document.getElementById('raidSearchInput').value.trim();
+  if (!q) return;
+  const container = document.getElementById('raidSearchResults');
+  container.innerHTML = '<div class="loading">Buscando...</div>';
+  const data = await api(`/api/raids/search?query=${encodeURIComponent(q)}`);
+  if (data && data.data && data.data.length > 0) {
+    container.innerHTML = data.data.map(ch => `
+      <div class="raid-result-item">
+        <img src="${ch.thumbnail_url || ''}" alt="" class="raid-result-thumb" onerror="this.style.background='var(--purple-500)';this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%239333ea%22 width=%2240%22 height=%2240%22/><text x=%2220%22 y=%2226%22 fill=%22white%22 text-anchor=%22middle%22 font-size=%2216%22>${(ch.display_name||'').charAt(0)}</text></svg>'">
+        <div class="raid-result-info">
+          <div class="raid-result-name">${escapeHtml(ch.display_name)}</div>
+          <div class="raid-result-meta">${ch.game_name || 'Sin categoria'} | ${ch.is_live ? 'EN VIVO' : 'Offline'}</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="startRaid('${ch.id}', '${escapeAttr(ch.display_name)}')" ${!ch.is_live ? 'disabled title="Canal no esta en vivo"' : ''}>Raid</button>
+      </div>
+    `).join('');
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No se encontraron canales</p></div>';
+  }
+}
+
+async function startRaid(userId, userName) {
+  const result = await api('/api/raids/start', { method: 'POST', body: { to_broadcaster_id: userId } });
+  if (result && (result.status === 200 || result.data)) {
+    showToast(`Raid a ${userName} iniciada!`, 'success');
+    loadRaidPage();
+  } else {
+    showToast('Error al iniciar raid', 'error');
+  }
+}
+
+async function cancelRaid() {
+  const result = await api('/api/raids/cancel', { method: 'DELETE' });
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast('Raid cancelada', 'success');
+    loadRaidPage();
+  } else {
+    showToast('Error al cancelar raid', 'error');
+  }
+}
+
+// ===== ADS =====
+async function loadAdsSchedule() {
+  const data = await api('/api/ads/schedule');
+  if (data && data.data && data.data[0]) {
+    const ad = data.data[0];
+    document.getElementById('adsNextAd').textContent = ad.next_ad_at ? new Date(ad.next_ad_at).toLocaleString('es') : 'Ninguno programado';
+    document.getElementById('adsDuration').textContent = ad.duration ? ad.duration + 's' : '--';
+    document.getElementById('adsPreroll').textContent = ad.preroll_free_time ? Math.floor(ad.preroll_free_time / 60) + ' min restantes' : '0 min';
+    document.getElementById('adsSnooze').textContent = ad.snooze_count || '0';
+    document.getElementById('snoozeAdBtn').disabled = ad.snooze_count <= 0 || !ad.next_ad_at;
+  }
+}
+
+async function snoozeAd() {
+  const result = await api('/api/ads/snooze', { method: 'POST' });
+  if (result && (result.status === 200 || result.data)) {
+    showToast('Anuncio pospuesto 5 minutos', 'success');
+    loadAdsSchedule();
+  } else {
+    showToast('Error al posponer anuncio', 'error');
+  }
+}
+
+async function startCommercial(length) {
+  const result = await api('/api/ads/start', { method: 'POST', body: { length } });
+  if (result && (result.status === 200 || result.data)) {
+    const msg = result.data?.data?.[0]?.message || 'Comercial iniciado';
+    showToast(`${msg} (${length}s)`, 'success');
+    loadAdsSchedule();
+  } else {
+    showToast('Error al iniciar comercial', 'error');
+  }
+}
+
+// ===== CLIPS =====
+async function loadClips() {
+  const grid = document.getElementById('clipsGrid');
+  grid.innerHTML = '<div class="loading">Cargando clips...</div>';
+  const data = await api('/api/clips');
+  if (data && data.data && data.data.length > 0) {
+    grid.innerHTML = data.data.map(clip => `
+      <div class="clip-card">
+        <img src="${clip.thumbnail_url}" alt="${escapeAttr(clip.title)}" class="clip-thumb" onerror="this.style.background='var(--bg-tertiary)'">
+        <div class="clip-info">
+          <div class="clip-title">${escapeHtml(clip.title)}</div>
+          <div class="clip-meta">${clip.view_count} vistas | ${new Date(clip.created_at).toLocaleDateString('es')}</div>
+          <div class="clip-actions">
+            <a href="${clip.url}" target="_blank" class="btn btn-secondary btn-sm">Ver</a>
+            <button class="btn btn-sm btn-secondary" onclick="copyClipLink('${clip.url}')">Copiar</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    grid.innerHTML = '<div class="empty-state"><p>No hay clips recientes</p></div>';
+  }
+}
+
+function copyClipLink(url) {
+  navigator.clipboard.writeText(url);
+  showToast('Link copiado!', 'success');
+}
+
+async function createClip() {
+  const result = await api('/api/clips/create', { method: 'POST' });
+  if (result && result.data && result.data[0]) {
+    showToast('Clip creado!', 'success');
+    window.open(result.data[0].edit_url, '_blank');
+    loadClips();
+  } else {
+    showToast('Error al crear clip (necesitas estar en vivo)', 'error');
+  }
+}
+
+// ===== SHIELD MODE =====
+async function loadShieldStatus() {
+  const data = await api('/api/shield-mode');
+  const toggleBtn = document.getElementById('shieldToggleBtn');
+  const statusText = document.getElementById('shieldStatusText');
+  const icon = document.getElementById('shieldIcon');
+  const lastAct = document.getElementById('shieldLastActivated');
+
+  if (data && data.data && data.data[0]) {
+    const s = data.data[0];
+    if (s.is_active) {
+      statusText.textContent = 'Modo Escudo Activo';
+      icon.classList.add('active');
+      toggleBtn.textContent = 'Desactivar Modo Escudo';
+      toggleBtn.className = 'btn btn-danger btn-lg';
+    } else {
+      statusText.textContent = 'Modo Escudo Desactivado';
+      icon.classList.remove('active');
+      toggleBtn.textContent = 'Activar Modo Escudo';
+      toggleBtn.className = 'btn btn-primary btn-lg';
+    }
+    if (s.last_activated_at) {
+      lastAct.textContent = 'Ultima activacion: ' + new Date(s.last_activated_at).toLocaleString('es');
+    }
+  }
+}
+
+async function toggleShieldMode() {
+  const data = await api('/api/shield-mode');
+  const isActive = data?.data?.[0]?.is_active || false;
+  const result = await api('/api/shield-mode', { method: 'PUT', body: { is_active: !isActive } });
+  if (result && (result.status === 200 || result.data)) {
+    showToast(`Modo Escudo ${!isActive ? 'activado' : 'desactivado'}`, 'success');
+    loadShieldStatus();
+  } else {
+    showToast('Error al cambiar Modo Escudo', 'error');
+  }
+}
+
+// ===== CUSTOM COMMANDS =====
+let customCommands = JSON.parse(localStorage.getItem('twitchmod_commands') || '[]');
+
+function loadCommands() {
+  const list = document.getElementById('commandsList');
+  if (customCommands.length === 0) {
+    list.innerHTML = '<div class="empty-state"><p>No hay comandos personalizados. Crea uno con el boton de arriba.</p><p class="text-muted" style="margin-top:8px">Los comandos se guardan localmente en tu navegador.</p></div>';
+    return;
+  }
+  list.innerHTML = customCommands.map((cmd, i) => `
+    <div class="command-item">
+      <div class="command-info">
+        <span class="command-name">!${escapeHtml(cmd.name)}</span>
+        <span class="command-response">${escapeHtml(cmd.response)}</span>
+      </div>
+      <div class="command-actions">
+        <button class="btn btn-danger btn-sm" onclick="deleteCommand(${i})">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function showAddCommandModal() {
+  showModal('Nuevo Comando Personalizado', `
+    <div class="form-group">
+      <label>Nombre del comando (sin !)</label>
+      <input type="text" id="cmdName" class="form-input" placeholder="ej: social">
+    </div>
+    <div class="form-group">
+      <label>Respuesta</label>
+      <textarea id="cmdResponse" class="form-input" rows="3" placeholder="ej: Sigueme en Twitter @twitchuser"></textarea>
+    </div>
+  `, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: 'Crear', class: 'btn-primary', action: 'addCommand()' }
+  ]);
+}
+
+function addCommand() {
+  const name = document.getElementById('cmdName').value.trim().toLowerCase().replace(/^!/, '');
+  const response = document.getElementById('cmdResponse').value.trim();
+  if (!name || !response) return showToast('Nombre y respuesta son requeridos', 'error');
+  if (customCommands.find(c => c.name === name)) return showToast('Ya existe ese comando', 'error');
+  customCommands.push({ name, response });
+  localStorage.setItem('twitchmod_commands', JSON.stringify(customCommands));
+  closeModal();
+  showToast(`Comando !${name} creado`, 'success');
+  loadCommands();
+}
+
+function deleteCommand(index) {
+  customCommands.splice(index, 1);
+  localStorage.setItem('twitchmod_commands', JSON.stringify(customCommands));
+  showToast('Comando eliminado', 'success');
+  loadCommands();
+}
+
+// ===== GOALS =====
+async function loadGoals() {
+  const grid = document.getElementById('goalsGrid');
+  grid.innerHTML = '<div class="loading">Cargando metas...</div>';
+  const data = await api('/api/goals');
+  if (data && data.data && data.data.length > 0) {
+    grid.innerHTML = data.data.map(goal => {
+      const pct = goal.target_amount > 0 ? Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100)) : 0;
+      const typeLabels = { follower: 'Seguidores', subscription: 'Suscriptores', subscription_count: 'Suscriptores', new_subscription: 'Nuevas subs', new_subscription_count: 'Nuevas subs' };
+      return `
+        <div class="goal-card">
+          <div class="goal-header">
+            <span class="goal-type">${typeLabels[goal.type] || goal.type}</span>
+            <span class="goal-status ${goal.status === 'ACTIVE' ? 'active' : ''}">${goal.status}</span>
+          </div>
+          <div class="goal-description">${escapeHtml(goal.description || 'Sin descripcion')}</div>
+          <div class="goal-progress">
+            <div class="goal-bar">
+              <div class="goal-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="goal-numbers">
+              <span>${goal.current_amount} / ${goal.target_amount}</span>
+              <span>${pct}%</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    grid.innerHTML = '<div class="empty-state"><p>No hay metas activas. Crea una desde el panel de Twitch.</p></div>';
+  }
+}
+
+// ===== CHAT LOG =====
+let chatLogData = [];
+
+async function loadChatLog() {
+  const container = document.getElementById('chatLogContainer');
+  const data = await api('/api/chat/log');
+  if (data && data.data && data.data.length > 0) {
+    chatLogData = data.data;
+    renderChatLog(chatLogData);
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No hay mensajes en el log. El chat se registra cuando llegan mensajes al canal.</p></div>';
+  }
+}
+
+function renderChatLog(messages) {
+  const container = document.getElementById('chatLogContainer');
+  container.innerHTML = messages.map(m => `
+    <div class="chat-log-entry">
+      <span class="chat-log-time">${new Date(m.timestamp).toLocaleTimeString('es')}</span>
+      <span class="chat-log-user" style="color:${m.color || '#9333ea'}">${escapeHtml(m.user)}</span>
+      <span class="chat-log-msg">${escapeHtml(m.message)}</span>
+    </div>
+  `).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+function filterChatLog() {
+  const q = document.getElementById('chatLogSearch').value.toLowerCase().trim();
+  if (!q) return renderChatLog(chatLogData);
+  renderChatLog(chatLogData.filter(m => m.user.toLowerCase().includes(q) || m.message.toLowerCase().includes(q)));
 }
