@@ -591,7 +591,7 @@ app.post('/api/mod/moderators', requireAuth, async (req, res) => {
 });
 
 app.delete('/api/mod/moderators', requireAuth, async (req, res) => {
-  const { user_id } = req.body;
+  const user_id = req.query.user_id || (req.body && req.body.user_id);
   const result = await twitchAPI(req, res, `/moderation/moderators?broadcaster_id=${req.auth.user.id}&user_id=${user_id}`, {
     method: 'DELETE'
   });
@@ -615,7 +615,7 @@ app.post('/api/mod/vips', requireAuth, async (req, res) => {
 });
 
 app.delete('/api/mod/vips', requireAuth, async (req, res) => {
-  const { user_id } = req.body;
+  const user_id = req.query.user_id || (req.body && req.body.user_id);
   const result = await twitchAPI(req, res, `/channels/vips?broadcaster_id=${req.auth.user.id}&user_id=${user_id}`, {
     method: 'DELETE'
   });

@@ -662,7 +662,7 @@ async function addAsMod(userId, userName) {
 }
 
 async function removeAsMod(userId, userName) {
-  const result = await api('/api/mod/moderators', { method: 'DELETE', body: { user_id: userId } });
+  const result = await api(`/api/mod/moderators?user_id=${userId}`, { method: 'DELETE' });
   closeModal();
   if (result && (result.status === 200 || result.status === 204)) {
     logAction('mod', userName, 'Removido como moderador');
@@ -687,7 +687,7 @@ async function addAsVip(userId, userName) {
 }
 
 async function removeAsVip(userId, userName) {
-  const result = await api('/api/mod/vips', { method: 'DELETE', body: { user_id: userId } });
+  const result = await api(`/api/mod/vips?user_id=${userId}`, { method: 'DELETE' });
   closeModal();
   if (result && (result.status === 200 || result.status === 204)) {
     logAction('vip', userName, 'Removido como VIP');
