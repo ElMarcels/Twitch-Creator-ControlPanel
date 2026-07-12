@@ -606,10 +606,11 @@ app.get('/api/mod/vips', requireAuth, async (req, res) => {
 
 app.post('/api/mod/vips', requireAuth, async (req, res) => {
   const { user_id } = req.body;
-  const result = await twitchAPI(req, res, `/channels/vips?broadcaster_id=${req.auth.user.id}`, {
-    method: 'PUT',
-    body: { data: { user_id } }
+  console.log('VIP ADD request:', { user_id, broadcaster_id: req.auth.user.id });
+  const result = await twitchAPI(req, res, `/channels/vips?broadcaster_id=${req.auth.user.id}&user_id=${user_id}`, {
+    method: 'POST'
   });
+  console.log('VIP ADD result:', JSON.stringify(result));
   res.json(result);
 });
 
