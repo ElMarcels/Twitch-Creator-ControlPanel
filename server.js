@@ -44,8 +44,17 @@ const SCOPES = [
   'user:edit:broadcast',
   'moderation:read',
   'bits:read',
-  'user:write:chat'
+  'user:write:chat',
+  'channel:edit:broadcast'
 ].join(' ');
+
+// Server-side state
+const viewerHistory = [];
+const followerSnapshots = [];
+const actionLog = [];
+const bannedWords = new Set();
+let lastViewerSampleTime = 0;
+let lastFollowerSampleTime = 0;
 
 app.use(cookieParser());
 app.use(express.json());
@@ -174,7 +183,7 @@ function setAuthCookie(res, authData) {
   });
 }
 
-async function twitchAPI(req, endpoint, options = {}) {
+async function twitchAPI(req, res, endpoint, options = {}) {
   const url = endpoint.startsWith('http') ? endpoint : `https://api.twitch.tv/helix${endpoint}`;
   const method = options.method || 'GET';
   const headers = {
@@ -305,7 +314,7 @@ app.get('/api/user', requireAuth, async (req, res) => {
 
 // Moderation
 app.get('/api/mod/chatters', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/chat/chatters?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/chat/chatters?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`);
   res.json(result);
 });
 
@@ -313,7 +322,7 @@ app.post('/api/mod/ban', requireAuth, async (req, res) => {
   const { user_id, reason, duration } = req.body;
   const body = { data: { user_id, reason: reason || '' } };
   if (duration) body.data.duration = duration;
-  const result = await twitchAPI(req, `/moderation/bans?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`, {
+  const result = await twitchAPI(req, res, `/moderation/bans?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`, {
     method: 'POST',
     body
   });
@@ -322,7 +331,7 @@ app.post('/api/mod/ban', requireAuth, async (req, res) => {
 
 app.delete('/api/mod/unban', requireAuth, async (req, res) => {
   const { user_id } = req.body;
-  const result = await twitchAPI(req, `/moderation/bans?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&user_id=${user_id}`, {
+  const result = await twitchAPI(req, res, `/moderation/bans?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&user_id=${user_id}`, {
     method: 'DELETE'
   });
   res.json(result);
@@ -330,7 +339,7 @@ app.delete('/api/mod/unban', requireAuth, async (req, res) => {
 
 app.post('/api/mod/timeout', requireAuth, async (req, res) => {
   const { user_id, duration, reason } = req.body;
-  const result = await twitchAPI(req, `/moderation/bans?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`, {
+  const result = await twitchAPI(req, res, `/moderation/bans?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`, {
     method: 'POST',
     body: { data: { user_id, duration: duration || 600, reason: reason || 'Timeout' } }
   });
@@ -339,7 +348,7 @@ app.post('/api/mod/timeout', requireAuth, async (req, res) => {
 
 app.post('/api/mod/untimeout', requireAuth, async (req, res) => {
   const { user_id } = req.body;
-  const result = await twitchAPI(req, `/moderation/bans?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&user_id=${user_id}`, {
+  const result = await twitchAPI(req, res, `/moderation/bans?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&user_id=${user_id}`, {
     method: 'DELETE'
   });
   res.json(result);
@@ -347,7 +356,7 @@ app.post('/api/mod/untimeout', requireAuth, async (req, res) => {
 
 app.post('/api/mod/announce', requireAuth, async (req, res) => {
   const { message, color } = req.body;
-  const result = await twitchAPI(req, `/chat/announcements?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`, {
+  const result = await twitchAPI(req, res, `/chat/announcements?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`, {
     method: 'POST',
     body: { message, color: color || 'primary' }
   });
@@ -357,7 +366,7 @@ app.post('/api/mod/announce', requireAuth, async (req, res) => {
 // Followers (with profile images via /users)
 app.get('/api/mod/followers', requireAuth, async (req, res) => {
   try {
-    const result = await twitchAPI(req, `/channels/followers?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&first=100`);
+    const result = await twitchAPI(req, res, `/channels/followers?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&first=100`);
     if (result.status !== 200 || !result.data || !result.data.data) {
       return res.json({ status: result.status, data: { data: [], error: result.data } });
     }
@@ -367,7 +376,7 @@ app.get('/api/mod/followers', requireAuth, async (req, res) => {
       for (let i = 0; i < followerIds.length; i += 100) {
         const chunk = followerIds.slice(i, i + 100);
         const idsParam = chunk.map(id => `id=${id}`).join('&');
-        const usersResult = await twitchAPI(req, `/users?${idsParam}`);
+        const usersResult = await twitchAPI(req, res, `/users?${idsParam}`);
         if (usersResult.data && usersResult.data.data) {
           for (const u of usersResult.data.data) {
             profileMap[u.id] = u.profile_image_url;
@@ -388,18 +397,18 @@ app.get('/api/mod/followers', requireAuth, async (req, res) => {
 app.get('/api/users/search', requireAuth, async (req, res) => {
   const { login } = req.query;
   if (!login) return res.json({ data: [] });
-  const result = await twitchAPI(req, `/users?login=${login}`);
+  const result = await twitchAPI(req, res, `/users?login=${login}`);
   res.json(result);
 });
 
 // Channel Points
 app.get('/api/channel-points/rewards', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/channel_points/custom_rewards?broadcaster_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/channel_points/custom_rewards?broadcaster_id=${req.auth.user.id}`);
   res.json(result);
 });
 
 app.post('/api/channel-points/rewards', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/channel_points/custom_rewards?broadcaster_id=${req.auth.user.id}`, {
+  const result = await twitchAPI(req, res, `/channel_points/custom_rewards?broadcaster_id=${req.auth.user.id}`, {
     method: 'POST',
     body: req.body
   });
@@ -407,7 +416,7 @@ app.post('/api/channel-points/rewards', requireAuth, async (req, res) => {
 });
 
 app.patch('/api/channel-points/rewards/:rewardId', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/channel_points/custom_rewards?broadcaster_id=${req.auth.user.id}&id=${req.params.rewardId}`, {
+  const result = await twitchAPI(req, res, `/channel_points/custom_rewards?broadcaster_id=${req.auth.user.id}&id=${req.params.rewardId}`, {
     method: 'PATCH',
     body: req.body
   });
@@ -415,21 +424,21 @@ app.patch('/api/channel-points/rewards/:rewardId', requireAuth, async (req, res)
 });
 
 app.delete('/api/channel-points/rewards/:rewardId', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/channel_points/custom_rewards?broadcaster_id=${req.auth.user.id}&id=${req.params.rewardId}`, {
+  const result = await twitchAPI(req, res, `/channel_points/custom_rewards?broadcaster_id=${req.auth.user.id}&id=${req.params.rewardId}`, {
     method: 'DELETE'
   });
   res.json(result);
 });
 
 app.get('/api/channel-points/rewards/:rewardId/redemptions', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/channel_points/custom_rewards/redemptions?broadcaster_id=${req.auth.user.id}&reward_id=${req.params.rewardId}&status=${req.query.status || 'UNFULFILLED'}`);
+  const result = await twitchAPI(req, res, `/channel_points/custom_rewards/redemptions?broadcaster_id=${req.auth.user.id}&reward_id=${req.params.rewardId}&status=${req.query.status || 'UNFULFILLED'}`);
   res.json(result);
 });
 
 app.patch('/api/channel-points/rewards/:rewardId/redemptions', requireAuth, async (req, res) => {
   const { ids, status } = req.body;
   const idsParam = ids.map(id => `id=${id}`).join('&');
-  const result = await twitchAPI(req, `/channel_points/custom_rewards/redemptions?broadcaster_id=${req.auth.user.id}&reward_id=${req.params.rewardId}&${idsParam}`, {
+  const result = await twitchAPI(req, res, `/channel_points/custom_rewards/redemptions?broadcaster_id=${req.auth.user.id}&reward_id=${req.params.rewardId}&${idsParam}`, {
     method: 'PATCH',
     body: { status }
   });
@@ -438,19 +447,19 @@ app.patch('/api/channel-points/rewards/:rewardId/redemptions', requireAuth, asyn
 
 // Stream info
 app.get('/api/stream', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/streams?user_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/streams?user_id=${req.auth.user.id}`);
   res.json(result);
 });
 
 app.get('/api/stream/tags', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/tags/streams?broadcaster_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/tags/streams?broadcaster_id=${req.auth.user.id}`);
   res.json(result);
 });
 
 app.get('/api/categories/search', requireAuth, async (req, res) => {
   const { name } = req.query;
   if (!name) return res.json({ data: [] });
-  const result = await twitchAPI(req, `/search/categories?query=${encodeURIComponent(name)}`);
+  const result = await twitchAPI(req, res, `/search/categories?query=${encodeURIComponent(name)}`);
   res.json(result);
 });
 
@@ -463,7 +472,7 @@ app.patch('/api/stream/info', requireAuth, async (req, res) => {
   if (is_live !== undefined) body.is_live = is_live;
   if (language !== undefined) body.language = language;
 
-  const result = await twitchAPI(req, `/channels?broadcaster_id=${req.auth.user.id}`, {
+  const result = await twitchAPI(req, res, `/channels?broadcaster_id=${req.auth.user.id}`, {
     method: 'PATCH',
     body
   });
@@ -471,18 +480,18 @@ app.patch('/api/stream/info', requireAuth, async (req, res) => {
 });
 
 app.get('/api/channel', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/channels?broadcaster_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/channels?broadcaster_id=${req.auth.user.id}`);
   res.json(result);
 });
 
 // Chat settings
 app.get('/api/chat/settings', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/chat/settings?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/chat/settings?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`);
   res.json(result);
 });
 
 app.patch('/api/chat/settings', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/chat/settings?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`, {
+  const result = await twitchAPI(req, res, `/chat/settings?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}`, {
     method: 'PATCH',
     body: req.body
   });
@@ -491,18 +500,18 @@ app.patch('/api/chat/settings', requireAuth, async (req, res) => {
 
 // Emotes
 app.get('/api/emotes/global', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, '/emotes/global');
+  const result = await twitchAPI(req, res, '/emotes/global');
   res.json(result);
 });
 
 // Predictions
 app.get('/api/predictions', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/predictions?broadcaster_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/predictions?broadcaster_id=${req.auth.user.id}`);
   res.json(result);
 });
 
 app.post('/api/predictions', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, '/predictions', {
+  const result = await twitchAPI(req, res, '/predictions', {
     method: 'POST',
     body: { ...req.body, broadcaster_id: req.auth.user.id }
   });
@@ -510,7 +519,7 @@ app.post('/api/predictions', requireAuth, async (req, res) => {
 });
 
 app.patch('/api/predictions/:predictionId', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, '/predictions', {
+  const result = await twitchAPI(req, res, '/predictions', {
     method: 'PATCH',
     body: { ...req.body, broadcaster_id: req.auth.user.id }
   });
@@ -519,12 +528,12 @@ app.patch('/api/predictions/:predictionId', requireAuth, async (req, res) => {
 
 // Polls
 app.get('/api/polls', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/polls?broadcaster_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/polls?broadcaster_id=${req.auth.user.id}`);
   res.json(result);
 });
 
 app.post('/api/polls', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, '/polls', {
+  const result = await twitchAPI(req, res, '/polls', {
     method: 'POST',
     body: { ...req.body, broadcaster_id: req.auth.user.id }
   });
@@ -532,7 +541,7 @@ app.post('/api/polls', requireAuth, async (req, res) => {
 });
 
 app.patch('/api/polls/:pollId', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, '/polls', {
+  const result = await twitchAPI(req, res, '/polls', {
     method: 'PATCH',
     body: { ...req.body, broadcaster_id: req.auth.user.id, id: req.params.pollId }
   });
@@ -541,7 +550,7 @@ app.patch('/api/polls/:pollId', requireAuth, async (req, res) => {
 
 // Raids
 app.post('/api/raids/start', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/raids?from_broadcaster_id=${req.auth.user.id}`, {
+  const result = await twitchAPI(req, res, `/raids?from_broadcaster_id=${req.auth.user.id}`, {
     method: 'POST',
     body: req.body
   });
@@ -549,7 +558,7 @@ app.post('/api/raids/start', requireAuth, async (req, res) => {
 });
 
 app.delete('/api/raids/cancel', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/raids?from_broadcaster_id=${req.auth.user.id}`, {
+  const result = await twitchAPI(req, res, `/raids?from_broadcaster_id=${req.auth.user.id}`, {
     method: 'DELETE'
   });
   res.json(result);
@@ -557,25 +566,25 @@ app.delete('/api/raids/cancel', requireAuth, async (req, res) => {
 
 // Hype Train
 app.get('/api/hype-train', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/hypetrain/events?broadcaster_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/hypetrain/events?broadcaster_id=${req.auth.user.id}`);
   res.json(result);
 });
 
 // Bans list
 app.get('/api/mod/bans', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/moderation/banned?broadcaster_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/moderation/banned?broadcaster_id=${req.auth.user.id}`);
   res.json(result);
 });
 
 // Moderators
 app.get('/api/mod/moderators', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/moderation/moderators?broadcaster_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/moderation/moderators?broadcaster_id=${req.auth.user.id}`);
   res.json(result);
 });
 
 app.post('/api/mod/moderators', requireAuth, async (req, res) => {
   const { user_id } = req.body;
-  const result = await twitchAPI(req, `/moderation/moderators?broadcaster_id=${req.auth.user.id}&user_id=${user_id}`, {
+  const result = await twitchAPI(req, res, `/moderation/moderators?broadcaster_id=${req.auth.user.id}&user_id=${user_id}`, {
     method: 'POST'
   });
   res.json(result);
@@ -583,7 +592,7 @@ app.post('/api/mod/moderators', requireAuth, async (req, res) => {
 
 app.delete('/api/mod/moderators', requireAuth, async (req, res) => {
   const { user_id } = req.body;
-  const result = await twitchAPI(req, `/moderation/moderators?broadcaster_id=${req.auth.user.id}&user_id=${user_id}`, {
+  const result = await twitchAPI(req, res, `/moderation/moderators?broadcaster_id=${req.auth.user.id}&user_id=${user_id}`, {
     method: 'DELETE'
   });
   res.json(result);
@@ -591,13 +600,13 @@ app.delete('/api/mod/moderators', requireAuth, async (req, res) => {
 
 // VIPs
 app.get('/api/mod/vips', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/channels/vips?broadcaster_id=${req.auth.user.id}&first=100`);
+  const result = await twitchAPI(req, res, `/channels/vips?broadcaster_id=${req.auth.user.id}&first=100`);
   res.json(result);
 });
 
 app.post('/api/mod/vips', requireAuth, async (req, res) => {
   const { user_id } = req.body;
-  const result = await twitchAPI(req, `/channels/vips?broadcaster_id=${req.auth.user.id}`, {
+  const result = await twitchAPI(req, res, `/channels/vips?broadcaster_id=${req.auth.user.id}`, {
     method: 'PUT',
     body: { data: { user_id } }
   });
@@ -606,7 +615,7 @@ app.post('/api/mod/vips', requireAuth, async (req, res) => {
 
 app.delete('/api/mod/vips', requireAuth, async (req, res) => {
   const { user_id } = req.body;
-  const result = await twitchAPI(req, `/channels/vips?broadcaster_id=${req.auth.user.id}&user_id=${user_id}`, {
+  const result = await twitchAPI(req, res, `/channels/vips?broadcaster_id=${req.auth.user.id}&user_id=${user_id}`, {
     method: 'DELETE'
   });
   res.json(result);
@@ -614,7 +623,7 @@ app.delete('/api/mod/vips', requireAuth, async (req, res) => {
 
 // All tags
 app.get('/api/tags', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/tags/streams?broadcaster_id=${req.auth.user.id}`);
+  const result = await twitchAPI(req, res, `/tags/streams?broadcaster_id=${req.auth.user.id}`);
   res.json(result);
 });
 
@@ -622,7 +631,7 @@ app.get('/api/tags', requireAuth, async (req, res) => {
 app.post('/api/chat/send', requireAuth, async (req, res) => {
   const { message } = req.body;
   if (!message || !message.trim()) return res.status(400).json({ error: 'Message required' });
-  const result = await twitchAPI(req, '/chat/message', {
+  const result = await twitchAPI(req, res, '/chat/message', {
     method: 'POST',
     body: {
       broadcaster_id: req.auth.user.id,
@@ -635,8 +644,138 @@ app.post('/api/chat/send', requireAuth, async (req, res) => {
 
 // Get chatters list with pagination
 app.get('/api/mod/chatters/list', requireAuth, async (req, res) => {
-  const result = await twitchAPI(req, `/chat/chatters?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&first=100`);
+  const result = await twitchAPI(req, res, `/chat/chatters?broadcaster_id=${req.auth.user.id}&moderator_id=${req.auth.user.id}&first=100`);
   res.json(result);
+});
+
+// ===== VIEWER HISTORY =====
+app.post('/api/stats/viewer-sample', requireAuth, async (req, res) => {
+  const now = Date.now();
+  if (now - lastViewerSampleTime < 55000) return res.json({ status: 200, skipped: true });
+  lastViewerSampleTime = now;
+
+  const result = await twitchAPI(req, res, `/streams?user_id=${req.auth.user.id}`);
+  if (result.status === 200 && result.data && result.data.data && result.data.data.length > 0) {
+    const s = result.data.data[0];
+    viewerHistory.push({ t: now, viewers: s.viewer_count, game: s.game_name, title: s.title });
+    if (viewerHistory.length > 500) viewerHistory.shift();
+  }
+  res.json({ status: 200, count: viewerHistory.length });
+});
+
+app.get('/api/stats/viewer-history', requireAuth, (req, res) => {
+  res.json({ data: viewerHistory });
+});
+
+// ===== STREAM ANALYSIS =====
+app.get('/api/stats/stream-analysis', requireAuth, (req, res) => {
+  const hourCounts = new Array(24).fill(0);
+  const dayCounts = new Array(7).fill(0);
+  const hours = ['12am','1am','2am','3am','4am','5am','6am','7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm','10pm','11pm'];
+  const days = ['Dom','Lun','Mar','Mie','Jue','Vie','Sab'];
+
+  viewerHistory.forEach(sample => {
+    const d = new Date(sample.t);
+    hourCounts[d.getHours()]++;
+    dayCounts[d.getDay()]++;
+  });
+
+  const bestHour = hourCounts.indexOf(Math.max(...hourCounts));
+  const bestDay = dayCounts.indexOf(Math.max(...dayCounts));
+
+  res.json({
+    data: {
+      hourCounts, dayCounts, hours, days,
+      bestHour: hours[bestHour], bestDay: days[bestDay],
+      totalSamples: viewerHistory.length,
+      peakViewers: viewerHistory.length > 0 ? Math.max(...viewerHistory.map(s => s.viewers)) : 0
+    }
+  });
+});
+
+// ===== FOLLOWER SNAPSHOTS =====
+app.post('/api/stats/follower-snapshot', requireAuth, async (req, res) => {
+  const now = Date.now();
+  if (now - lastFollowerSampleTime < 300000) return res.json({ status: 200, skipped: true });
+  lastFollowerSampleTime = now;
+
+  const userResult = await twitchAPI(req, res, '/users?id=' + req.auth.user.id);
+  if (userResult.status === 200 && userResult.data && userResult.data.data && userResult.data.data[0]) {
+    const followerCount = userResult.data.data[0].followers_count || 0;
+    followerSnapshots.push({ t: now, count: followerCount });
+    if (followerSnapshots.length > 500) followerSnapshots.shift();
+  }
+  res.json({ status: 200 });
+});
+
+app.get('/api/stats/follower-history', requireAuth, (req, res) => {
+  res.json({ data: followerSnapshots });
+});
+
+// ===== THUMBNAIL =====
+app.put('/api/stream/thumbnail', requireAuth, async (req, res) => {
+  const { image_url } = req.body;
+  if (!image_url) return res.status(400).json({ error: 'image_url required' });
+  const result = await twitchAPI(req, res, `/channels?broadcaster_id=${req.auth.user.id}`, {
+    method: 'PATCH',
+    body: { title: undefined, game_id: undefined, tags: undefined, is_live: undefined, language: undefined, tags_lock: undefined }
+  });
+  const thumbResult = await twitchAPI(req, res, '/channels/thumbnail', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: { broadcaster_id: req.auth.user.id, image_url }
+  });
+  res.json(thumbResult);
+});
+
+// ===== AUTO-MOD =====
+app.get('/api/mod/automod/words', requireAuth, (req, res) => {
+  res.json({ words: Array.from(bannedWords) });
+});
+
+app.post('/api/mod/automod/words', requireAuth, (req, res) => {
+  const { words } = req.body;
+  if (Array.isArray(words)) {
+    words.forEach(w => bannedWords.add(w.toLowerCase().trim()));
+  }
+  res.json({ words: Array.from(bannedWords) });
+});
+
+app.delete('/api/mod/automod/words', requireAuth, (req, res) => {
+  const { word } = req.body;
+  if (word) bannedWords.delete(word.toLowerCase().trim());
+  res.json({ words: Array.from(bannedWords) });
+});
+
+app.post('/api/mod/automod/check', requireAuth, (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.json({ blocked: false });
+  const lower = message.toLowerCase();
+  for (const word of bannedWords) {
+    if (lower.includes(word)) {
+      return res.json({ blocked: true, word });
+    }
+  }
+  res.json({ blocked: false });
+});
+
+// ===== ACTION LOG =====
+app.get('/api/mod/action-log', requireAuth, (req, res) => {
+  res.json({ data: actionLog.slice(-200).reverse() });
+});
+
+app.post('/api/mod/action-log', requireAuth, (req, res) => {
+  const { action, target, details } = req.body;
+  actionLog.push({
+    id: Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    t: Date.now(),
+    action: action || 'unknown',
+    target: target || '',
+    details: details || '',
+    moderator: req.auth.user.display_name || req.auth.user.login
+  });
+  if (actionLog.length > 200) actionLog.shift();
+  res.json({ status: 200 });
 });
 
 // Dashboard SPA fallback

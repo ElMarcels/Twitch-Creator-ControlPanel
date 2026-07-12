@@ -45,6 +45,8 @@ function showDashboard() {
   populateUserInfo();
   loadHomeData();
   startStreamRefresh();
+  startViewerTracking();
+  startFollowerTracking();
 }
 
 function populateUserInfo() {
@@ -231,6 +233,8 @@ function switchModTab(tab) {
   document.querySelectorAll('.mod-tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById(`modTab-${tab}`).classList.add('active');
   const q = document.getElementById('modUserSearch').value.toLowerCase().trim();
+  if (tab === 'automod') { loadBannedWords(); return; }
+  if (tab === 'actionlog') { loadActionLog(); return; }
   filterCurrentModTab(q);
 }
 
@@ -539,6 +543,7 @@ async function executeBan(userId, userName) {
   const result = await api('/api/mod/ban', { method: 'POST', body });
   closeModal();
   if (result && (result.status === 200 || result.status === 204)) {
+    logAction('ban', userName, reason || (isTemporary ? `Temporal ${document.getElementById('banDuration').value}s` : 'Permanente'));
     showToast(`${userName} ha sido baneado${isTemporary ? ' temporalmente' : ''}`, 'success');
   } else {
     showToast('Error al banear usuario', 'error');
@@ -549,6 +554,7 @@ async function unbanUser(userId, userName) {
   const result = await api('/api/mod/unban', { method: 'DELETE', body: { user_id: userId } });
   closeModal();
   if (result && (result.status === 200 || result.status === 204)) {
+    logAction('unban', userName || 'Usuario');
     showToast(`${userName || 'Usuario'} desbaneado`, 'success');
   } else {
     showToast('Error al desbanear', 'error');
@@ -589,6 +595,7 @@ async function executeTimeout(userId, userName) {
   const result = await api('/api/mod/timeout', { method: 'POST', body: { user_id: userId, duration, reason } });
   closeModal();
   if (result && (result.status === 200 || result.status === 204)) {
+    logAction('timeout', userName, `${Math.floor(duration / 60)}m ${reason || ''}`);
     const mins = Math.floor(duration / 60);
     const h = Math.floor(mins / 60);
     const m = mins % 60;
@@ -647,6 +654,7 @@ async function addAsMod(userId, userName) {
   const result = await api('/api/mod/moderators', { method: 'POST', body: { user_id: userId } });
   closeModal();
   if (result && (result.status === 200 || result.status === 204)) {
+    logAction('mod', userName, 'Agregado como moderador');
     showToast(`${userName} ahora es moderador`, 'success');
   } else {
     showToast('Error al asignar moderador', 'error');
@@ -657,6 +665,7 @@ async function removeAsMod(userId, userName) {
   const result = await api('/api/mod/moderators', { method: 'DELETE', body: { user_id: userId } });
   closeModal();
   if (result && (result.status === 200 || result.status === 204)) {
+    logAction('mod', userName, 'Removido como moderador');
     showToast(`Moderador removido de ${userName}`, 'success');
   } else {
     showToast('Error al remover moderador', 'error');
@@ -667,6 +676,7 @@ async function addAsVip(userId, userName) {
   const result = await api('/api/mod/vips', { method: 'POST', body: { user_id: userId } });
   closeModal();
   if (result && (result.status === 200 || result.status === 204)) {
+    logAction('vip', userName, 'Agregado como VIP');
     showToast(`${userName} ahora es VIP`, 'success');
   } else {
     showToast('Error al asignar VIP', 'error');
@@ -677,6 +687,7 @@ async function removeAsVip(userId, userName) {
   const result = await api('/api/mod/vips', { method: 'DELETE', body: { user_id: userId } });
   closeModal();
   if (result && (result.status === 200 || result.status === 204)) {
+    logAction('vip', userName, 'Removido como VIP');
     showToast(`VIP removido de ${userName}`, 'success');
   } else {
     showToast('Error al remover VIP', 'error');
@@ -1078,24 +1089,51 @@ async function loadStats() {
     `;
   }
 
-  const streamData = await api('/api/stream');
-  const streamInfo = document.getElementById('streamDetailInfo');
-  if (streamData && streamData.data && streamData.data.length > 0) {
-    const s = streamData.data[0];
-    streamInfo.innerHTML = `
-      <div class="channel-info-grid">
-        <div class="channel-info-item"><span class="label">Estado</span><span class="value" style="color:var(--success)">EN DIRECTO</span></div>
-        <div class="channel-info-item"><span class="label">Titulo</span><span class="value">${escapeHtml(s.title)}</span></div>
-        <div class="channel-info-item"><span class="label">Categoria</span><span class="value">${escapeHtml(s.game_name)}</span></div>
-        <div class="channel-info-item"><span class="label">Espectadores</span><span class="value">${s.viewer_count}</span></div>
-        <div class="channel-info-item"><span class="label">Inicio</span><span class="value">${new Date(s.started_at).toLocaleString('es')}</span></div>
-        <div class="channel-info-item"><span class="label">Idioma</span><span class="value">${s.language}</span></div>
-        <div class="channel-info-item"><span class="label">Tags</span><span class="value">${s.tags ? s.tags.join(', ') : '--'}</span></div>
-        <div class="channel-info-item"><span class="label">Thumbnail</span><span class="value"><a href="${s.thumbnail_url}" target="_blank" style="color:var(--purple-400)">Ver thumbnail</a></span></div>
-      </div>
-    `;
+  loadViewerChart();
+  loadHoursChart();
+  loadFollowerChart();
+  loadGlobalEmotes();
+}
+
+async function loadViewerChart() {
+  const data = await api('/api/stats/viewer-history');
+  if (data && data.data && data.data.length > 0) {
+    const samples = data.data;
+    const labels = samples.map(s => {
+      const d = new Date(s.t);
+      return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+    });
+    const values = samples.map(s => s.viewers);
+    document.getElementById('viewerChartBadge').textContent = samples.length + ' muestras';
+    drawLineChart('viewerChart', labels, values, '#a855f7', 'viewerChartEmpty');
   } else {
-    streamInfo.innerHTML = '<div class="empty-state"><p>No hay directo activo</p></div>';
+    document.getElementById('viewerChartEmpty').style.display = '';
+    const c = document.getElementById('viewerChart');
+    if (c) c.style.display = 'none';
+  }
+}
+
+async function loadHoursChart() {
+  const data = await api('/api/stats/stream-analysis');
+  if (data && data.data) {
+    const d = data.data;
+    document.getElementById('hoursChartBadge').textContent = d.bestHour + ' / ' + d.bestDay;
+    drawBarChart('hoursChart', d.hours, d.dayCounts, '#3b82f6', 'hoursChartEmpty');
+  }
+}
+
+async function loadFollowerChart() {
+  const data = await api('/api/stats/follower-history');
+  if (data && data.data && data.data.length > 0) {
+    const samples = data.data;
+    const labels = samples.map(s => new Date(s.t).toLocaleDateString('es'));
+    const values = samples.map(s => s.count);
+    document.getElementById('followerChartBadge').textContent = samples.length + ' muestras';
+    drawLineChart('followerChart', labels, values, '#10b981', 'followerChartEmpty');
+  } else {
+    document.getElementById('followerChartEmpty').style.display = '';
+    const c = document.getElementById('followerChart');
+    if (c) c.style.display = 'none';
   }
 }
 
@@ -1324,6 +1362,292 @@ function showToast(message, type = 'info') {
   toast.innerHTML = `${icons[type] || icons.info}<span>${message}</span>`;
   container.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3500);
+}
+
+// ===== CANVAS CHARTS =====
+function drawLineChart(canvasId, labels, values, color, emptyId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.parentElement.clientWidth;
+  const h = canvas.height = 200;
+  ctx.clearRect(0, 0, w, h);
+
+  if (!values || values.length < 2) {
+    canvas.style.display = 'none';
+    if (emptyId) document.getElementById(emptyId).style.display = '';
+    return;
+  }
+
+  canvas.style.display = '';
+  if (emptyId) document.getElementById(emptyId).style.display = 'none';
+
+  const pad = { t: 20, r: 20, b: 30, l: 45 };
+  const cw = w - pad.l - pad.r;
+  const ch = h - pad.t - pad.b;
+  const maxV = Math.max(...values, 1);
+  const minV = 0;
+  const range = maxV - minV || 1;
+
+  ctx.strokeStyle = 'rgba(168, 85, 247, 0.15)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + ch - (i / 4) * ch;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, y);
+    ctx.lineTo(w - pad.r, y);
+    ctx.stroke();
+    ctx.fillStyle = '#6b5f8a';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(minV + (i / 4) * range), pad.l - 8, y + 4);
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t + ch - ((values[0] - minV) / range) * ch);
+  for (let i = 1; i < values.length; i++) {
+    const x = pad.l + (i / (values.length - 1)) * cw;
+    const y = pad.t + ch - ((values[i] - minV) / range) * ch;
+    ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = color || '#a855f7';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  const grad = ctx.createLinearGradient(0, pad.t, 0, h - pad.b);
+  grad.addColorStop(0, (color || '#a855f7') + '40');
+  grad.addColorStop(1, (color || '#a855f7') + '05');
+  ctx.lineTo(pad.l + cw, pad.t + ch);
+  ctx.lineTo(pad.l, pad.t + ch);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  if (labels && values.length <= 24) {
+    ctx.fillStyle = '#6b5f8a';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    const step = Math.max(1, Math.floor(values.length / 8));
+    for (let i = 0; i < values.length; i += step) {
+      const x = pad.l + (i / (values.length - 1)) * cw;
+      ctx.fillText(labels[i] || '', x, h - 8);
+    }
+  }
+}
+
+function drawBarChart(canvasId, labels, values, color, emptyId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.parentElement.clientWidth;
+  const h = canvas.height = 200;
+  ctx.clearRect(0, 0, w, h);
+
+  if (!values || values.every(v => v === 0)) {
+    canvas.style.display = 'none';
+    if (emptyId) document.getElementById(emptyId).style.display = '';
+    return;
+  }
+
+  canvas.style.display = '';
+  if (emptyId) document.getElementById(emptyId).style.display = 'none';
+
+  const pad = { t: 20, r: 20, b: 35, l: 35 };
+  const cw = w - pad.l - pad.r;
+  const ch = h - pad.t - pad.b;
+  const maxV = Math.max(...values, 1);
+  const barW = cw / labels.length * 0.7;
+  const gap = cw / labels.length;
+
+  ctx.strokeStyle = 'rgba(168, 85, 247, 0.15)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + ch - (i / 4) * ch;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, y);
+    ctx.lineTo(w - pad.r, y);
+    ctx.stroke();
+    ctx.fillStyle = '#6b5f8a';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round((i / 4) * maxV), pad.l - 8, y + 4);
+  }
+
+  for (let i = 0; i < values.length; i++) {
+    const x = pad.l + i * gap + (gap - barW) / 2;
+    const barH = (values[i] / maxV) * ch;
+    const y = pad.t + ch - barH;
+
+    const grad = ctx.createLinearGradient(0, y, 0, pad.t + ch);
+    grad.addColorStop(0, color || '#a855f7');
+    grad.addColorStop(1, (color || '#a855f7') + '60');
+    ctx.fillStyle = grad;
+
+    ctx.beginPath();
+    const r = Math.min(4, barW / 2);
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + barW - r, y);
+    ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+    ctx.lineTo(x + barW, pad.t + ch);
+    ctx.lineTo(x, pad.t + ch);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.fill();
+
+    if (labels[i]) {
+      ctx.fillStyle = '#6b5f8a';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(labels[i], x + barW / 2, h - 10);
+    }
+  }
+}
+
+// ===== VIEWER TRACKING =====
+let viewerTrackInterval = null;
+
+function startViewerTracking() {
+  if (viewerTrackInterval) clearInterval(viewerTrackInterval);
+  viewerTrackInterval = setInterval(async () => {
+    const dot = document.querySelector('.status-dot');
+    if (dot && dot.classList.contains('live')) {
+      await api('/api/stats/viewer-sample', { method: 'POST' });
+    }
+  }, 60000);
+}
+
+async function stopViewerTracking() {
+  if (viewerTrackInterval) clearInterval(viewerTrackInterval);
+  viewerTrackInterval = null;
+}
+
+// ===== FOLLOWER TRACKING =====
+let followerTrackInterval = null;
+
+function startFollowerTracking() {
+  if (followerTrackInterval) clearInterval(followerTrackInterval);
+  followerTrackInterval = setInterval(async () => {
+    await api('/api/stats/follower-snapshot', { method: 'POST' });
+  }, 300000);
+}
+
+// ===== AUTO-MOD =====
+async function loadBannedWords() {
+  const data = await api('/api/mod/automod/words');
+  const container = document.getElementById('automodWordsList');
+  if (data && data.words && data.words.length > 0) {
+    container.innerHTML = data.words.map(w => `
+      <div class="automod-word-tag">
+        <span>${escapeHtml(w)}</span>
+        <button class="automod-word-remove" onclick="removeBannedWord('${escapeAttr(w)}')">&times;</button>
+      </div>
+    `).join('');
+  } else {
+    container.innerHTML = '<div class="empty-state" style="padding:16px"><p>No hay palabras bloqueadas. Agrega una arriba.</p></div>';
+  }
+}
+
+async function addBannedWord() {
+  const input = document.getElementById('automodWordInput');
+  const word = input.value.trim();
+  if (!word) return;
+  await api('/api/mod/automod/words', { method: 'POST', body: { words: [word] } });
+  input.value = '';
+  loadBannedWords();
+  showToast(`"${word}" agregado a palabras bloqueadas`, 'success');
+}
+
+async function removeBannedWord(word) {
+  await api('/api/mod/automod/words', { method: 'DELETE', body: { word } });
+  loadBannedWords();
+  showToast(`"${word}" removido`, 'info');
+}
+
+async function testAutoMod() {
+  const input = document.getElementById('automodTestInput');
+  const message = input.value.trim();
+  if (!message) return;
+  const result = await api('/api/mod/automod/check', { method: 'POST', body: { message } });
+  const container = document.getElementById('automodTestResult');
+  if (result && result.blocked) {
+    container.innerHTML = `<div class="automod-result blocked">BLOQUEADO - Contiene la palabra: "${escapeHtml(result.word)}"</div>`;
+  } else {
+    container.innerHTML = `<div class="automod-result allowed">PERMITIDO - No contiene palabras bloqueadas</div>`;
+  }
+}
+
+// ===== ACTION LOG =====
+async function logAction(action, target, details) {
+  await api('/api/mod/action-log', { method: 'POST', body: { action, target, details } });
+}
+
+async function loadActionLog() {
+  const data = await api('/api/mod/action-log');
+  const container = document.getElementById('actionLogList');
+  if (data && data.data && data.data.length > 0) {
+    container.innerHTML = data.data.map(entry => {
+      const icons = {
+        ban: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>',
+        unban: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#10b981" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="16 8 10 14 8 12"/></svg>',
+        timeout: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        announce: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+        mod: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#a855f7" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+        vip: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#c084fc" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        chat: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+      };
+      const icon = icons[entry.action] || icons.chat;
+      const time = new Date(entry.t).toLocaleString('es');
+      return `
+        <div class="action-log-entry">
+          <div class="action-log-icon">${icon}</div>
+          <div class="action-log-info">
+            <span class="action-log-action">${escapeHtml(entry.action)}</span>
+            <span class="action-log-target">${escapeHtml(entry.target)}</span>
+            ${entry.details ? `<span class="action-log-details">${escapeHtml(entry.details)}</span>` : ''}
+          </div>
+          <div class="action-log-meta">
+            <span class="action-log-moderator">${escapeHtml(entry.moderator)}</span>
+            <span class="action-log-time">${time}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No hay acciones registradas todavia</p></div>';
+  }
+}
+
+// ===== EMOTES =====
+async function loadGlobalEmotes() {
+  const data = await api('/api/emotes/global');
+  const container = document.getElementById('globalEmotes');
+  if (data && data.data && data.data.length > 0) {
+    container.innerHTML = data.data.slice(0, 80).map(e => {
+      const url = e.images && e.images.url_1x ? e.images.url_1x : '';
+      if (url) {
+        return `<div class="emote-item" title="${escapeHtml(e.name)}"><img src="${url}" alt="${escapeHtml(e.name)}" loading="lazy"></div>`;
+      }
+      return `<div class="emote-item emote-text" title="${escapeHtml(e.name)}">${escapeHtml(e.name)}</div>`;
+    }).join('');
+  } else {
+    container.innerHTML = '<div class="empty-state"><p>No se pudieron cargar los emotes</p></div>';
+  }
+}
+
+// ===== THUMBNAIL =====
+async function updateThumbnail() {
+  const url = document.getElementById('thumbnailUrl').value.trim();
+  if (!url) return showToast('Ingresa una URL de imagen', 'warning');
+  if (!url.startsWith('https://')) return showToast('La URL debe ser HTTPS', 'warning');
+
+  const result = await api('/api/stream/thumbnail', { method: 'PUT', body: { image_url: url } });
+  if (result && (result.status === 200 || result.status === 204)) {
+    showToast('Miniatura actualizada!', 'success');
+    logAction('thumbnail', currentUser.display_name, 'Miniatura actualizada');
+  } else {
+    const errMsg = result?.data?.message || 'Error al actualizar miniatura';
+    showToast(errMsg, 'error');
+  }
 }
 
 // ===== UTILITIES =====
