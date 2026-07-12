@@ -674,12 +674,15 @@ async function removeAsMod(userId, userName) {
 
 async function addAsVip(userId, userName) {
   const result = await api('/api/mod/vips', { method: 'POST', body: { user_id: userId } });
+  console.log('VIP result:', result);
   closeModal();
   if (result && (result.status === 200 || result.status === 204)) {
     logAction('vip', userName, 'Agregado como VIP');
     showToast(`${userName} ahora es VIP`, 'success');
   } else {
-    showToast('Error al asignar VIP', 'error');
+    const errMsg = result?.data?.message || result?.data?.error || JSON.stringify(result);
+    console.error('VIP error:', errMsg);
+    showToast('Error al asignar VIP: ' + errMsg, 'error');
   }
 }
 
