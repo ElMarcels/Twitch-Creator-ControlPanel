@@ -85,7 +85,8 @@ function navigateTo(page) {
     'chat-settings': 'Chat',
     'stats': 'Estadisticas',
     'predictions': 'Predicciones',
-    'polls': 'Encuestas'
+    'polls': 'Encuestas',
+    'about': 'Acerca de'
   };
   document.getElementById('pageTitle').textContent = titles[page] || 'Dashboard';
 
