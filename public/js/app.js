@@ -3038,12 +3038,14 @@ async function moderatorLogin() {
   const username = document.getElementById('modLoginUsername').value.trim();
   const password = document.getElementById('modLoginPassword').value;
   const channel = document.getElementById('modLoginChannel').value.trim();
-  if (!username || !password || !channel) return showToast('Completa todos los campos', 'error');
+  const accessCard = document.getElementById('modLoginCard').value.trim();
+  if (!username || !password) return showToast('Usuario y contrasena requeridos', 'error');
+  if (!accessCard && !channel) return showToast('Ingresa el canal o un codigo de acceso', 'error');
   try {
     const resp = await fetch('/auth/moderator/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, channelLogin: channel })
+      body: JSON.stringify({ username, password, channelLogin: channel || undefined, accessCard: accessCard || undefined })
     });
     const data = await resp.json();
     if (data.authenticated && data.user) {
@@ -3108,6 +3110,16 @@ async function addModeratorAccount() {
   if (result && result.data) {
     showToast(`Moderador ${username} agregado`, 'success');
     loadModeratorAccounts();
+    if (result.data.accessCard) {
+      showModal('Codigo de Acceso', `
+        <p style="margin-bottom:12px;color:var(--text-secondary)">Comparte este codigo con <strong>${escapeHtml(username)}</strong> para que pueda iniciar sesion:</p>
+        <textarea id="modAccessCardCode" class="form-input" readonly rows="4" style="font-size:0.7rem;word-break:break-all;cursor:pointer" onclick="this.select()">${escapeHtml(result.data.accessCard)}</textarea>
+        <p style="margin-top:10px;font-size:0.8rem;color:var(--text-muted)">Haz click en el codigo para seleccionarlo, luego copialo y enviaselo al moderador.</p>
+      `, [
+        { text: 'Copiar', class: 'btn-primary', action: "navigator.clipboard.writeText(document.getElementById('modAccessCardCode').value);showToast('Copiado','success')" },
+        { text: 'Cerrar', class: 'btn-secondary', action: 'closeModal()' }
+      ]);
+    }
   } else {
     showToast(result?.error || 'Error al agregar moderador', 'error');
   }

@@ -119,7 +119,7 @@ function verifyPassword(password, salt, hash) {
 }
 
 function getModeratorName(req) {
-  if (req.moderatorSession) return req.moderatorSession.username;
+  if (req.moderatorSession) return req.moderatorSession.moderatorName || req.moderatorSession.username;
   return req.auth.user.display_name || req.auth.user.login;
 }
 
@@ -128,18 +128,26 @@ function requireAuth(req, res, next) {
   const decoded = token ? verifyToken(token) : null;
   if (decoded) {
     if (decoded.role === 'moderator') {
-      const ownerData = ownerTokens.get(decoded.ownerId);
-      if (!ownerData) {
-        if (req.path.startsWith('/api/')) {
-          return res.status(401).json({ error: 'Owner not connected' });
+      if (decoded.user && decoded.accessToken) {
+        req.auth = {
+          user: decoded.user,
+          accessToken: decoded.accessToken,
+          refreshToken: decoded.refreshToken
+        };
+      } else {
+        const ownerData = ownerTokens.get(decoded.ownerId);
+        if (!ownerData) {
+          if (req.path.startsWith('/api/')) {
+            return res.status(401).json({ error: 'Owner not connected' });
+          }
+          return res.status(401).send('Owner not connected');
         }
-        return res.status(401).send('Owner not connected');
+        req.auth = {
+          user: ownerData.user,
+          accessToken: ownerData.accessToken,
+          refreshToken: ownerData.refreshToken
+        };
       }
-      req.auth = {
-        user: ownerData.user,
-        accessToken: ownerData.accessToken,
-        refreshToken: ownerData.refreshToken
-      };
       req.moderatorSession = decoded;
     } else {
       req.auth = decoded;
@@ -278,8 +286,22 @@ async function twitchAPI(req, res, endpoint, options = {}) {
       const refreshed = await refreshAccessToken(req.auth);
       if (refreshed) {
         if (req.moderatorSession) {
-          ownerTokens.set(req.moderatorSession.ownerId, refreshed);
-          saveDashboardData();
+          if (ownerTokens.has(req.moderatorSession.ownerId)) {
+            ownerTokens.set(req.moderatorSession.ownerId, refreshed);
+            saveDashboardData();
+          }
+          const newToken = signToken({
+            role: 'moderator',
+            user: refreshed.user,
+            accessToken: refreshed.accessToken,
+            refreshToken: refreshed.refreshToken,
+            moderatorName: req.moderatorSession.moderatorName
+          });
+          res.cookie(COOKIE_NAME, newToken, {
+            maxAge: COOKIE_MAX_AGE, httpOnly: true,
+            secure: process.env.NODE_ENV === 'production' || process.env.VERCEL,
+            sameSite: 'lax', path: '/'
+          });
         } else {
           req.auth = refreshed;
           setAuthCookie(res, refreshed);
@@ -380,6 +402,14 @@ app.get('/auth/me', (req, res) => {
     return res.json({ authenticated: false });
   }
   if (decoded.role === 'moderator') {
+    if (decoded.user) {
+      return res.json({
+        authenticated: true,
+        role: 'moderator',
+        user: decoded.user,
+        moderator: { username: decoded.moderatorName }
+      });
+    }
     const ownerData = ownerTokens.get(decoded.ownerId);
     if (!ownerData) return res.json({ authenticated: false, error: 'Owner not connected' });
     return res.json({
@@ -428,7 +458,18 @@ app.post('/api/owner/moderators', requireAuth, requireOwner, (req, res) => {
   };
   moderatorAccounts.set(key, mod);
   saveDashboardData();
-  res.json({ data: { id: mod.id, username: mod.username, createdAt: mod.createdAt } });
+  const accessCard = signToken({
+    type: 'moderator_access_card',
+    username: mod.username,
+    passwordHash: hash,
+    salt,
+    ownerId: req.auth.user.id,
+    ownerUser: req.auth.user,
+    ownerAccessToken: req.auth.accessToken,
+    ownerRefreshToken: req.auth.refreshToken,
+    exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60)
+  });
+  res.json({ data: { id: mod.id, username: mod.username, createdAt: mod.createdAt, accessCard } });
 });
 
 app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, (req, res) => {
@@ -445,27 +486,57 @@ app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, (req, res) =>
 });
 
 app.post('/auth/moderator/login', (req, res) => {
-  const { username, password, channelLogin } = req.body;
-  if (!username || !password || !channelLogin) {
-    return res.status(400).json({ error: 'Username, password, and channel required' });
+  const { username, password, channelLogin, accessCard } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password required' });
   }
-  let ownerId = null;
-  ownerTokens.forEach((val, key) => {
-    if (val.user && val.user.login && val.user.login.toLowerCase() === channelLogin.toLowerCase()) {
-      ownerId = key;
+
+  let ownerData = null;
+
+  if (accessCard) {
+    const card = verifyToken(accessCard);
+    if (!card || card.type !== 'moderator_access_card') {
+      return res.status(400).json({ error: 'Invalid or expired access card' });
     }
-  });
-  if (!ownerId) return res.status(400).json({ error: 'Channel owner is not connected to this dashboard' });
-  const key = `${ownerId}:${username.toLowerCase()}`;
-  const mod = moderatorAccounts.get(key);
-  if (!mod) return res.status(401).json({ error: 'Invalid credentials' });
-  if (!verifyPassword(password, mod.salt, mod.passwordHash)) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+    if (!verifyPassword(password, card.salt, card.passwordHash)) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    if (card.username.toLowerCase() !== username.toLowerCase()) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    ownerData = {
+      user: card.ownerUser,
+      accessToken: card.ownerAccessToken,
+      refreshToken: card.ownerRefreshToken
+    };
+  } else {
+    if (!channelLogin) {
+      return res.status(400).json({ error: 'Channel required' });
+    }
+    let ownerId = null;
+    ownerTokens.forEach((val, key) => {
+      if (val.user && val.user.login && val.user.login.toLowerCase() === channelLogin.toLowerCase()) {
+        ownerId = key;
+      }
+    });
+    if (!ownerId) return res.status(400).json({ error: 'Channel owner is not connected to this dashboard' });
+    const key = `${ownerId}:${username.toLowerCase()}`;
+    const mod = moderatorAccounts.get(key);
+    if (!mod) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!verifyPassword(password, mod.salt, mod.passwordHash)) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    ownerData = ownerTokens.get(ownerId);
   }
-  const ownerData = ownerTokens.get(ownerId);
+
+  if (!ownerData) return res.status(400).json({ error: 'Could not resolve owner data' });
+
   const token = signToken({
-    role: 'moderator', ownerId,
-    moderatorId: mod.id, username: mod.username
+    role: 'moderator',
+    user: ownerData.user,
+    accessToken: ownerData.accessToken,
+    refreshToken: ownerData.refreshToken,
+    moderatorName: username
   });
   res.cookie(COOKIE_NAME, token, {
     maxAge: COOKIE_MAX_AGE, httpOnly: true,
@@ -475,7 +546,7 @@ app.post('/auth/moderator/login', (req, res) => {
   res.json({
     authenticated: true, role: 'moderator',
     user: ownerData.user,
-    moderator: { id: mod.id, username: mod.username }
+    moderator: { username }
   });
 });
 
