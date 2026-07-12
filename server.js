@@ -45,7 +45,7 @@ const SCOPES = [
   'moderation:read',
   'bits:read',
   'user:write:chat',
-  'channel:edit:broadcast'
+  'channel:manage:broadcast'
 ].join(' ');
 
 // Server-side state
