@@ -532,11 +532,12 @@ async function checkAuth() {
     const data = await resp.json();
     if (data.authenticated && data.user) {
       currentUser = data.user;
-      if (data.role === 'moderator') {
-        currentUser.isModerator = true;
-        currentUser.moderatorName = data.moderator.username;
+      currentUser.role = data.role || 'owner';
+      if (data.selectedChannelId) {
+        showDashboard();
+      } else {
+        showChannelSelection();
       }
-      showDashboard();
     } else {
       showLogin();
     }
@@ -546,12 +547,23 @@ async function checkAuth() {
 }
 
 function showLogin() {
+  document.getElementById('login-screen').style.display = '';
   document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('channels-screen').style.display = 'none';
   document.getElementById('dashboard').classList.add('hidden');
 }
 
+function showChannelSelection() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('channels-screen').style.display = '';
+  document.getElementById('channels-screen').classList.remove('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+  loadChannelSelection();
+}
+
 function showDashboard() {
-  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('channels-screen').style.display = 'none';
   document.getElementById('dashboard').classList.remove('hidden');
   populateUserInfo();
   loadHomeData();
@@ -564,10 +576,83 @@ function populateUserInfo() {
   if (!currentUser) return;
   document.getElementById('userAvatar').src = currentUser.profile_image_url;
   document.getElementById('userName').textContent = currentUser.display_name;
-  if (currentUser.isModerator) {
-    document.getElementById('userName').textContent += ' (Mod: ' + currentUser.moderatorName + ')';
-  }
   document.getElementById('pageTitle').textContent = t('title_home');
+}
+
+// ===== CHANNEL SELECTION =====
+async function loadChannelSelection() {
+  if (!currentUser) return;
+
+  const mySection = document.getElementById('myChannelSection');
+  const modSection = document.getElementById('moderatedChannelsSection');
+  const noChannels = document.getElementById('noChannelsMessage');
+  const modList = document.getElementById('moderatedChannelsList');
+
+  mySection.style.display = 'none';
+  modSection.style.display = 'none';
+  noChannels.style.display = 'none';
+  modList.innerHTML = '';
+
+  let hasAnyChannel = false;
+
+  if (currentUser.role === 'owner') {
+    document.getElementById('myChannelAvatar').src = currentUser.profile_image_url;
+    document.getElementById('myChannelName').textContent = currentUser.display_name;
+    mySection.style.display = '';
+    hasAnyChannel = true;
+  }
+
+  try {
+    const resp = await fetch('/api/user/moderated-channels');
+    const data = await resp.json();
+    const channels = data.data || [];
+
+    if (channels.length > 0) {
+      modSection.style.display = '';
+      hasAnyChannel = true;
+      modList.innerHTML = channels.map(ch => `
+        <div class="channel-select-card" onclick="selectChannel('${ch.broadcaster_id}')" style="cursor:pointer;display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#9146ff,#772ce8);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.1rem;flex-shrink:0">${(ch.broadcaster_name || ch.broadcaster_login || '?')[0].toUpperCase()}</div>
+          <div style="text-align:left;min-width:0">
+            <div style="font-weight:700;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(ch.broadcaster_name || ch.broadcaster_login)}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted)">@${escapeHtml(ch.broadcaster_login)}</div>
+          </div>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;opacity:0.4;flex-shrink:0"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      `).join('');
+    }
+  } catch (err) {
+    console.error('Error loading moderated channels:', err);
+  }
+
+  if (!hasAnyChannel) {
+    noChannels.style.display = '';
+  }
+}
+
+async function selectChannel(channelId) {
+  let targetChannelId;
+  if (channelId === 'my') {
+    targetChannelId = currentUser.id;
+  } else {
+    targetChannelId = channelId;
+  }
+
+  try {
+    const resp = await fetch('/auth/select-channel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelId: targetChannelId })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      showDashboard();
+    } else {
+      showToast(data.error || 'Error al seleccionar canal', 'error');
+    }
+  } catch (err) {
+    showToast('Error de conexion', 'error');
+  }
 }
 
 // ===== NAVIGATION =====
@@ -3031,43 +3116,10 @@ function loadShortcutsSettings() {
 // ============================================================
 // FEATURE: MODERATOR ACCESS SYSTEM
 // ============================================================
-function toggleLoginMode(mode) {
-  document.getElementById('twitchLoginSection').style.display = mode === 'owner' ? '' : 'none';
-  document.getElementById('modLoginSection').style.display = mode === 'moderator' ? '' : 'none';
-  document.querySelectorAll('.login-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-}
-
-async function moderatorLogin() {
-  const username = document.getElementById('modLoginUsername').value.trim();
-  const password = document.getElementById('modLoginPassword').value;
-  const channel = document.getElementById('modLoginChannel').value.trim();
-  const accessCard = document.getElementById('modLoginCard').value.trim();
-  if (!username || !password) return showToast('Usuario y contrasena requeridos', 'error');
-  if (!accessCard && !channel) return showToast('Ingresa el canal o un codigo de acceso', 'error');
-  try {
-    const resp = await fetch('/auth/moderator/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, channelLogin: channel || undefined, accessCard: accessCard || undefined })
-    });
-    const data = await resp.json();
-    if (data.authenticated && data.user) {
-      currentUser = data.user;
-      currentUser.isModerator = true;
-      currentUser.moderatorName = data.moderator.username;
-      showDashboard();
-    } else {
-      showToast(data.error || 'Error al iniciar sesion', 'error');
-    }
-  } catch (err) {
-    showToast('Error de conexion', 'error');
-  }
-}
-
 async function loadModeratorAccounts() {
   const container = document.getElementById('moderatorAccountsList');
   if (!container) return;
-  if (currentUser && currentUser.isModerator) {
+  if (currentUser && currentUser.role !== 'owner') {
     const section = container.closest('.settings-section');
     if (section) section.style.display = 'none';
     return;
@@ -3076,12 +3128,14 @@ async function loadModeratorAccounts() {
   if (data && data.data && data.data.length > 0) {
     container.innerHTML = data.data.map(mod => `
       <div class="settings-row">
-        <div class="settings-info">
-          <h3>${escapeHtml(mod.username)}</h3>
-          <p>Creado: ${new Date(mod.createdAt).toLocaleString('es')}</p>
+        <div class="settings-info" style="display:flex;align-items:center;gap:12px">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#9146ff,#772ce8);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.85rem;flex-shrink:0">${(mod.twitchDisplayName || mod.twitchUsername || '?')[0].toUpperCase()}</div>
+          <div>
+            <h3>${escapeHtml(mod.twitchDisplayName || mod.twitchUsername)}</h3>
+            <p style="font-size:0.78rem;color:var(--text-muted)">@${escapeHtml(mod.twitchUsername)} · Agregado: ${new Date(mod.createdAt).toLocaleString('es')}</p>
+          </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" onclick="copyModToken('${mod.id}')">Copiar token</button>
           <button class="btn btn-danger btn-sm" onclick="removeModeratorAccount('${mod.id}')">Eliminar</button>
         </div>
       </div>
@@ -3091,25 +3145,12 @@ async function loadModeratorAccounts() {
   }
 }
 
-async function copyModToken(id) {
-  const result = await api(`/api/owner/moderators/${id}/token`);
-  if (result && result.data && result.data.accessCard) {
-    await navigator.clipboard.writeText(result.data.accessCard);
-    showToast('Token copiado al portapapeles', 'success');
-  } else {
-    showToast('Error al obtener el token', 'error');
-  }
-}
-
 function showAddModeratorModal() {
   showModal('Agregar Moderador', `
     <div class="form-group">
-      <label>Nombre de usuario</label>
-      <input type="text" id="newModUsername" class="form-input" placeholder="Nombre de usuario">
-    </div>
-    <div class="form-group">
-      <label>Contrasena</label>
-      <input type="password" id="newModPassword" class="form-input" placeholder="Minimo 4 caracteres">
+      <label>Nombre de usuario de Twitch</label>
+      <input type="text" id="newModUsername" class="form-input" placeholder="Ej: tu_usuario">
+      <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px">El usuario debe tener una cuenta de Twitch activa.</p>
     </div>
   `, [
     { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
@@ -3119,12 +3160,11 @@ function showAddModeratorModal() {
 
 async function addModeratorAccount() {
   const username = document.getElementById('newModUsername').value.trim();
-  const password = document.getElementById('newModPassword').value;
-  if (!username || !password) return showToast('Nombre y contrasena requeridos', 'error');
-  const result = await api('/api/owner/moderators', { method: 'POST', body: { username, password } });
+  if (!username) return showToast('Nombre de usuario requerido', 'error');
+  const result = await api('/api/owner/moderators/add', { method: 'POST', body: { username } });
   closeModal();
   if (result && result.data) {
-    showToast(`Moderador ${username} agregado. Usa "Copiar token" para obtener su codigo de acceso.`, 'success');
+    showToast(`Moderador @${result.data.twitchUsername} agregado correctamente.`, 'success');
     loadModeratorAccounts();
   } else {
     showToast(result?.error || 'Error al agregar moderador', 'error');

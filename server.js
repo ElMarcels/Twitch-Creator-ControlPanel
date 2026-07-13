@@ -4,7 +4,6 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const fetch = require('node-fetch');
 const path = require('path');
-const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,6 +22,7 @@ const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const SCOPES = [
   'user:read:email',
   'user:read:follows',
+  'user:read:moderated_channels',
   'channel:moderate',
   'chat:edit',
   'chat:read',
@@ -158,19 +158,10 @@ function verifyToken(token) {
   }
 }
 
-function hashPassword(password) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
-  return { salt, hash };
-}
 
-function verifyPassword(password, salt, hash) {
-  const result = crypto.scryptSync(password, salt, 64).toString('hex');
-  return result === hash;
-}
 
 function getModeratorName(req) {
-  if (req.moderatorSession) return req.moderatorSession.moderatorName || req.moderatorSession.username;
+  if (req.moderatorSession) return req.auth.user.display_name || req.auth.user.login;
   return req.auth.user.display_name || req.auth.user.login;
 }
 
@@ -178,30 +169,26 @@ function requireAuth(req, res, next) {
   const token = req.cookies[COOKIE_NAME];
   const decoded = token ? verifyToken(token) : null;
   if (decoded) {
-    if (decoded.role === 'moderator') {
-      if (decoded.user && decoded.accessToken) {
-        req.auth = {
-          user: decoded.user,
-          accessToken: decoded.accessToken,
-          refreshToken: decoded.refreshToken
-        };
-      } else {
-        const ownerData = ownerTokens.get(decoded.ownerId);
-        if (!ownerData) {
-          if (req.path.startsWith('/api/')) {
-            return res.status(401).json({ error: 'Owner not connected' });
-          }
-          return res.status(401).send('Owner not connected');
+    if (decoded.role === 'moderator' && decoded.selectedChannelId) {
+      const ownerData = ownerTokens.get(decoded.selectedChannelId);
+      if (!ownerData) {
+        if (req.path.startsWith('/api/')) {
+          return res.status(401).json({ error: 'Owner not connected' });
         }
-        req.auth = {
-          user: ownerData.user,
-          accessToken: ownerData.accessToken,
-          refreshToken: ownerData.refreshToken
-        };
+        return res.status(401).send('Owner not connected');
       }
+      req.auth = {
+        user: ownerData.user,
+        accessToken: ownerData.accessToken,
+        refreshToken: ownerData.refreshToken
+      };
       req.moderatorSession = decoded;
     } else {
-      req.auth = decoded;
+      req.auth = {
+        user: decoded.user,
+        accessToken: decoded.accessToken,
+        refreshToken: decoded.refreshToken
+      };
     }
     return next();
   }
@@ -336,27 +323,8 @@ async function twitchAPI(req, res, endpoint, options = {}) {
     if (resp.status === 401) {
       const refreshed = await refreshAccessToken(req.auth);
       if (refreshed) {
-        if (req.moderatorSession) {
-          if (ownerTokens.has(req.moderatorSession.ownerId)) {
-            ownerTokens.set(req.moderatorSession.ownerId, refreshed);
-            await saveDashboardData();
-          }
-          const newToken = signToken({
-            role: 'moderator',
-            user: refreshed.user,
-            accessToken: refreshed.accessToken,
-            refreshToken: refreshed.refreshToken,
-            moderatorName: req.moderatorSession.moderatorName
-          });
-          res.cookie(COOKIE_NAME, newToken, {
-            maxAge: COOKIE_MAX_AGE, httpOnly: true,
-            secure: process.env.NODE_ENV === 'production' || process.env.VERCEL,
-            sameSite: 'lax', path: '/'
-          });
-        } else {
-          req.auth = refreshed;
-          setAuthCookie(res, refreshed);
-        }
+        req.auth = refreshed;
+        setAuthCookie(res, refreshed);
         headers['Authorization'] = `Bearer ${refreshed.accessToken}`;
         fetchOptions.headers = headers;
         resp = await fetch(url, fetchOptions);
@@ -432,7 +400,7 @@ app.get('/auth/twitch/callback', async (req, res) => {
     setAuthCookie(res, authData);
     ownerTokens.set(authData.user.id, authData);
     await saveDashboardData();
-    res.redirect('/dashboard');
+    res.redirect('/channels');
   } catch (err) {
     console.error('Auth error:', err);
     res.redirect('/?error=auth_failed');
@@ -452,26 +420,13 @@ app.get('/auth/me', (req, res) => {
   if (!decoded) {
     return res.json({ authenticated: false });
   }
-  if (decoded.role === 'moderator') {
-    if (decoded.user) {
-      return res.json({
-        authenticated: true,
-        role: 'moderator',
-        user: decoded.user,
-        moderator: { username: decoded.moderatorName }
-      });
-    }
-    const ownerData = ownerTokens.get(decoded.ownerId);
-    if (!ownerData) return res.json({ authenticated: false, error: 'Owner not connected' });
+  if (decoded.user) {
     return res.json({
       authenticated: true,
-      role: 'moderator',
-      user: ownerData.user,
-      moderator: { id: decoded.moderatorId, username: decoded.username }
+      user: decoded.user,
+      role: decoded.role || 'owner',
+      selectedChannelId: decoded.selectedChannelId || null
     });
-  }
-  if (decoded.user) {
-    return res.json({ authenticated: true, user: decoded.user });
   }
   res.json({ authenticated: false });
 });
@@ -488,47 +443,90 @@ app.get('/api/owner/moderators', requireAuth, requireOwner, (req, res) => {
   const mods = [];
   moderatorAccounts.forEach((val) => {
     if (val.ownerId === req.auth.user.id) {
-      mods.push({ id: val.id, username: val.username, createdAt: val.createdAt });
+      mods.push({ id: val.id, twitchUsername: val.twitchUsername, twitchUserId: val.twitchUserId, createdAt: val.createdAt });
     }
   });
   res.json({ data: mods });
 });
 
-app.post('/api/owner/moderators', requireAuth, requireOwner, async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
-  if (password.length < 4) return res.status(400).json({ error: 'Password must be at least 4 characters' });
-  const key = `${req.auth.user.id}:${username.toLowerCase()}`;
-  if (moderatorAccounts.has(key)) return res.status(400).json({ error: 'Moderator already exists' });
-  const { salt, hash } = hashPassword(password);
+app.post('/api/owner/moderators/add', requireAuth, requireOwner, async (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  const cleanUsername = username.trim().toLowerCase();
+
+  const userResult = await twitchAPI(req, res, `/users?login=${cleanUsername}`);
+  if (!userResult.data || !userResult.data.data || userResult.data.data.length === 0) {
+    return res.status(404).json({ error: 'Usuario de Twitch no encontrado' });
+  }
+  const twitchUser = userResult.data.data[0];
+
+  const key = `${req.auth.user.id}:${twitchUser.id}`;
+  if (moderatorAccounts.has(key)) {
+    return res.status(400).json({ error: 'Este usuario ya es moderador de tu canal' });
+  }
+
   const mod = {
     id: 'mod_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    username, passwordHash: hash, salt,
+    twitchUserId: twitchUser.id,
+    twitchUsername: twitchUser.login,
+    twitchDisplayName: twitchUser.display_name,
+    twitchProfileImage: twitchUser.profile_image_url,
     ownerId: req.auth.user.id,
     createdAt: new Date().toISOString()
   };
   moderatorAccounts.set(key, mod);
   await saveDashboardData();
-  res.json({ data: { id: mod.id, username: mod.username, createdAt: mod.createdAt } });
+  res.json({ data: { id: mod.id, twitchUsername: mod.twitchUsername, twitchDisplayName: mod.twitchDisplayName, createdAt: mod.createdAt } });
 });
 
-app.get('/api/owner/moderators/:id/token', requireAuth, requireOwner, (req, res) => {
-  let found = null;
-  moderatorAccounts.forEach((val) => {
-    if (val.id === req.params.id && val.ownerId === req.auth.user.id) found = val;
-  });
+app.get('/api/user/moderated-channels', requireAuth, async (req, res) => {
+  const myUserId = req.auth.user.id;
+  const result = await twitchAPI(req, res, `/moderation/channels?user_id=${myUserId}`);
+  if (result.status !== 200 || !result.data) {
+    return res.json({ data: [] });
+  }
+  const channels = result.data.data || [];
+  const dashboardChannels = [];
+  for (const ch of channels) {
+    if (moderatorAccounts.has(`${ch.broadcaster_id}:${myUserId}`)) {
+      dashboardChannels.push(ch);
+    }
+  }
+  res.json({ data: dashboardChannels });
+});
+
+app.get('/api/channel/verify', requireAuth, (req, res) => {
+  const channelId = req.query.channel_id;
+  if (!channelId) return res.status(400).json({ error: 'channel_id required' });
+  const myUserId = req.moderatorSession ? req.moderatorSession.user.id : req.auth.user.id;
+  if (channelId === myUserId) {
+    return res.json({ allowed: true, role: 'owner' });
+  }
+  const key = `${channelId}:${myUserId}`;
+  if (moderatorAccounts.has(key)) {
+    return res.json({ allowed: true, role: 'moderator' });
+  }
+  res.json({ allowed: false });
+});
+
+app.get('/api/channel/info', requireAuth, async (req, res) => {
+  const channelId = req.query.channel_id;
+  if (!channelId) return res.status(400).json({ error: 'channel_id required' });
+  const result = await twitchAPI(req, res, `/channels?broadcaster_id=${channelId}`);
+  res.json(result);
+});
+
+app.post('/api/owner/moderators/:id', requireAuth, requireOwner, async (req, res) => {
+  let found = false;
+  for (const [key, val] of moderatorAccounts) {
+    if (val.id === req.params.id && val.ownerId === req.auth.user.id) {
+      moderatorAccounts.delete(key);
+      found = true;
+    }
+  }
   if (!found) return res.status(404).json({ error: 'Moderator not found' });
-  const accessCard = signToken({
-    type: 'moderator_access_card',
-    username: found.username,
-    passwordHash: found.passwordHash,
-    salt: found.salt,
-    ownerId: req.auth.user.id,
-    ownerUser: req.auth.user,
-    ownerAccessToken: req.auth.accessToken,
-    ownerRefreshToken: req.auth.refreshToken
-  });
-  res.json({ data: { accessCard } });
+  await saveDashboardData();
+  res.json({ status: 204 });
 });
 
 app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, async (req, res) => {
@@ -544,69 +542,33 @@ app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, async (req, r
   res.json({ status: 204 });
 });
 
-app.post('/auth/moderator/login', (req, res) => {
-  const { username, password, channelLogin, accessCard } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password required' });
+app.post('/auth/select-channel', requireAuth, (req, res) => {
+  const { channelId } = req.body;
+  if (!channelId) return res.status(400).json({ error: 'channelId required' });
+  let role = 'owner';
+  if (channelId !== req.auth.user.id) {
+    const key = `${channelId}:${req.auth.user.id}`;
+    if (!moderatorAccounts.has(key)) {
+      return res.status(403).json({ error: 'Not authorized for this channel' });
+    }
+    role = 'moderator';
   }
-
-  let ownerData = null;
-
-  if (accessCard) {
-    const card = verifyToken(accessCard);
-    if (!card || card.type !== 'moderator_access_card') {
-      return res.status(400).json({ error: 'Invalid or expired access card' });
-    }
-    if (!verifyPassword(password, card.salt, card.passwordHash)) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    if (card.username.toLowerCase() !== username.toLowerCase()) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    ownerData = {
-      user: card.ownerUser,
-      accessToken: card.ownerAccessToken,
-      refreshToken: card.ownerRefreshToken
-    };
-  } else {
-    if (!channelLogin) {
-      return res.status(400).json({ error: 'Channel required' });
-    }
-    let ownerId = null;
-    ownerTokens.forEach((val, key) => {
-      if (val.user && val.user.login && val.user.login.toLowerCase() === channelLogin.toLowerCase()) {
-        ownerId = key;
-      }
-    });
-    if (!ownerId) return res.status(400).json({ error: 'Channel owner is not connected to this dashboard' });
-    const key = `${ownerId}:${username.toLowerCase()}`;
-    const mod = moderatorAccounts.get(key);
-    if (!mod) return res.status(401).json({ error: 'Invalid credentials' });
-    if (!verifyPassword(password, mod.salt, mod.passwordHash)) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    ownerData = ownerTokens.get(ownerId);
-  }
-
-  if (!ownerData) return res.status(400).json({ error: 'Could not resolve owner data' });
-
-  const token = signToken({
-    role: 'moderator',
-    user: ownerData.user,
-    accessToken: ownerData.accessToken,
-    refreshToken: ownerData.refreshToken,
-    moderatorName: username
+  const token = req.cookies[COOKIE_NAME];
+  const decoded = token ? verifyToken(token) : null;
+  if (!decoded) return res.status(401).json({ error: 'Not authenticated' });
+  const selectedToken = signToken({
+    user: decoded.user,
+    accessToken: decoded.accessToken,
+    refreshToken: decoded.refreshToken,
+    selectedChannelId: channelId,
+    role: role
   });
-  res.cookie(COOKIE_NAME, token, {
+  res.cookie(COOKIE_NAME, selectedToken, {
     maxAge: COOKIE_MAX_AGE, httpOnly: true,
     secure: process.env.NODE_ENV === 'production' || process.env.VERCEL,
     sameSite: 'lax', path: '/'
   });
-  res.json({
-    authenticated: true, role: 'moderator',
-    user: ownerData.user,
-    moderator: { username }
-  });
+  res.json({ success: true });
 });
 
 // User info
@@ -1434,6 +1396,10 @@ app.post('/api/owner/appeals/:id/review', requireAuth, async (req, res) => {
 });
 
 // Dashboard SPA fallback
+app.get('/channels', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.get('/dashboard', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

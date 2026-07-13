@@ -56,36 +56,13 @@
         <img src="/img/twitchcommandcente.png" alt="Logo" style="width:60px;height:60px;object-fit:contain">
       </div>
       <h1 class="login-title">Moderador <span class="gradient-text">Twitch</span></h1>
-      <p class="login-subtitle" data-i18n="login_subtitle">Administra tu canal con estilo. Moderación, recompensas, estadísticas y más.</p>
-
-      <div style="display:flex;gap:8px;margin-bottom:20px;justify-content:center">
-        <button class="btn btn-secondary login-mode-btn active" data-mode="owner" onclick="toggleLoginMode('owner')" style="font-size:0.85rem;padding:8px 16px">Dueño del canal</button>
-        <button class="btn btn-secondary login-mode-btn" data-mode="moderator" onclick="toggleLoginMode('moderator')" style="font-size:0.85rem;padding:8px 16px">Moderador</button>
-      </div>
+      <p class="login-subtitle" data-i18n="login_subtitle">Administra tu canal con estilo. Moderacion, recompensas, estadisticas y mas.</p>
 
       <div id="twitchLoginSection">
         <a href="/auth/twitch" class="btn-twitch-login">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
           <span data-i18n="login_btn">Iniciar sesion con Twitch</span>
         </a>
-      </div>
-
-      <div id="modLoginSection" style="display:none">
-        <div class="form-group" style="margin-bottom:12px">
-          <input type="text" id="modLoginChannel" class="form-input" placeholder="Canal (login de Twitch, ej: tu_usuario)">
-        </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <input type="text" id="modLoginUsername" class="form-input" placeholder="Usuario moderador">
-        </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <input type="password" id="modLoginPassword" class="form-input" placeholder="Contrasena">
-        </div>
-        <div class="form-group" style="margin-bottom:16px">
-          <textarea id="modLoginCard" class="form-input" placeholder="Codigo de acceso (opcional si el dueño está conectado)" rows="2" style="font-size:0.75rem;resize:vertical"></textarea>
-        </div>
-        <button class="btn-twitch-login" onclick="moderatorLogin()" style="width:100%;justify-content:center">
-          <span>Iniciar sesion como moderador</span>
-        </button>
       </div>
 
       <div class="login-features">
@@ -101,6 +78,49 @@
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
           <span data-i18n="login_feat_rewards">Recompensas totales</span>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHANNEL SELECTION SCREEN -->
+  <div id="channels-screen" class="login-screen" style="display:none">
+    <div class="login-bg">
+      <div class="login-orb login-orb-1"></div>
+      <div class="login-orb login-orb-2"></div>
+      <div class="login-orb login-orb-3"></div>
+    </div>
+    <div class="login-card" style="max-width:560px">
+      <div class="login-logo">
+        <img src="/img/twitchcommandcente.png" alt="Logo" style="width:50px;height:50px;object-fit:contain">
+      </div>
+      <h1 class="login-title" style="font-size:1.6rem">Selecciona un <span class="gradient-text">Canal</span></h1>
+      <p class="login-subtitle" style="margin-bottom:24px">Elige que canal quieres administrar desde el panel de control.</p>
+
+      <div id="myChannelSection" style="display:none;margin-bottom:24px">
+        <h2 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:12px;text-align:left;font-weight:600">Mi Canal</h2>
+        <div id="myChannelCard" class="channel-select-card channel-select-card--owner" onclick="selectChannel('my')" style="cursor:pointer">
+          <img id="myChannelAvatar" src="" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
+          <div style="text-align:left">
+            <div id="myChannelName" style="font-weight:700;font-size:1.05rem"></div>
+            <div style="font-size:0.8rem;color:var(--text-muted)">Canal principal</div>
+          </div>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;opacity:0.5"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+
+      <div id="moderatedChannelsSection" style="display:none;margin-bottom:20px">
+        <h2 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:12px;text-align:left;font-weight:600">Canales en los que soy Moderador</h2>
+        <div id="moderatedChannelsList"></div>
+      </div>
+
+      <div id="noChannelsMessage" style="display:none;text-align:center;padding:30px 20px">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:12px"><circle cx="12" cy="12" r="10"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+        <p style="color:var(--text-muted);font-size:0.95rem;margin-bottom:8px">No eres moderador de ningun canal.</p>
+        <p style="color:var(--text-muted);font-size:0.8rem">Para usar este panel, un streamer debe agregarte como moderador desde la configuracion.</p>
+      </div>
+
+      <div style="text-align:center;margin-top:16px">
+        <a href="/auth/logout" style="color:var(--text-muted);font-size:0.8rem;text-decoration:none">Cerrar sesion</a>
       </div>
     </div>
   </div>
@@ -1146,7 +1166,7 @@
                 <div class="settings-row">
                   <div class="settings-info">
                     <h3>Moderadores del Panel</h3>
-                    <p>Crea cuentas con usuario y contrasena para que tus moderadores accedan al dashboard.</p>
+                    <p>Agrega moderadores por su nombre de usuario de Twitch para que puedan acceder al dashboard.</p>
                   </div>
                   <button class="btn btn-primary btn-sm" onclick="showAddModeratorModal()">Agregar Moderador</button>
                 </div>

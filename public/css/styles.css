@@ -3345,6 +3345,33 @@ body.compact-mode .clip-card .clip-thumb { height: 120px; }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Channel Selection Cards */
+.channel-select-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--card-bg, rgba(255,255,255,0.03));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.channel-select-card:hover {
+  border-color: var(--purple-500, #a855f7);
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.15);
+  transform: translateY(-1px);
+}
+.channel-select-card--owner {
+  border-color: rgba(168, 85, 247, 0.3);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(124, 58, 237, 0.05));
+}
+.channel-select-card--owner:hover {
+  border-color: var(--purple-500, #a855f7);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(124, 58, 237, 0.08));
+}
+
 /* Input focus glow */
 .form-input:focus {
   border-color: var(--purple-500);

@@ -24,6 +24,10 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/channels",
+      "dest": "/api/index.js"
+    },
+    {
       "src": "/appeal",
       "dest": "/api/index.js"
     },
