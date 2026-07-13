@@ -474,22 +474,26 @@ app.post('/api/owner/moderators/add', requireAuth, requireOwner, async (req, res
 
 app.get('/api/user/moderated-channels', requireAuth, async (req, res) => {
   const myUserId = req.auth.user.id;
-  const result = await twitchAPI(req, res, `/moderation/channels?user_id=${myUserId}`);
-  const mapKeys = Array.from(moderatorAccounts.keys());
-  if (result.status !== 200 || !result.data) {
-    console.log('[MOD-CHANNELS] Twitch API failed:', result.status, JSON.stringify(result.data));
-    return res.json({ data: [], _debug: { myUserId, status: result.status, mapKeys, error: result.data } });
-  }
-  const channels = result.data.data || [];
-  const dashboardChannels = [];
-  for (const ch of channels) {
-    const key = `${ch.broadcaster_id}:${myUserId}`;
-    if (moderatorAccounts.has(key)) {
-      dashboardChannels.push(ch);
+  const ownerIds = [];
+  moderatorAccounts.forEach((val) => {
+    if (val.twitchUserId === myUserId && !ownerIds.includes(val.ownerId)) {
+      ownerIds.push(val.ownerId);
     }
+  });
+  if (ownerIds.length === 0) return res.json({ data: [] });
+  const idsParam = ownerIds.map(id => `id=${id}`).join('&');
+  const usersResult = await twitchAPI(req, res, `/users?${idsParam}`);
+  if (usersResult.status !== 200 || !usersResult.data || !usersResult.data.data) {
+    return res.json({ data: [] });
   }
-  console.log('[MOD-CHANNELS]', { myUserId, twitchCount: channels.length, filteredCount: dashboardChannels.length, mapKeys, channelBroadcasterIds: channels.map(c => c.broadcaster_id) });
-  res.json({ data: dashboardChannels, _debug: { myUserId, twitchCount: channels.length, filteredCount: dashboardChannels.length, mapKeys, broadcasterIds: channels.map(c => c.broadcaster_id) } });
+  const usersMap = {};
+  usersResult.data.data.forEach(u => { usersMap[u.id] = u; });
+  const channels = ownerIds.map(ownerId => {
+    const u = usersMap[ownerId];
+    if (!u) return null;
+    return { broadcaster_id: u.id, broadcaster_login: u.login, broadcaster_name: u.display_name, broadcaster_profile_image: u.profile_image_url };
+  }).filter(Boolean);
+  res.json({ data: channels });
 });
 
 app.get('/api/channel/verify', requireAuth, (req, res) => {
