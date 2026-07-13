@@ -454,7 +454,7 @@ app.get('/auth/logout', (req, res) => {
   res.redirect('/');
 });
 
-app.get('/auth/me', (req, res) => {
+app.get('/auth/me', async (req, res) => {
   const token = req.cookies[COOKIE_NAME];
   const decoded = token ? verifyToken(token) : null;
   if (!decoded) {
@@ -467,8 +467,22 @@ app.get('/auth/me', (req, res) => {
       role: decoded.role || null,
       selectedChannelId: decoded.selectedChannelId || null
     };
-    if (decoded.role === 'moderator' && decoded.ownerUser) {
-      response.ownerUser = decoded.ownerUser;
+    if (decoded.role === 'moderator' && decoded.selectedChannelId) {
+      let ownerUser = decoded.ownerUser || null;
+      if (!ownerUser) {
+        const ownerData = ownerTokens.get(decoded.selectedChannelId);
+        if (ownerData && ownerData.user) ownerUser = ownerData.user;
+      }
+      if (!ownerUser && decoded.accessToken) {
+        try {
+          const resp = await fetch(`https://api.twitch.tv/helix/users?id=${decoded.selectedChannelId}`, {
+            headers: { 'Authorization': `Bearer ${decoded.accessToken}`, 'Client-Id': TWITCH_CLIENT_ID }
+          });
+          const data = await resp.json();
+          if (data.data && data.data[0]) ownerUser = data.data[0];
+        } catch {}
+      }
+      if (ownerUser) response.ownerUser = ownerUser;
     }
     return res.json(response);
   }
@@ -627,11 +641,19 @@ app.post('/auth/select-channel', requireAuth, async (req, res) => {
   };
 
   if (role === 'moderator') {
-    const ownerData = ownerTokens.get(channelId);
+    let ownerData = ownerTokens.get(channelId);
     if (ownerData) {
       payload.ownerAccessToken = ownerData.accessToken;
       payload.ownerRefreshToken = ownerData.refreshToken;
       payload.ownerUser = ownerData.user;
+    } else if (decoded.accessToken) {
+      try {
+        const resp = await fetch(`https://api.twitch.tv/helix/users?id=${channelId}`, {
+          headers: { 'Authorization': `Bearer ${decoded.accessToken}`, 'Client-Id': TWITCH_CLIENT_ID }
+        });
+        const data = await resp.json();
+        if (data.data && data.data[0]) payload.ownerUser = data.data[0];
+      } catch {}
     }
   }
 
