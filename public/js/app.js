@@ -532,7 +532,7 @@ async function checkAuth() {
     const data = await resp.json();
     if (data.authenticated && data.user) {
       currentUser = data.user;
-      currentUser.role = data.role || 'owner';
+      currentUser.role = data.role;
       if (data.selectedChannelId) {
         showDashboard();
       } else {

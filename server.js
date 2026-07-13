@@ -111,6 +111,7 @@ async function loadFromRedis() {
     moderatorAccounts.clear();
     if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
     if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
+    console.log(`[Redis LOAD] ownerTokens: ${ownerTokens.size}, moderatorAccounts: ${moderatorAccounts.size}`);
   } catch (err) {
     console.error('Failed to load from Redis:', err.message);
   }
@@ -121,13 +122,16 @@ async function saveToRedis() {
   const obj = { ownerTokens: {}, moderatorAccounts: {} };
   ownerTokens.forEach((v, k) => obj.ownerTokens[k] = v);
   moderatorAccounts.forEach((v, k) => obj.moderatorAccounts[k] = v);
+  console.log(`[Redis SAVE] ownerTokens: ${ownerTokens.size}, moderatorAccounts: ${moderatorAccounts.size}`);
+  console.log(`[Redis SAVE] moderatorAccounts keys:`, Array.from(moderatorAccounts.keys()));
   try {
     await Promise.all([
       redisSet('fav-twitch:ownerTokens', obj.ownerTokens),
       redisSet('fav-twitch:moderatorAccounts', obj.moderatorAccounts)
     ]);
+    console.log(`[Redis SAVE] OK`);
   } catch (err) {
-    console.error('Failed to save to Redis:', err.message);
+    console.error('[Redis SAVE] FAILED:', err.message);
   }
 }
 
@@ -547,7 +551,7 @@ app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, async (req, r
   res.json({ status: 204 });
 });
 
-app.post('/auth/select-channel', requireAuth, (req, res) => {
+app.post('/auth/select-channel', requireAuth, async (req, res) => {
   const { channelId } = req.body;
   if (!channelId) return res.status(400).json({ error: 'channelId required' });
   let role = 'owner';
@@ -561,6 +565,16 @@ app.post('/auth/select-channel', requireAuth, (req, res) => {
   const token = req.cookies[COOKIE_NAME];
   const decoded = token ? verifyToken(token) : null;
   if (!decoded) return res.status(401).json({ error: 'Not authenticated' });
+
+  if (role === 'owner') {
+    ownerTokens.set(channelId, {
+      user: decoded.user,
+      accessToken: decoded.accessToken,
+      refreshToken: decoded.refreshToken
+    });
+    await saveToRedis();
+  }
+
   const selectedToken = signToken({
     user: decoded.user,
     accessToken: decoded.accessToken,
