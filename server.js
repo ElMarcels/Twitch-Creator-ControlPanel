@@ -90,7 +90,7 @@ async function redisSet(key, value) {
       Authorization: `Bearer ${REDIS_TOKEN}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ value: JSON.stringify(value) })
+    body: JSON.stringify(value)
   });
   if (!resp.ok) throw new Error(`Redis SET failed: ${resp.status}`);
 }
@@ -111,7 +111,6 @@ async function loadFromRedis() {
     moderatorAccounts.clear();
     if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
     if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
-    console.log(`[Redis LOAD] ownerTokens: ${ownerTokens.size}, moderatorAccounts: ${moderatorAccounts.size}`);
   } catch (err) {
     console.error('Failed to load from Redis:', err.message);
   }
@@ -122,16 +121,13 @@ async function saveToRedis() {
   const obj = { ownerTokens: {}, moderatorAccounts: {} };
   ownerTokens.forEach((v, k) => obj.ownerTokens[k] = v);
   moderatorAccounts.forEach((v, k) => obj.moderatorAccounts[k] = v);
-  console.log(`[Redis SAVE] ownerTokens: ${ownerTokens.size}, moderatorAccounts: ${moderatorAccounts.size}`);
-  console.log(`[Redis SAVE] moderatorAccounts keys:`, Array.from(moderatorAccounts.keys()));
   try {
     await Promise.all([
       redisSet('fav-twitch:ownerTokens', obj.ownerTokens),
       redisSet('fav-twitch:moderatorAccounts', obj.moderatorAccounts)
     ]);
-    console.log(`[Redis SAVE] OK`);
   } catch (err) {
-    console.error('[Redis SAVE] FAILED:', err.message);
+    console.error('Failed to save to Redis:', err.message);
   }
 }
 
@@ -478,29 +474,18 @@ app.post('/api/owner/moderators/add', requireAuth, requireOwner, async (req, res
 
 app.get('/api/user/moderated-channels', requireAuth, async (req, res) => {
   const myUserId = req.auth.user.id;
-  console.log(`[moderated-channels] Checking for user ${myUserId} (${req.auth.user.login})`);
-  console.log(`[moderated-channels] moderatorAccounts size: ${moderatorAccounts.size}`);
-  moderatorAccounts.forEach((val, key) => {
-    console.log(`[moderated-channels]   key=${key} owner=${val.ownerId} twitchUser=${val.twitchUserId}`);
-  });
   const result = await twitchAPI(req, res, `/moderation/channels?user_id=${myUserId}`);
-  console.log(`[moderated-channels] Twitch API status: ${result.status}`);
   if (result.status !== 200 || !result.data) {
-    console.log(`[moderated-channels] Twitch API error:`, JSON.stringify(result.data));
     return res.json({ data: [] });
   }
   const channels = result.data.data || [];
-  console.log(`[moderated-channels] Twitch returned ${channels.length} channels:`, channels.map(c => c.broadcaster_login));
   const dashboardChannels = [];
   for (const ch of channels) {
     const key = `${ch.broadcaster_id}:${myUserId}`;
-    const found = moderatorAccounts.has(key);
-    console.log(`[moderated-channels]   checking key=${key} found=${found}`);
-    if (found) {
+    if (moderatorAccounts.has(key)) {
       dashboardChannels.push(ch);
     }
   }
-  console.log(`[moderated-channels] Returning ${dashboardChannels.length} dashboard channels`);
   res.json({ data: dashboardChannels });
 });
 
