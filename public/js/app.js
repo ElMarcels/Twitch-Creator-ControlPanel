@@ -582,6 +582,13 @@ function populateUserInfo() {
   document.getElementById('userAvatar').src = u.profile_image_url;
   document.getElementById('userName').textContent = u.display_name;
   document.getElementById('pageTitle').textContent = t('title_home');
+  const badge = document.getElementById('modBadge');
+  if (currentUser.role === 'moderator') {
+    badge.textContent = `Sesion como Moderador (${currentUser.display_name})`;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
 }
 
 // ===== CHANNEL SELECTION =====
