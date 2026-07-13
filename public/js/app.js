@@ -561,10 +561,18 @@ function showChannelSelection() {
   loadChannelSelection();
 }
 
-function showDashboard() {
+async function showDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('channels-screen').style.display = 'none';
   document.getElementById('dashboard').classList.remove('hidden');
+  if (currentUser && currentUser.role === 'moderator' && currentUser.selectedChannelId) {
+    const ownerData = await api('/api/user');
+    if (ownerData && ownerData.id) {
+      currentUser = ownerData;
+      currentUser.role = 'moderator';
+      currentUser.selectedChannelId = ownerData.id;
+    }
+  }
   populateUserInfo();
   loadHomeData();
   startStreamRefresh();
