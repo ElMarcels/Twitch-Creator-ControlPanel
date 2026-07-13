@@ -595,12 +595,10 @@ async function loadChannelSelection() {
 
   let hasAnyChannel = false;
 
-  if (currentUser.role === 'owner') {
-    document.getElementById('myChannelAvatar').src = currentUser.profile_image_url;
-    document.getElementById('myChannelName').textContent = currentUser.display_name;
-    mySection.style.display = '';
-    hasAnyChannel = true;
-  }
+  document.getElementById('myChannelAvatar').src = currentUser.profile_image_url;
+  document.getElementById('myChannelName').textContent = currentUser.display_name;
+  mySection.style.display = '';
+  hasAnyChannel = true;
 
   try {
     const resp = await fetch('/api/user/moderated-channels');

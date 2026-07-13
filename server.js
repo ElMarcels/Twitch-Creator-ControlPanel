@@ -97,63 +97,46 @@ async function redisSet(key, value) {
 
 const moderatorAccounts = new Map();
 const ownerTokens = new Map();
-const channelOwners = new Set();
 
-let dataLoaded = false;
-let dataLoadOk = false;
-let dataLoadPromise = null;
-
-async function loadDashboardData() {
-  if (!REDIS_URL) { dataLoaded = true; dataLoadOk = true; return; }
+async function loadFromRedis() {
+  if (!REDIS_URL) return;
   try {
-    const tokensRaw = await redisGet('fav-twitch:ownerTokens');
-    const accountsRaw = await redisGet('fav-twitch:moderatorAccounts');
-    const ownersRaw = await redisGet('fav-twitch:channelOwners');
+    const [tokensRaw, accountsRaw] = await Promise.all([
+      redisGet('fav-twitch:ownerTokens'),
+      redisGet('fav-twitch:moderatorAccounts')
+    ]);
     const tokens = typeof tokensRaw === 'string' ? JSON.parse(tokensRaw) : tokensRaw;
     const accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : accountsRaw;
-    const owners = typeof ownersRaw === 'string' ? JSON.parse(ownersRaw) : ownersRaw;
+    ownerTokens.clear();
+    moderatorAccounts.clear();
     if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
     if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
-    if (Array.isArray(owners)) owners.forEach(id => channelOwners.add(id));
-    else if (owners && typeof owners === 'object') Object.keys(owners).forEach(id => channelOwners.add(id));
-    dataLoadOk = true;
   } catch (err) {
     console.error('Failed to load from Redis:', err.message);
   }
-  dataLoaded = true;
 }
 
-async function waitForData() {
-  if (dataLoaded) return;
-  if (dataLoadPromise) await dataLoadPromise;
-}
-
-async function saveDashboardData() {
+async function saveToRedis() {
   if (!REDIS_URL) return;
-  await waitForData();
-  if (!dataLoadOk) { console.error('SKIP save: initial Redis load failed, refusing to overwrite with empty data'); return; }
-  if (moderatorAccounts.size === 0 && ownerTokens.size === 0 && channelOwners.size === 0) {
-    console.error('SKIP save: all data structures empty, refusing to overwrite Redis');
-    return;
-  }
   const obj = { ownerTokens: {}, moderatorAccounts: {} };
   ownerTokens.forEach((v, k) => obj.ownerTokens[k] = v);
   moderatorAccounts.forEach((v, k) => obj.moderatorAccounts[k] = v);
   try {
     await Promise.all([
       redisSet('fav-twitch:ownerTokens', obj.ownerTokens),
-      redisSet('fav-twitch:moderatorAccounts', obj.moderatorAccounts),
-      redisSet('fav-twitch:channelOwners', Array.from(channelOwners))
+      redisSet('fav-twitch:moderatorAccounts', obj.moderatorAccounts)
     ]);
   } catch (err) {
     console.error('Failed to save to Redis:', err.message);
   }
 }
 
-dataLoadPromise = loadDashboardData().catch(() => { dataLoaded = true; });
-
 app.use(cookieParser());
 app.use(express.json());
+app.use(async (req, res, next) => {
+  await loadFromRedis();
+  next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 function signToken(payload) {
@@ -409,8 +392,7 @@ app.get('/auth/twitch/callback', async (req, res) => {
 
     setAuthCookie(res, authData);
     ownerTokens.set(authData.user.id, authData);
-    channelOwners.add(authData.user.id);
-    await saveDashboardData();
+    await saveToRedis();
     res.redirect('/channels');
   } catch (err) {
     console.error('Auth error:', err);
@@ -432,11 +414,10 @@ app.get('/auth/me', (req, res) => {
     return res.json({ authenticated: false });
   }
   if (decoded.user) {
-    const isOwner = channelOwners.has(decoded.user.id);
     return res.json({
       authenticated: true,
       user: decoded.user,
-      role: decoded.role || (isOwner ? 'owner' : null),
+      role: decoded.role || null,
       selectedChannelId: decoded.selectedChannelId || null
     });
   }
@@ -487,7 +468,7 @@ app.post('/api/owner/moderators/add', requireAuth, requireOwner, async (req, res
     createdAt: new Date().toISOString()
   };
   moderatorAccounts.set(key, mod);
-  await saveDashboardData();
+  await saveToRedis();
   res.json({ data: { id: mod.id, twitchUsername: mod.twitchUsername, twitchDisplayName: mod.twitchDisplayName, createdAt: mod.createdAt } });
 });
 
@@ -549,7 +530,7 @@ app.post('/api/owner/moderators/:id', requireAuth, requireOwner, async (req, res
     }
   }
   if (!found) return res.status(404).json({ error: 'Moderator not found' });
-  await saveDashboardData();
+  await saveToRedis();
   res.json({ status: 204 });
 });
 
@@ -562,7 +543,7 @@ app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, async (req, r
     }
   }
   if (!found) return res.status(404).json({ error: 'Moderator not found' });
-  await saveDashboardData();
+  await saveToRedis();
   res.json({ status: 204 });
 });
 
