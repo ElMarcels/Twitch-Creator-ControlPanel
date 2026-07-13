@@ -163,7 +163,16 @@ function requireAuth(req, res, next) {
   const decoded = token ? verifyToken(token) : null;
   if (decoded) {
     if (decoded.role === 'moderator' && decoded.selectedChannelId) {
-      const ownerData = ownerTokens.get(decoded.selectedChannelId);
+      let ownerData = null;
+      if (decoded.ownerAccessToken && decoded.ownerUser) {
+        ownerData = {
+          user: decoded.ownerUser,
+          accessToken: decoded.ownerAccessToken,
+          refreshToken: decoded.ownerRefreshToken
+        };
+      } else {
+        ownerData = ownerTokens.get(decoded.selectedChannelId);
+      }
       if (!ownerData) {
         if (req.path.startsWith('/api/')) {
           return res.status(401).json({ error: 'Owner not connected' });
@@ -289,6 +298,24 @@ function setAuthCookie(res, authData) {
   });
 }
 
+function setAuthCookiePreservingSession(res, authData, req) {
+  const currentToken = req.cookies[COOKIE_NAME];
+  const currentDecoded = currentToken ? verifyToken(currentToken) : null;
+  const payload = {
+    user: authData.user,
+    accessToken: authData.accessToken,
+    refreshToken: authData.refreshToken
+  };
+  if (currentDecoded) {
+    if (currentDecoded.role) payload.role = currentDecoded.role;
+    if (currentDecoded.selectedChannelId) payload.selectedChannelId = currentDecoded.selectedChannelId;
+    if (currentDecoded.ownerAccessToken) payload.ownerAccessToken = currentDecoded.ownerAccessToken;
+    if (currentDecoded.ownerRefreshToken) payload.ownerRefreshToken = currentDecoded.ownerRefreshToken;
+    if (currentDecoded.ownerUser) payload.ownerUser = currentDecoded.ownerUser;
+  }
+  setAuthCookie(res, payload);
+}
+
 async function twitchAPI(req, res, endpoint, options = {}) {
   const url = endpoint.startsWith('http') ? endpoint : `https://api.twitch.tv/helix${endpoint}`;
   const method = options.method || 'GET';
@@ -317,7 +344,7 @@ async function twitchAPI(req, res, endpoint, options = {}) {
       const refreshed = await refreshAccessToken(req.auth);
       if (refreshed) {
         req.auth = refreshed;
-        setAuthCookie(res, refreshed);
+        setAuthCookiePreservingSession(res, refreshed, req);
         headers['Authorization'] = `Bearer ${refreshed.accessToken}`;
         fetchOptions.headers = headers;
         resp = await fetch(url, fetchOptions);
@@ -567,13 +594,24 @@ app.post('/auth/select-channel', requireAuth, async (req, res) => {
     await saveToRedis();
   }
 
-  const selectedToken = signToken({
+  const payload = {
     user: decoded.user,
     accessToken: decoded.accessToken,
     refreshToken: decoded.refreshToken,
     selectedChannelId: channelId,
     role: role
-  });
+  };
+
+  if (role === 'moderator') {
+    const ownerData = ownerTokens.get(channelId);
+    if (ownerData) {
+      payload.ownerAccessToken = ownerData.accessToken;
+      payload.ownerRefreshToken = ownerData.refreshToken;
+      payload.ownerUser = ownerData.user;
+    }
+  }
+
+  const selectedToken = signToken(payload);
   res.cookie(COOKIE_NAME, selectedToken, {
     maxAge: COOKIE_MAX_AGE, httpOnly: true,
     secure: process.env.NODE_ENV === 'production' || process.env.VERCEL,
