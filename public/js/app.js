@@ -3117,7 +3117,7 @@ function loadShortcutsSettings() {
 async function loadModeratorAccounts() {
   const container = document.getElementById('moderatorAccountsList');
   if (!container) return;
-  if (currentUser && currentUser.role !== 'owner') {
+  if (currentUser && currentUser.role === 'moderator') {
     const section = container.closest('.settings-section');
     if (section) section.style.display = 'none';
     return;
