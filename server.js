@@ -99,14 +99,18 @@ const moderatorAccounts = new Map();
 const ownerTokens = new Map();
 
 function migrateRedisData(data) {
-  if (!data || typeof data !== 'object') return data;
+  if (!data || typeof data !== 'object') return { data, migrated: false };
   if (data.hasOwnProperty('value') && typeof data.value === 'string') {
     try {
       const fixed = JSON.parse(data.value);
-      if (fixed && typeof fixed === 'object') return fixed;
+      if (fixed && typeof fixed === 'object') {
+        const merged = { ...fixed };
+        Object.entries(data).forEach(([k, v]) => { if (k !== 'value') merged[k] = v; });
+        return { data: merged, migrated: true };
+      }
     } catch {}
   }
-  return data;
+  return { data, migrated: false };
 }
 
 async function loadFromRedis() {
@@ -118,13 +122,15 @@ async function loadFromRedis() {
     ]);
     let tokens = typeof tokensRaw === 'string' ? JSON.parse(tokensRaw) : tokensRaw;
     let accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : accountsRaw;
-    tokens = migrateRedisData(tokens);
-    accounts = migrateRedisData(accounts);
+    const tMigrate = migrateRedisData(tokens);
+    const aMigrate = migrateRedisData(accounts);
+    tokens = tMigrate.data;
+    accounts = aMigrate.data;
     ownerTokens.clear();
     moderatorAccounts.clear();
     if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
     if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
-    await saveToRedis();
+    if (tMigrate.migrated || aMigrate.migrated) await saveToRedis();
   } catch (err) {
     console.error('Failed to load from Redis:', err.message);
   }
