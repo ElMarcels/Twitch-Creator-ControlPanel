@@ -461,12 +461,16 @@ app.get('/auth/me', (req, res) => {
     return res.json({ authenticated: false });
   }
   if (decoded.user) {
-    return res.json({
+    const response = {
       authenticated: true,
       user: decoded.user,
       role: decoded.role || null,
       selectedChannelId: decoded.selectedChannelId || null
-    });
+    };
+    if (decoded.role === 'moderator' && decoded.ownerUser) {
+      response.ownerUser = decoded.ownerUser;
+    }
+    return res.json(response);
   }
   res.json({ authenticated: false });
 });

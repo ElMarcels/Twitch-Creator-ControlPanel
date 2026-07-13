@@ -532,7 +532,11 @@ async function checkAuth() {
     const data = await resp.json();
     if (data.authenticated && data.user) {
       currentUser = data.user;
-      currentUser.role = data.role;
+      currentUser.role = data.role || null;
+      currentUser.selectedChannelId = data.selectedChannelId || null;
+      if (data.ownerUser) {
+        currentUser._displayUser = data.ownerUser;
+      }
       if (data.selectedChannelId) {
         showDashboard();
       } else {
@@ -565,14 +569,6 @@ async function showDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('channels-screen').style.display = 'none';
   document.getElementById('dashboard').classList.remove('hidden');
-  if (currentUser && currentUser.role === 'moderator' && currentUser.selectedChannelId) {
-    const ownerData = await api('/api/user');
-    if (ownerData && ownerData.id) {
-      currentUser = ownerData;
-      currentUser.role = 'moderator';
-      currentUser.selectedChannelId = ownerData.id;
-    }
-  }
   populateUserInfo();
   loadHomeData();
   startStreamRefresh();
@@ -581,9 +577,10 @@ async function showDashboard() {
 }
 
 function populateUserInfo() {
-  if (!currentUser) return;
-  document.getElementById('userAvatar').src = currentUser.profile_image_url;
-  document.getElementById('userName').textContent = currentUser.display_name;
+  const u = currentUser._displayUser || currentUser;
+  if (!u) return;
+  document.getElementById('userAvatar').src = u.profile_image_url;
+  document.getElementById('userName').textContent = u.display_name;
   document.getElementById('pageTitle').textContent = t('title_home');
 }
 
@@ -652,7 +649,7 @@ async function selectChannel(channelId) {
     });
     const data = await resp.json();
     if (data.success) {
-      showDashboard();
+      await checkAuth();
     } else {
       showToast(data.error || 'Error al seleccionar canal', 'error');
     }
@@ -777,9 +774,9 @@ async function api(endpoint, options = {}) {
 // ===== HOME =====
 async function loadHomeData() {
   if (!currentUser) return;
-  
-  document.getElementById('followersValue').textContent = currentUser.followers_count || '--';
-  document.getElementById('viewsValue').textContent = formatNumber(currentUser.view_count);
+  const u = currentUser._displayUser || currentUser;
+  document.getElementById('followersValue').textContent = u.followers_count || '--';
+  document.getElementById('viewsValue').textContent = formatNumber(u.view_count);
 
   await refreshStreamStatus();
 }
@@ -1679,9 +1676,10 @@ async function sendChatMessage() {
 async function loadStats() {
   if (!currentUser) return;
 
-  document.getElementById('statBigFollowers').textContent = formatNumber(currentUser.followers_count || 0);
-  document.getElementById('statBigViews').textContent = formatNumber(currentUser.view_count);
-  document.getElementById('statBigBroadcaster').textContent = currentUser.broadcaster_type === 'partner' ? 'Partner' : currentUser.broadcaster_type === 'affiliate' ? 'Afiliado' : 'Estandar';
+  const u = currentUser._displayUser || currentUser;
+  document.getElementById('statBigFollowers').textContent = formatNumber(u.followers_count || 0);
+  document.getElementById('statBigViews').textContent = formatNumber(u.view_count);
+  document.getElementById('statBigBroadcaster').textContent = u.broadcaster_type === 'partner' ? 'Partner' : u.broadcaster_type === 'affiliate' ? 'Afiliado' : 'Estandar';
 
   const channelData = await api('/api/channel');
   const channelInfo = document.getElementById('channelInfoDetail');
@@ -1693,9 +1691,9 @@ async function loadStats() {
         <div class="channel-info-item"><span class="label">Titulo</span><span class="value">${escapeHtml(ch.title || '--')}</span></div>
         <div class="channel-info-item"><span class="label">Categoria</span><span class="value">${escapeHtml(ch.game_name || '--')}</span></div>
         <div class="channel-info-item"><span class="label">Idioma</span><span class="value">${ch.language || '--'}</span></div>
-        <div class="channel-info-item"><span class="label">Seguidores</span><span class="value">${formatNumber(ch.follower_count || currentUser.followers_count || 0)}</span></div>
+        <div class="channel-info-item"><span class="label">Seguidores</span><span class="value">${formatNumber(ch.follower_count || u.followers_count || 0)}</span></div>
         <div class="channel-info-item"><span class="label">Tipo</span><span class="value">${ch.broadcaster_type || 'Estándar'}</span></div>
-        <div class="channel-info-item"><span class="label">Creado</span><span class="value">${new Date(currentUser.created_at).toLocaleDateString('es')}</span></div>
+        <div class="channel-info-item"><span class="label">Creado</span><span class="value">${new Date(u.created_at).toLocaleDateString('es')}</span></div>
         <div class="channel-info-item"><span class="label">Descripcion</span><span class="value">${escapeHtml(ch.description || 'Sin descripcion')}</span></div>
       </div>
     `;
@@ -2255,7 +2253,7 @@ async function updateThumbnail() {
   const result = await api('/api/stream/thumbnail', { method: 'PUT', body: { image_url: url } });
   if (result && (result.status === 200 || result.status === 204)) {
     showToast('Miniatura actualizada!', 'success');
-    logAction('thumbnail', currentUser.display_name, 'Miniatura actualizada');
+    logAction('thumbnail', (currentUser._displayUser || currentUser).display_name, 'Miniatura actualizada');
   } else {
     const errMsg = result?.data?.message || 'Error al actualizar miniatura';
     showToast(errMsg, 'error');
