@@ -98,6 +98,17 @@ async function redisSet(key, value) {
 const moderatorAccounts = new Map();
 const ownerTokens = new Map();
 
+function migrateRedisData(data) {
+  if (!data || typeof data !== 'object') return data;
+  if (data.hasOwnProperty('value') && typeof data.value === 'string') {
+    try {
+      const fixed = JSON.parse(data.value);
+      if (fixed && typeof fixed === 'object') return fixed;
+    } catch {}
+  }
+  return data;
+}
+
 async function loadFromRedis() {
   if (!REDIS_URL) return;
   try {
@@ -105,12 +116,15 @@ async function loadFromRedis() {
       redisGet('fav-twitch:ownerTokens'),
       redisGet('fav-twitch:moderatorAccounts')
     ]);
-    const tokens = typeof tokensRaw === 'string' ? JSON.parse(tokensRaw) : tokensRaw;
-    const accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : accountsRaw;
+    let tokens = typeof tokensRaw === 'string' ? JSON.parse(tokensRaw) : tokensRaw;
+    let accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : accountsRaw;
+    tokens = migrateRedisData(tokens);
+    accounts = migrateRedisData(accounts);
     ownerTokens.clear();
     moderatorAccounts.clear();
     if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
     if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
+    await saveToRedis();
   } catch (err) {
     console.error('Failed to load from Redis:', err.message);
   }
