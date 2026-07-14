@@ -83,6 +83,189 @@ body.light-theme {
   --glass-refraction: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.2) 100%);
 }
 
+/* ===== MIDNIGHT THEME (azul oscuro) ===== */
+body.midnight-theme {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #0f1629;
+  --bg-card: #121b30;
+  --bg-card-hover: #16203a;
+  --bg-input: #080c18;
+  --bg-sidebar: #0b1124;
+
+  --purple-400: #818cf8;
+  --purple-500: #6366f1;
+  --purple-600: #4f46e5;
+  --purple-700: #4338ca;
+  --purple-900: #312e81;
+
+  --magenta-400: #f472b6;
+  --magenta-500: #ec4899;
+  --magenta-600: #db2777;
+
+  --blue-400: #38bdf8;
+  --blue-500: #0ea5e9;
+  --blue-600: #0284c7;
+
+  --indigo-500: #818cf8;
+  --indigo-600: #6366f1;
+
+  --teal-500: #2dd4bf;
+
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --border-color: rgba(99, 102, 241, 0.15);
+  --border-glow: rgba(99, 102, 241, 0.3);
+
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.1);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.1);
+
+  --gradient-primary: linear-gradient(135deg, #818cf8 0%, #6366f1 50%, #4f46e5 100%);
+  --gradient-magenta: linear-gradient(135deg, #ec4899 0%, #818cf8 100%);
+  --gradient-dark: linear-gradient(135deg, #121b30 0%, #0a0e1a 100%);
+
+  --glass-bg: rgba(15, 22, 41, 0.75);
+  --glass-bg-light: rgba(15, 22, 41, 0.55);
+  --glass-blur: blur(24px) saturate(180%);
+  --glass-border: rgba(129, 140, 248, 0.1);
+  --glass-border-hover: rgba(129, 140, 248, 0.2);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(129, 140, 248, 0.06);
+  --glass-shadow-lg: 0 16px 64px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(129, 140, 248, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(129, 140, 248, 0.06);
+  --glass-refraction: linear-gradient(135deg, rgba(129,140,248,0.06) 0%, rgba(129,140,248,0) 50%, rgba(129,140,248,0.03) 100%);
+}
+
+body.midnight-theme .login-orb-1 { background: rgba(99, 102, 241, 0.35); }
+body.midnight-theme .login-orb-2 { background: rgba(129, 140, 248, 0.25); }
+body.midnight-theme .login-orb-3 { background: rgba(56, 189, 248, 0.2); }
+
+/* ===== EMERALD THEME (verde oscuro) ===== */
+body.emerald-theme {
+  --bg-primary: #0a1410;
+  --bg-secondary: #0d1f16;
+  --bg-card: #11261a;
+  --bg-card-hover: #163122;
+  --bg-input: #07120d;
+  --bg-sidebar: #0b1811;
+
+  --purple-400: #6ee7b7;
+  --purple-500: #34d399;
+  --purple-600: #10b981;
+  --purple-700: #059669;
+  --purple-900: #065f46;
+
+  --magenta-400: #f472b6;
+  --magenta-500: #ec4899;
+  --magenta-600: #db2777;
+
+  --blue-400: #22d3ee;
+  --blue-500: #06b6d4;
+  --blue-600: #0891b2;
+
+  --indigo-500: #2dd4bf;
+  --indigo-600: #14b8a6;
+
+  --teal-500: #34d399;
+
+  --text-primary: #d1fae5;
+  --text-secondary: #6ee7b7;
+  --text-muted: #4ade80;
+
+  --border-color: rgba(16, 185, 129, 0.15);
+  --border-glow: rgba(16, 185, 129, 0.3);
+
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.1);
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.1);
+  --success: #34d399;
+  --success-bg: rgba(52, 211, 153, 0.1);
+
+  --gradient-primary: linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%);
+  --gradient-magenta: linear-gradient(135deg, #ec4899 0%, #34d399 100%);
+  --gradient-dark: linear-gradient(135deg, #11261a 0%, #0a1410 100%);
+
+  --glass-bg: rgba(13, 31, 22, 0.75);
+  --glass-bg-light: rgba(13, 31, 22, 0.55);
+  --glass-blur: blur(24px) saturate(180%);
+  --glass-border: rgba(16, 185, 129, 0.1);
+  --glass-border-hover: rgba(16, 185, 129, 0.2);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(16, 185, 129, 0.06);
+  --glass-shadow-lg: 0 16px 64px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(16, 185, 129, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(16, 185, 129, 0.06);
+  --glass-refraction: linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(16,185,129,0) 50%, rgba(16,185,129,0.03) 100%);
+}
+
+body.emerald-theme .login-orb-1 { background: rgba(16, 185, 129, 0.35); }
+body.emerald-theme .login-orb-2 { background: rgba(52, 211, 153, 0.25); }
+body.emerald-theme .login-orb-3 { background: rgba(6, 182, 212, 0.2); }
+
+/* ===== DRACULA THEME (morado/rosa oscuro) ===== */
+body.dracula-theme {
+  --bg-primary: #1a1124;
+  --bg-secondary: #231a30;
+  --bg-card: #2b203a;
+  --bg-card-hover: #332847;
+  --bg-input: #140e1c;
+  --bg-sidebar: #1c1428;
+
+  --purple-400: #d8b4fe;
+  --purple-500: #c084fc;
+  --purple-600: #a855f7;
+  --purple-700: #9333ea;
+  --purple-900: #7e22ce;
+
+  --magenta-400: #f9a8d4;
+  --magenta-500: #f472b6;
+  --magenta-600: #ec4899;
+
+  --blue-400: #67e8f9;
+  --blue-500: #22d3ee;
+  --blue-600: #06b6d4;
+
+  --indigo-500: #a78bfa;
+  --indigo-600: #8b5cf6;
+
+  --teal-500: #5eead4;
+
+  --text-primary: #f5d0fe;
+  --text-secondary: #d8b4fe;
+  --text-muted: #a78bfa;
+
+  --border-color: rgba(168, 85, 247, 0.2);
+  --border-glow: rgba(236, 72, 153, 0.35);
+
+  --danger: #fb7185;
+  --danger-bg: rgba(251, 113, 133, 0.1);
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.1);
+  --success: #6ee7b7;
+  --success-bg: rgba(110, 231, 183, 0.1);
+
+  --gradient-primary: linear-gradient(135deg, #d8b4fe 0%, #a855f7 50%, #ec4899 100%);
+  --gradient-magenta: linear-gradient(135deg, #f472b6 0%, #c084fc 100%);
+  --gradient-dark: linear-gradient(135deg, #2b203a 0%, #1a1124 100%);
+
+  --glass-bg: rgba(35, 26, 48, 0.75);
+  --glass-bg-light: rgba(35, 26, 48, 0.55);
+  --glass-blur: blur(24px) saturate(180%);
+  --glass-border: rgba(216, 180, 254, 0.1);
+  --glass-border-hover: rgba(216, 180, 254, 0.2);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(216, 180, 254, 0.06);
+  --glass-shadow-lg: 0 16px 64px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(216, 180, 254, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(216, 180, 254, 0.06);
+  --glass-refraction: linear-gradient(135deg, rgba(216,180,254,0.06) 0%, rgba(216,180,254,0) 50%, rgba(216,180,254,0.03) 100%);
+}
+
+body.dracula-theme .login-orb-1 { background: rgba(168, 85, 247, 0.4); }
+body.dracula-theme .login-orb-2 { background: rgba(236, 72, 153, 0.3); }
+body.dracula-theme .login-orb-3 { background: rgba(216, 180, 254, 0.2); }
+
 /* ===== LIGHT THEME ===== */
 body.light-theme {
   --bg-primary: #f5f3ff;
@@ -3074,28 +3257,34 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
 /* Theme Toggle */
 .theme-toggle {
   display: flex;
+  flex-wrap: wrap;
   background: var(--glass-bg-light);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-radius: var(--radius-sm);
   padding: 3px;
   border: 1px solid var(--glass-border);
+  gap: 2px;
+  max-width: 340px;
 }
 
 .theme-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 5px;
+  padding: 7px 10px;
   border: none;
   border-radius: 6px;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   font-family: inherit;
+  flex: 1;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .theme-btn:hover {

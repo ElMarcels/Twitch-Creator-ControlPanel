@@ -20,7 +20,7 @@ const translations = {
     nav_spam: 'Spam Detector', nav_alerts_widget: 'Alertas', nav_share: 'Compartir',
     nav_mod_activity: 'Actividad Mods', nav_suspicious: 'Usuarios Sospechosos', nav_chat_rules: 'Reglas del Chat',
     settings_appearance: 'Apariencia', settings_theme: 'Tema',
-    settings_theme_desc: 'Cambia entre tema oscuro y claro',
+    settings_theme_desc: 'Elige el tema visual de la aplicacion',
     theme_dark: 'Oscuro', theme_light: 'Claro',
     settings_language_title: 'Idioma', settings_language: 'Idioma',
     settings_language_desc: 'Selecciona el idioma de la interfaz',
@@ -95,6 +95,9 @@ const translations = {
     cl_113_1: 'Nueva seccion de Documentacion con Guia de la Aplicacion',
     cl_113_2: 'Registro de Cambios en la seccion Documentacion',
     cl_113_3: 'Pagina "Acerca de" (integrada en Documentacion)',
+    cl_114_1: '3 nuevos temas visuales: Midnight (azul), Emerald (verde) y Dracula (morado)',
+    cl_114_2: 'Selector de temas redisenado para soportar 5 temas',
+    cl_114_3: 'Sistema de temas refactorizado para escalar con nuevas paletas',
     cl_112_1: 'Traducciones en 7 idiomas (es, en, de, fr, pt, ja, ko)',
     cl_112_2: 'Optimizacion del CSS con variables de colores',
     cl_111_1: 'Detector de Spam con configuracion de ventana de tiempo',
@@ -172,7 +175,7 @@ const translations = {
     nav_spam: 'Spam Detector', nav_alerts_widget: 'Alerts',
     nav_mod_activity: 'Mod Activity', nav_suspicious: 'Suspicious Users', nav_chat_rules: 'Chat Rules',
     settings_appearance: 'Appearance', settings_theme: 'Theme',
-    settings_theme_desc: 'Switch between dark and light theme',
+    settings_theme_desc: 'Choose the visual theme of the app',
     theme_dark: 'Dark', theme_light: 'Light',
     settings_language_title: 'Language', settings_language: 'Language',
     settings_language_desc: 'Select the interface language',
@@ -247,6 +250,9 @@ const translations = {
     cl_113_1: 'New Documentation section with Application Guide',
     cl_113_2: 'Changelog in Documentation section',
     cl_113_3: 'About page (integrated into Documentation)',
+    cl_114_1: '3 new visual themes: Midnight (blue), Emerald (green) and Dracula (purple)',
+    cl_114_2: 'Redesigned theme selector to support 5 themes',
+    cl_114_3: 'Theme system refactored to scale with new palettes',
     cl_112_1: 'Translations in 7 languages (es, en, de, fr, pt, ja, ko)',
     cl_112_2: 'CSS optimization with color variables',
     cl_111_1: 'Spam Detector with time window configuration',
@@ -324,7 +330,7 @@ const translations = {
     nav_spam: 'Spam Detektor', nav_alerts_widget: 'Alerten',
     nav_mod_activity: 'Mod Aktivitaet', nav_suspicious: 'Verdaechtige User', nav_chat_rules: 'Chat Regeln',
     settings_appearance: 'Darstellung', settings_theme: 'Thema',
-    settings_theme_desc: 'Zwischen dunklem und hellem Thema wechseln',
+    settings_theme_desc: 'Das visuelle Thema der App wahlen',
     theme_dark: 'Dunkel', theme_light: 'Hell',
     settings_language_title: 'Sprache', settings_language: 'Sprache',
     settings_language_desc: 'Wahle die Oberflachensprache',
@@ -399,6 +405,9 @@ const translations = {
     cl_113_1: 'Neuer Dokumentationsbereich mit Anwendungsanleitung',
     cl_113_2: 'Versionshistorie im Dokumentationsbereich',
     cl_113_3: 'Ueber-Seite (in Dokumentation integriert)',
+    cl_114_1: '3 neue visuelle Designs: Midnight (blau), Emerald (gruen) und Dracula (lila)',
+    cl_114_2: 'Design-Auswahl ueberarbeitet fuer 5 Designs',
+    cl_114_3: 'Design-System fuer neue Paletten erweitert',
     cl_112_1: 'Uebersetzungen in 7 Sprachen (es, en, de, fr, pt, ja, ko)',
     cl_112_2: 'CSS-Optimierung mit Farbvariablen',
     cl_111_1: 'Spam-Erkennung mit Zeitfenster-Konfiguration',
@@ -476,7 +485,7 @@ const translations = {
     nav_spam: 'Detecteur Spam', nav_alerts_widget: 'Alertes',
     nav_mod_activity: 'Activite Mod', nav_suspicious: 'Utilisateurs Suspects', nav_chat_rules: 'Regles du Chat',
     settings_appearance: 'Apparence', settings_theme: 'Theme',
-    settings_theme_desc: 'Basculer entre le theme sombre et clair',
+    settings_theme_desc: 'Choisir le theme visuel de l\'application',
     theme_dark: 'Sombre', theme_light: 'Clair',
     settings_language_title: 'Langue', settings_language: 'Langue',
     settings_language_desc: 'Selectionnez la langue de l\'interface',
@@ -551,6 +560,9 @@ const translations = {
     cl_113_1: 'Nouvelle section Documentation avec Guide de l\'Application',
     cl_113_2: 'Journal des Modifications dans la section Documentation',
     cl_113_3: 'Page A propos (integree dans la Documentation)',
+    cl_114_1: '3 nouveaux themes visuels: Midnight (bleu), Emerald (vert) et Dracula (violet)',
+    cl_114_2: 'Selecteur de themes repense pour supporter 5 themes',
+    cl_114_3: 'Systeme de themes refactore pour evolver avec de nouvelles palettes',
     cl_112_1: 'Traductions en 7 langues (es, en, de, fr, pt, ja, ko)',
     cl_112_2: 'Optimisation CSS avec variables de couleurs',
     cl_111_1: 'Detecteur de Spam avec configuration de fenetre de temps',
@@ -628,7 +640,7 @@ const translations = {
     nav_spam: 'Detector Spam', nav_alerts_widget: 'Alertas',
     nav_mod_activity: 'Atividade Mods', nav_suspicious: 'Usuarios Suspeitos', nav_chat_rules: 'Regras do Chat',
     settings_appearance: 'Aparencia', settings_theme: 'Tema',
-    settings_theme_desc: 'Alternar entre tema escuro e claro',
+    settings_theme_desc: 'Escolher o tema visual do aplicativo',
     theme_dark: 'Escuro', theme_light: 'Claro',
     settings_language_title: 'Idioma', settings_language: 'Idioma',
     settings_language_desc: 'Selecione o idioma da interface',
@@ -703,6 +715,9 @@ const translations = {
     cl_113_1: 'Nova secao de Documentacao com Guia do Aplicativo',
     cl_113_2: 'Registro de Alteracoes na secao Documentacao',
     cl_113_3: 'Pagina Sobre (integrada na Documentacao)',
+    cl_114_1: '3 novos temas visuais: Midnight (azul), Emerald (verde) e Dracula (roxo)',
+    cl_114_2: 'Seletor de temas redesenho para suportar 5 temas',
+    cl_114_3: 'Sistema de temas refatorado para escalar com novas paletas',
     cl_112_1: 'Traducoes em 7 idiomas (es, en, de, fr, pt, ja, ko)',
     cl_112_2: 'Otimizacao do CSS com variaveis de cores',
     cl_111_1: 'Detector de Spam com configuracao de janela de tempo',
@@ -855,6 +870,9 @@ const translations = {
     cl_113_1: 'アプリケーションガイド付きの新しいドキュメントセクション',
     cl_113_2: 'ドキュメントセクションに変更履歴を追加',
     cl_113_3: '概要ページ（ドキュメントに統合）',
+    cl_114_1: '3つの新しいテーマ：Midnight（青）、Emerald（緑）、Dracula（紫）',
+    cl_114_2: '5テーマ対応にテーマセレクタを再設計',
+    cl_114_3: '新しいカラーに対応するようテーマシステムをリファクタリング',
     cl_112_1: '7か国語対応（es, en, de, fr, pt, ja, ko）',
     cl_112_2: 'カラーベースを使ったCSS最適化',
     cl_111_1: '時間窓設定付きスパム検出',
@@ -1007,6 +1025,9 @@ const translations = {
     cl_113_1: '앱 가이드가 포함된 새로운 문서 섹션',
     cl_113_2: '문서 섹션에 변경 이력 추가',
     cl_113_3: '정보 페이지 (문서에 통합)',
+    cl_114_1: '3개의 새로운 테마: Midnight(파랑), Emerald(초록), Dracula(보라)',
+    cl_114_2: '5개 테마를 지원하도록 테마 선택기 재설계',
+    cl_114_3: '새로운 팔레트 지원을 위해 테마 시스템 리팩토링',
     cl_112_1: '7개 언어 번역 (es, en, de, fr, pt, ja, ko)',
     cl_112_2: '색상 변수를 사용한 CSS 최적화',
     cl_111_1: '시간 창 설정이 포함된 스팸 감지',
@@ -1096,11 +1117,12 @@ function applyTranslations() {
 }
 
 // ===== THEME =====
+const THEME_CLASSES = ['light-theme', 'midnight-theme', 'emerald-theme', 'dracula-theme'];
+
 function applyTheme(theme) {
-  if (theme === 'light') {
-    document.body.classList.add('light-theme');
-  } else {
-    document.body.classList.remove('light-theme');
+  THEME_CLASSES.forEach(cls => document.body.classList.remove(cls));
+  if (theme !== 'dark') {
+    document.body.classList.add(theme + '-theme');
   }
   localStorage.setItem('theme', theme);
   document.querySelectorAll('.theme-btn').forEach(btn => {
