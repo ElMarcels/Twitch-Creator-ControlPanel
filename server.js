@@ -1769,6 +1769,58 @@ app.post('/api/nightbot/import', requireAuth, async (req, res) => {
 });
 
 // ===== CUSTOM COMMANDS (server-side bot) =====
+
+// Auto-sync helper: push a single command to Nightbot (fire-and-forget)
+async function syncCommandToNightbot(channelId, cmd) {
+  try {
+    const token = await getNightbotToken(channelId);
+    if (!token) return; // Nightbot not connected, skip
+
+    let nbMessage = cmd.response
+      .replace(/{user}/g, '$(twitch $(user))')
+      .replace(/{username}/g, '$(channel)')
+      .replace(/{args}/g, '$(querystring)')
+      .replace(/{date}/g, '$(date)')
+      .replace(/{time}/g, '$(time)')
+      .substring(0, 400);
+
+    const body = {
+      name: `!${cmd.name}`,
+      message: nbMessage,
+      coolDown: String(cmd.cooldown || 5),
+      userLevel: cmd.permissions === 'broadcaster' ? 'owner' : cmd.permissions || 'everyone'
+    };
+
+    // Check if command already exists on Nightbot
+    const existing = await nightbotApi(channelId, 'GET', '/commands');
+    const existingCmd = (existing.commands || []).find(c => (c.name || '').replace(/^!/, '').toLowerCase() === cmd.name);
+
+    if (existingCmd) {
+      await nightbotApi(channelId, 'PUT', `/commands/${existingCmd._id}`, body);
+    } else {
+      await nightbotApi(channelId, 'POST', '/commands', body);
+    }
+  } catch (e) {
+    console.error('Nightbot auto-sync error:', e.message);
+  }
+}
+
+// Auto-sync helper: remove a command from Nightbot
+async function removeCommandFromNightbot(channelId, cmdName) {
+  try {
+    const token = await getNightbotToken(channelId);
+    if (!token) return;
+
+    const existing = await nightbotApi(channelId, 'GET', '/commands');
+    const existingCmd = (existing.commands || []).find(c => (c.name || '').replace(/^!/, '').toLowerCase() === cmdName);
+    if (existingCmd) {
+      await nightbotApi(channelId, 'DELETE', `/commands/${existingCmd._id}`);
+    }
+  } catch (e) {
+    console.error('Nightbot auto-delete error:', e.message);
+  }
+}
+
 app.get('/api/commands', requireAuth, (req, res) => {
   const channelId = req.auth.user.id;
   const cmds = customCommands.get(channelId) || [];
@@ -1794,6 +1846,8 @@ app.post('/api/commands', requireAuth, (req, res) => {
   };
   cmds.push(cmd);
   customCommands.set(channelId, cmds);
+  // Auto-sync to Nightbot (fire-and-forget)
+  syncCommandToNightbot(channelId, cmd);
   res.json({ data: cmd });
 });
 
@@ -1809,6 +1863,8 @@ app.put('/api/commands/:id', requireAuth, (req, res) => {
   if (cooldown !== undefined) cmd.cooldown = Math.max(0, parseInt(cooldown) || 0);
   if (permissions !== undefined) cmd.permissions = permissions;
   customCommands.set(channelId, cmds);
+  // Auto-sync to Nightbot (fire-and-forget)
+  syncCommandToNightbot(channelId, cmd);
   res.json({ data: cmd });
 });
 
@@ -1817,8 +1873,11 @@ app.delete('/api/commands/:id', requireAuth, (req, res) => {
   const cmds = customCommands.get(channelId) || [];
   const idx = cmds.findIndex(c => c.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Command not found' });
+  const deletedName = cmds[idx].name;
   cmds.splice(idx, 1);
   customCommands.set(channelId, cmds);
+  // Auto-sync to Nightbot: remove command (fire-and-forget)
+  removeCommandFromNightbot(channelId, deletedName);
   res.json({ status: 204 });
 });
 
