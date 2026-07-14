@@ -2134,6 +2134,183 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
   margin: 0 12px;
 }
 
+/* DOCUMENTATION TABS */
+.doc-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.doc-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  background: var(--glass-bg-light);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.doc-tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-refraction);
+  pointer-events: none;
+}
+
+.doc-tab > * {
+  position: relative;
+  z-index: 1;
+}
+
+.doc-tab:hover {
+  border-color: var(--glass-border-hover);
+  color: var(--text-primary);
+}
+
+.doc-tab.active {
+  background: rgba(147, 51, 234, 0.15);
+  border-color: rgba(147, 51, 234, 0.4);
+  color: var(--purple-400);
+  font-weight: 600;
+}
+
+.doc-tab-content {
+  display: none;
+}
+
+.doc-tab-content.active {
+  display: block;
+}
+
+/* Guide-specific styles */
+.guide-steps {
+  color: var(--text-secondary);
+  line-height: 2;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.guide-steps li {
+  margin-bottom: 4px;
+}
+
+.guide-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.guide-feature-card {
+  background: var(--glass-bg-light);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  text-align: center;
+  transition: border-color 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.guide-feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-refraction);
+  pointer-events: none;
+}
+
+.guide-feature-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.guide-feature-card:hover {
+  border-color: var(--glass-border-hover);
+  transform: translateY(-2px);
+}
+
+.guide-feature-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+
+.guide-feature-icon.purple { background: rgba(147, 51, 234, 0.15); color: var(--purple-400); }
+.guide-feature-icon.magenta { background: rgba(236, 72, 153, 0.15); color: var(--pink-400); }
+.guide-feature-icon.blue { background: rgba(59, 130, 246, 0.15); color: var(--blue-400); }
+.guide-feature-icon.green { background: rgba(16, 185, 129, 0.15); color: var(--green-400); }
+.guide-feature-icon.orange { background: rgba(245, 158, 11, 0.15); color: var(--orange-400); }
+.guide-feature-icon.red { background: rgba(239, 68, 68, 0.15); color: var(--red-400); }
+.guide-feature-icon.teal { background: rgba(20, 184, 166, 0.15); color: var(--teal-400); }
+
+.guide-feature-card h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.guide-feature-card p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.guide-shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.guide-shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--glass-bg-light);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+
+.guide-shortcut-item span {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.guide-tips-list {
+  color: var(--text-secondary);
+  line-height: 2;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.guide-tips-list li {
+  margin-bottom: 4px;
+}
+
 @media (max-width: 640px) {
   .about-features-grid {
     grid-template-columns: 1fr;

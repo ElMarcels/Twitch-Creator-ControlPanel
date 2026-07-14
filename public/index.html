@@ -245,9 +245,9 @@
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span data-i18n="nav_settings">Ajustes</span>
         </a>
-        <a href="#" class="nav-item" data-page="about">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-          <span data-i18n="nav_about">Acerca de</span>
+        <a href="#" class="nav-item" data-page="documentation">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span data-i18n="nav_documentation">Documentacion</span>
         </a>
         <a href="/auth/logout" class="nav-item logout">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -1263,93 +1263,292 @@
           </div>
         </div>
 
-        <!-- ABOUT -->
-        <div class="page" id="page-about">
-          <div class="about-container">
-            <div class="about-hero">
-              <img src="/img/twitchcommandcente.png" alt="Logo" class="about-logo">
-              <h1 class="about-title">TwitchMod <span class="gradient-text">Dashboard</span></h1>
-              <p class="about-version">v1.1</p>
-            </div>
+        <!-- DOCUMENTATION -->
+        <div class="page" id="page-documentation">
+          <div class="doc-tabs">
+            <button class="doc-tab active" data-doc-tab="about" onclick="switchDocTab('about')">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              <span data-i18n="doc_tab_about">Acerca de</span>
+            </button>
+            <button class="doc-tab" data-doc-tab="guide" onclick="switchDocTab('guide')">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              <span data-i18n="doc_tab_guide">Guia de la Aplicacion</span>
+            </button>
+          </div>
 
-            <div class="about-section">
-              <h2>Que es esta aplicacion?</h2>
-              <p>TwitchMod Dashboard es una herramienta completa para moderadores y creadores de contenido de Twitch. Diseñada para centralizar y simplificar la gestion de tu canal, esta dashboard te permite controlar todo desde un solo lugar sin tener que cambiar entre multiples paginas de Twitch.</p>
-            </div>
+          <!-- ABOUT TAB -->
+          <div class="doc-tab-content active" id="docTab-about">
+            <div class="about-container">
+              <div class="about-hero">
+                <img src="/img/twitchcommandcente.png" alt="Logo" class="about-logo">
+                <h1 class="about-title">TwitchMod <span class="gradient-text">Dashboard</span></h1>
+                <p class="about-version">v1.1</p>
+              </div>
 
-            <div class="about-section">
-              <h2>Caracteristicas principales</h2>
-              <div class="about-features-grid">
-                <div class="about-feature-card">
-                  <div class="about-feature-icon purple">
-                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <div class="about-section">
+                <h2 data-i18n="about_what">Que es esta aplicacion?</h2>
+                <p data-i18n="about_what_desc">TwitchMod Dashboard es una herramienta completa para moderadores y creadores de contenido de Twitch. Disenada para centralizar y simplificar la gestion de tu canal, esta dashboard te permite controlar todo desde un solo lugar sin tener que cambiar entre multiples paginas de Twitch.</p>
+              </div>
+
+              <div class="about-section">
+                <h2 data-i18n="about_features">Caracteristicas principales</h2>
+                <div class="about-features-grid">
+                  <div class="about-feature-card">
+                    <div class="about-feature-icon purple">
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h3 data-i18n="about_feat_mod">Moderacion</h3>
+                    <p data-i18n="about_feat_mod_desc">Gestiona seguidores, chatters, moderadores y VIPs desde un solo lugar. Ban, timeout y control total del chat.</p>
                   </div>
-                  <h3>Moderacion</h3>
-                  <p>Gestiona seguidores, chatters, moderadores y VIPs desde un solo lugar. Ban, timeout y control total del chat.</p>
-                </div>
-                <div class="about-feature-card">
-                  <div class="about-feature-icon magenta">
-                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                  <div class="about-feature-card">
+                    <div class="about-feature-icon magenta">
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    </div>
+                    <h3 data-i18n="about_feat_stats">Estadisticas</h3>
+                    <p data-i18n="about_feat_stats_desc">Visualiza graficos de seguidores, horas pico, crecimiento y emotes mas usados con graficas interactivas.</p>
                   </div>
-                  <h3>Estadisticas</h3>
-                  <p>Visualiza graficos de seguidores, horas pico, crecimiento y emotes mas usados con graficas interactivas.</p>
-                </div>
-                <div class="about-feature-card">
-                  <div class="about-feature-icon blue">
-                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <div class="about-feature-card">
+                    <div class="about-feature-icon blue">
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <h3 data-i18n="about_feat_chat">Chat en vivo</h3>
+                    <p data-i18n="about_feat_chat_desc">Lee y envia mensajes al chat de tu canal directamente desde la dashboard. Configura ajustes del chat.</p>
                   </div>
-                  <h3>Chat en vivo</h3>
-                  <p>Lee y envia mensajes al chat de tu canal directamente desde la dashboard. Configura ajustes del chat.</p>
-                </div>
-                <div class="about-feature-card">
-                  <div class="about-feature-icon green">
-                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v2m0 8v2"/></svg>
+                  <div class="about-feature-card">
+                    <div class="about-feature-icon green">
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v2m0 8v2"/></svg>
+                    </div>
+                    <h3 data-i18n="about_feat_points">Puntos del Canal</h3>
+                    <p data-i18n="about_feat_points_desc">Administra recompensas personalizadas, canjes y ajustes de puntos del canal.</p>
                   </div>
-                  <h3>Puntos del Canal</h3>
-                  <p>Administra recompensas personalizadas, canjes y ajustes de puntos del canal.</p>
-                </div>
-                <div class="about-feature-card">
-                  <div class="about-feature-icon orange">
-                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                  <div class="about-feature-card">
+                    <div class="about-feature-icon orange">
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                    </div>
+                    <h3 data-i18n="about_feat_predictions">Predicciones y Encuestas</h3>
+                    <p data-i18n="about_feat_predictions_desc">Crea y gestiona predicciones y encuestas para interactuar con tu audiencia.</p>
                   </div>
-                  <h3>Predicciones y Encuestas</h3>
-                  <p>Crea y gestiona predicciones y encuestas para interactuar con tu audiencia.</p>
-                </div>
-                <div class="about-feature-card">
-                  <div class="about-feature-icon red">
-                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                  <div class="about-feature-card">
+                    <div class="about-feature-icon red">
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    </div>
+                    <h3 data-i18n="about_feat_stream">Configuracion del Directo</h3>
+                    <p data-i18n="about_feat_stream_desc">Modifica titulo, categoria, idioma, etiquetas y thumbnail de tu directo en tiempo real.</p>
                   </div>
-                  <h3>Configuracion del Directo</h3>
-                  <p>Modifica titulo, categoria, idioma, etiquetas y thumbnail de tu directo en tiempo real.</p>
                 </div>
               </div>
-            </div>
 
-            <div class="about-section">
-              <h2>Tecnologias</h2>
-              <div class="about-tech-list">
-                <span class="about-tech-badge">Node.js</span>
-                <span class="about-tech-badge">Express</span>
-                <span class="about-tech-badge">Twitch Helix API</span>
-                <span class="about-tech-badge">Vanilla JS</span>
-                <span class="about-tech-badge">CSS3</span>
-                <span class="about-tech-badge">OAuth 2.0</span>
-                <span class="about-tech-badge">Vercel</span>
+              <div class="about-section">
+                <h2 data-i18n="about_tech">Tecnologias</h2>
+                <div class="about-tech-list">
+                  <span class="about-tech-badge">Node.js</span>
+                  <span class="about-tech-badge">Express</span>
+                  <span class="about-tech-badge">Twitch Helix API</span>
+                  <span class="about-tech-badge">Vanilla JS</span>
+                  <span class="about-tech-badge">CSS3</span>
+                  <span class="about-tech-badge">OAuth 2.0</span>
+                  <span class="about-tech-badge">Vercel</span>
+                </div>
+              </div>
+
+              <div class="about-section">
+                <h2 data-i18n="about_security">Seguridad</h2>
+                <p data-i18n="about_security_desc">Tus credenciales de Twitch nunca se almacenan en nuestros servidores. La autenticacion se realiza a traves de OAuth 2.0 y los tokens de acceso se manejan de forma segura con cookies HttpOnly. La aplicacion solo accede a los permisos que tu autorizas explicitamente.</p>
+              </div>
+
+              <div class="about-section about-footer">
+                <p data-i18n="about_footer">Creado con dedicacion para la comunidad de Twitch.</p>
+                <p class="about-links">
+                  <a href="https://github.com/ElMarcels/Twitch-Creator-ControlPanel" target="_blank" rel="noopener">GitHub</a>
+                  <span class="about-separator">|</span>
+                  <a href="https://dev.twitch.tv" target="_blank" rel="noopener">Twitch Developers</a>
+                </p>
               </div>
             </div>
+          </div>
 
-            <div class="about-section">
-              <h2>Seguridad</h2>
-              <p>Tus credenciales de Twitch nunca se almacenan en nuestros servidores. La autenticacion se realiza a traves de OAuth 2.0 y los tokens de acceso se manejan de forma segura con cookies HttpOnly. La aplicacion solo accede a los permisos que tu autorizas explicitamente.</p>
-            </div>
+          <!-- GUIDE TAB -->
+          <div class="doc-tab-content" id="docTab-guide">
+            <div class="about-container">
+              <div class="about-hero">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;color:var(--purple-400)"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <h1 class="about-title" data-i18n="guide_title">Guia de la Aplicacion</h1>
+                <p class="about-version" data-i18n="guide_subtitle">Aprende a usar cada funcion del dashboard paso a paso</p>
+              </div>
 
-            <div class="about-section about-footer">
-              <p>Creado con dedicacion para la comunidad de Twitch.</p>
-              <p class="about-links">
-                <a href="https://github.com/ElMarcels/Twitch-Creator-ControlPanel" target="_blank" rel="noopener">GitHub</a>
-                <span class="about-separator">|</span>
-                <a href="https://dev.twitch.tv" target="_blank" rel="noopener">Twitch Developers</a>
-              </p>
+              <div class="about-section">
+                <h2 data-i18n="guide_quickstart_title">Inicio Rapido</h2>
+                <p data-i18n="guide_quickstart_desc">Para empezar a usar TwitchMod Dashboard, solo necesitas una cuenta de Twitch y ser moderador o propietario de un canal. Sigue estos pasos:</p>
+                <ol class="guide-steps">
+                  <li data-i18n="guide_step1">Haz clic en "Iniciar sesion con Twitch" y autoriza la aplicacion.</li>
+                  <li data-i18n="guide_step2">Si eres moderador de multiples canales, selecciona el canal que quieres administrar.</li>
+                  <li data-i18n="guide_step3">Explora las secciones del panel usando el menu lateral izquierdo.</li>
+                  <li data-i18n="guide_step4">Configura tu tema e idioma preferidos en la seccion de Ajustes.</li>
+                </ol>
+              </div>
+
+              <div class="about-section">
+                <h2 data-i18n="guide_sections_title">Secciones del Dashboard</h2>
+                <div class="guide-features-grid">
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon purple">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_home">Inicio</h3>
+                    <p data-i18n="guide_sec_home_desc">Vista general con estadisticas clave (seguidores, visitas, espectadores) y estado del directo en tiempo real. Accesos rapidos a las funciones mas usadas.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon magenta">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_moderation">Moderacion</h3>
+                    <p data-i18n="guide_sec_moderation_desc">Gestiona seguidores, chatters activos, baneados, moderadores y VIPs. Incluye AutoMod con palabras bloqueadas y un historial de acciones de moderacion.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon green">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_points">Puntos del Canal</h3>
+                    <p data-i18n="guide_sec_points_desc">Crea, edita, duplica y elimina recompensas personalizadas. Configura costos, limites por directo y por usuario, y elige colores personalizados.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon blue">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_stream">Configurar Directo</h3>
+                    <p data-i18n="guide_sec_stream_desc">Modifica el titulo, categoria, idioma y etiquetas de tu directo en tiempo real. Tambien puedes actualizar la miniatura (thumbnail) del stream.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon orange">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_chat">Chat</h3>
+                    <p data-i18n="guide_sec_chat_desc">Envia mensajes al chat, configura modo lento, suscriptores, seguidores y mas. Incluye mensajes rapidos predefinidos y anuncios con colores.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon teal">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_stats">Estadisticas</h3>
+                    <p data-i18n="guide_sec_stats_desc">Graficos interactivos de espectadores en el tiempo, mejores horarios para transmitir, crecimiento de seguidores e informacion detallada del canal.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon red">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_predictions">Predicciones y Encuestas</h3>
+                    <p data-i18n="guide_sec_predictions_desc">Crea predicciones con opciones y duracion, resuelve o cancela. Encuestas con multiples opciones y votacion en tiempo real.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon purple">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_raids">Raids</h3>
+                    <p data-i18n="guide_sec_raids_desc">Busca canales y envia raids para apoyar a otros streamers. Cancela un raid activo si es necesario.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon blue">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_ads">Anuncios</h3>
+                    <p data-i18n="guide_sec_ads_desc">Programa anuncios, posponer el proximo anuncio y lanza comerciales de 30s a 3min. Visualiza el estado de pre-roll.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon magenta">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_clips">Clips</h3>
+                    <p data-i18n="guide_sec_clips_desc">Crea clips del directo con un clic, visualiza los clips recientes con vista previa y comparte los enlaces.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon green">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_shield">Modo Escudo</h3>
+                    <p data-i18n="guide_sec_shield_desc">Activa el modo escudo para bloquear automaticamente mensajes de usuarios nuevos o no seguidores durante raids no deseados.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon orange">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_commands">Comandos</h3>
+                    <p data-i18n="guide_sec_commands_desc">Crea comandos personalizados con variables como {user}, {args}, {date} y {time}. El bot responde automaticamente en el chat via EventSub.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon teal">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_goals">Metas</h3>
+                    <p data-i18n="guide_sec_goals_desc">Crea metas de seguidores, suscriptores y visualizaciones con barras de progreso. Metas locales y metas de Twitch integradas.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon blue">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_chatlog">Log del Chat</h3>
+                    <p data-i18n="guide_sec_chatlog_desc">Revisa el historial completo de mensajes del chat con busqueda integrada. Util para revisar lo que paso durante el directo.</p>
+                  </div>
+                  <div class="guide-feature-card">
+                    <div class="guide-feature-icon red">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+                    </div>
+                    <h3 data-i18n="guide_sec_spam">Detector de Spam</h3>
+                    <p data-i18n="guide_sec_spam_desc">Configura un detector automatico de mensajes repetitivos con ventana de tiempo y numero maximo de mensajes. Revisa el historial de spam detectado.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="about-section">
+                <h2 data-i18n="guide_shortcuts_title">Atajos de Teclado</h2>
+                <p data-i18n="guide_shortcuts_desc" style="margin-bottom:16px">Usa estos atajos para navegar mas rapido (se activan/desactivan en Ajustes):</p>
+                <div class="guide-shortcuts-grid">
+                  <div class="guide-shortcut-item">
+                    <kbd class="kbd">Alt + 1</kbd>
+                    <span data-i18n="guide_sc_home">Ir a Inicio</span>
+                  </div>
+                  <div class="guide-shortcut-item">
+                    <kbd class="kbd">Alt + 2..9</kbd>
+                    <span data-i18n="guide_sc_pages">Ir a paginas 2-9</span>
+                  </div>
+                  <div class="guide-shortcut-item">
+                    <kbd class="kbd">Alt + S</kbd>
+                    <span data-i18n="guide_sc_settings">Abrir Ajustes</span>
+                  </div>
+                  <div class="guide-shortcut-item">
+                    <kbd class="kbd">Alt + R</kbd>
+                    <span data-i18n="guide_sc_refresh">Refrescar pagina actual</span>
+                  </div>
+                  <div class="guide-shortcut-item">
+                    <kbd class="kbd">Alt + D</kbd>
+                    <span data-i18n="guide_sc_dashboard">Ir al Dashboard</span>
+                  </div>
+                  <div class="guide-shortcut-item">
+                    <kbd class="kbd">Esc</kbd>
+                    <span data-i18n="guide_sc_close">Cerrar modal</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="about-section">
+                <h2 data-i18n="guide_tips_title">Consejos Utiles</h2>
+                <ul class="guide-tips-list">
+                  <li data-i18n="guide_tip1">Activa el modo compacto en Ajustes si quieres ver mas contenido en pantalla.</li>
+                  <li data-i18n="guide_tip2">El panel recopila estadisticas automaticamente mientras el directo esta activo. Vuelve a revisar los graficos despues de unas horas.</li>
+                  <li data-i18n="guide_tip3">Puedes compartir tu dashboard con otros moderadores usando la funcion de "Compartir".</li>
+                  <li data-i18n="guide_tip4">Configura el email digest semanal en Ajustes para recibir un resumen de metricas en tu correo.</li>
+                  <li data-i18n="guide_tip5">El spam detector funciona en segundo plano. Puedes ajustar la sensibilidad en su seccion.</li>
+                  <li data-i18n="guide_tip6">Los comandos personalizados necesitan que el bot este conectado via EventSub. Haz clic en "Conectar Bot" en la seccion de Comandos.</li>
+                </ul>
+              </div>
+
+              <div class="about-section about-footer">
+                <p data-i18n="guide_footer">¿Tienes mas preguntas? Visita nuestro repositorio en GitHub o la documentacion de Twitch Developers.</p>
+                <p class="about-links">
+                  <a href="https://github.com/ElMarcels/Twitch-Creator-ControlPanel" target="_blank" rel="noopener">GitHub</a>
+                  <span class="about-separator">|</span>
+                  <a href="https://dev.twitch.tv" target="_blank" rel="noopener">Twitch Developers</a>
+                </p>
+              </div>
             </div>
           </div>
         </div>
