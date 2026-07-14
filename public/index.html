@@ -812,6 +812,26 @@
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Nuevo Comando
             </button>
+            <button class="btn btn-secondary" onclick="loadCommands()">Actualizar</button>
+          </div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header">
+              <h3>Bot de Comandos</h3>
+              <div id="eventsubStatus" class="eventsub-badge eventsub-disconnected">
+                <span class="eventsub-dot"></span> Desconectado
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="text-muted" style="margin-bottom:12px">El bot escucha el chat y responde automaticamente cuando alguien escribe un comando (ej: <code>!social</code>). Necesita estar conectado via EventSub WebSocket.</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm" onclick="connectEventSub()">Conectar Bot</button>
+                <button class="btn btn-secondary btn-sm" onclick="disconnectEventSub()">Desconectar</button>
+                <button class="btn btn-secondary btn-sm" onclick="checkEventSubStatus()">Estado</button>
+              </div>
+              <div class="help-text" style="margin-top:8px">
+                <strong>Variables disponibles:</strong> <code>{user}</code> <code>{username}</code> <code>{args}</code> <code>{date}</code> <code>{time}</code>
+              </div>
+            </div>
           </div>
           <div class="commands-list" id="commandsList"></div>
         </div>
@@ -900,6 +920,7 @@
             <button class="btn btn-secondary" onclick="testAlert('follow')" data-i18n="alerts_test_follow">Test Follow</button>
             <button class="btn btn-secondary" onclick="testAlert('sub')" data-i18n="alerts_test_sub">Test Sub</button>
             <button class="btn btn-secondary" onclick="testAlert('bits')" data-i18n="alerts_test_bits">Test Bits</button>
+            <button class="btn btn-secondary" onclick="showAlertConfigModal()">Configurar Alertas</button>
           </div>
           <div class="card">
             <div class="card-header"><h3 data-i18n="alerts_title">Alertas en vivo</h3></div>
@@ -1157,6 +1178,57 @@
                 <div class="settings-row">
                   <div class="settings-info"><h3>D</h3><p data-i18n="shortcut_d">Ir al Dashboard</p></div>
                   <kbd class="kbd">Alt+D</kbd>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h2 class="settings-section-title">Email Digest Semanal</h2>
+              <div class="settings-card">
+                <div class="settings-row">
+                  <div class="settings-info">
+                    <h3>Recibir resumen por email</h3>
+                    <p>Recibe un email semanal con las metricas de tu canal: viewers, seguidores, chatters y mas.</p>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="emailDigestEnabled" onchange="saveEmailConfig()">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-info">
+                    <h3>Email de destino</h3>
+                    <p>Donde recibiras los resumenes semanales.</p>
+                  </div>
+                  <input type="email" id="emailDigestAddress" class="form-input" placeholder="tu@email.com" style="max-width:300px" onchange="saveEmailConfig()">
+                </div>
+                <div class="settings-row">
+                  <div class="settings-info">
+                    <h3>Servidor SMTP</h3>
+                    <p>Configuracion del servidor de correo saliente.</p>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                    <input type="text" id="emailSmtpHost" class="form-input" placeholder="smtp.gmail.com" style="width:200px" onchange="saveEmailConfig()">
+                    <input type="number" id="emailSmtpPort" class="form-input" placeholder="587" style="width:80px" onchange="saveEmailConfig()">
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-info">
+                    <h3>Usuario SMTP</h3>
+                    <p>Cuenta de correo que enviara el resumen.</p>
+                  </div>
+                  <input type="text" id="emailSmtpUser" class="form-input" placeholder="usuario@gmail.com" style="max-width:300px" onchange="saveEmailConfig()">
+                </div>
+                <div class="settings-row">
+                  <div class="settings-info">
+                    <h3>Contrasena SMTP</h3>
+                    <p>Contraseña o App Password de tu proveedor de correo.</p>
+                  </div>
+                  <input type="password" id="emailSmtpPass" class="form-input" placeholder="Contraseña SMTP" style="max-width:300px" onchange="saveEmailConfig()">
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px">
+                  <button class="btn btn-secondary btn-sm" onclick="testEmailDigest()">Enviar prueba</button>
+                  <button class="btn btn-primary btn-sm" onclick="sendDigestNow()">Enviar resumen ahora</button>
                 </div>
               </div>
             </div>

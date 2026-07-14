@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const fetch = require('node-fetch');
 const path = require('path');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -63,6 +64,23 @@ const actionLog = [];
 const bannedWords = new Set();
 let lastViewerSampleTime = 0;
 let lastFollowerSampleTime = 0;
+
+// ===== CUSTOM COMMANDS (server-side) =====
+const customCommands = new Map(); // channelId -> [{id, name, response, enabled, cooldown, permissions}]
+const commandCooldowns = new Map(); // `${channelId}:${commandName}:${userId}` -> lastUsedTimestamp
+
+// ===== ALERT TEMPLATES =====
+const alertTemplates = new Map(); // channelId -> {follow: {message, duration, sound}, sub: {...}, bits: {...}, raid: {...}}
+
+// ===== EMAIL DIGEST =====
+const emailConfigs = new Map(); // channelId -> {email, smtpHost, smtpPort, smtpUser, smtpPass, enabled, lastSent}
+
+// ===== EVENTSUB WEBSOCKET (for chat command detection) =====
+let eventsubWs = null;
+let eventsubSessionId = null;
+let eventsubKeepalive = null;
+let eventsubBroadcasterId = null;
+let eventsubConnected = false;
 
 // Moderator access system
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || '';
@@ -1415,6 +1433,391 @@ app.delete('/api/share/:token', requireAuth, (req, res) => {
   if (!entry || entry.userId !== req.auth.userId) return res.status(404).json({ error: 'Not found' });
   sharedDashboards.delete(req.params.token);
   res.json({ status: 204 });
+});
+
+// ===== CUSTOM COMMANDS (server-side bot) =====
+app.get('/api/commands', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const cmds = customCommands.get(channelId) || [];
+  res.json({ data: cmds });
+});
+
+app.post('/api/commands', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const { name, response, enabled, cooldown, permissions } = req.body;
+  if (!name || !response) return res.status(400).json({ error: 'Name and response required' });
+  const cleanName = name.trim().toLowerCase().replace(/^!/, '');
+  const cmds = customCommands.get(channelId) || [];
+  if (cmds.find(c => c.name === cleanName)) return res.status(400).json({ error: 'Command already exists' });
+  const cmd = {
+    id: 'cmd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    name: cleanName,
+    response: response.trim(),
+    enabled: enabled !== false,
+    cooldown: Math.max(0, parseInt(cooldown) || 0),
+    permissions: permissions || 'everyone',
+    uses: 0,
+    createdAt: new Date().toISOString()
+  };
+  cmds.push(cmd);
+  customCommands.set(channelId, cmds);
+  res.json({ data: cmd });
+});
+
+app.put('/api/commands/:id', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const cmds = customCommands.get(channelId) || [];
+  const cmd = cmds.find(c => c.id === req.params.id);
+  if (!cmd) return res.status(404).json({ error: 'Command not found' });
+  const { name, response, enabled, cooldown, permissions } = req.body;
+  if (name !== undefined) cmd.name = name.trim().toLowerCase().replace(/^!/, '');
+  if (response !== undefined) cmd.response = response.trim();
+  if (enabled !== undefined) cmd.enabled = enabled;
+  if (cooldown !== undefined) cmd.cooldown = Math.max(0, parseInt(cooldown) || 0);
+  if (permissions !== undefined) cmd.permissions = permissions;
+  customCommands.set(channelId, cmds);
+  res.json({ data: cmd });
+});
+
+app.delete('/api/commands/:id', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const cmds = customCommands.get(channelId) || [];
+  const idx = cmds.findIndex(c => c.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Command not found' });
+  cmds.splice(idx, 1);
+  customCommands.set(channelId, cmds);
+  res.json({ status: 204 });
+});
+
+// Chat message handler for bot commands
+async function handleChatMessage(broadcasterId, senderId, senderLogin, senderName, message, userRoles) {
+  const cmds = customCommands.get(broadcasterId) || [];
+  const cleanMsg = message.trim();
+  if (!cleanMsg.startsWith('!')) return;
+
+  const parts = cleanMsg.slice(1).split(/\s+/);
+  const cmdName = parts[0].toLowerCase();
+  const cmd = cmds.find(c => c.name === cmdName && c.enabled);
+  if (!cmd) return;
+
+  // Cooldown check
+  const cooldownKey = `${broadcasterId}:${cmdName}:${senderId}`;
+  const lastUsed = commandCooldowns.get(cooldownKey) || 0;
+  const now = Date.now();
+  if (cmd.cooldown > 0 && (now - lastUsed) < cmd.cooldown * 1000) return;
+  commandCooldowns.set(cooldownKey, now);
+
+  // Permission check
+  const isBroadcaster = senderId === broadcasterId;
+  const isMod = userRoles && (userRoles.includes('moderator') || userRoles.includes('broadcaster'));
+  if (cmd.permissions === 'broadcaster' && !isBroadcaster) return;
+  if (cmd.permissions === 'moderator' && !isMod && !isBroadcaster) return;
+
+  // Build response with variables
+  const args = parts.slice(1).join(' ');
+  let response = cmd.response
+    .replace(/{user}/g, senderName)
+    .replace(/{username}/g, senderLogin)
+    .replace(/{args}/g, args)
+    .replace(/{channel}/g, broadcasterId)
+    .replace(/{date}/g, new Date().toLocaleDateString('es'))
+    .replace(/{time}/g, new Date().toLocaleTimeString('es'));
+
+  cmd.uses = (cmd.uses || 0) + 1;
+
+  // Send response via Twitch API
+  try {
+    const ownerData = ownerTokens.get(broadcasterId);
+    if (!ownerData) return;
+    await fetch('https://api.twitch.tv/helix/chat/messages', {
+      method: 'POST',
+      headers: {
+        'Client-ID': TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${ownerData.accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        broadcaster_id: broadcasterId,
+        sender_id: broadcasterId,
+        message: response
+      })
+    });
+  } catch (err) {
+    console.error('Bot command send error:', err.message);
+  }
+}
+
+// ===== EVENTSUB WEBSOCKET =====
+function connectEventSub(broadcasterId, accessToken) {
+  if (eventsubWs) disconnectEventSub();
+  eventsubBroadcasterId = broadcasterId;
+
+  const ws = new (require('ws'))('wss://eventsub.wss.twitch.tv/ws');
+  eventsubWs = ws;
+
+  ws.on('message', async (data) => {
+    const msg = JSON.parse(data.toString());
+    if (msg.metadata?.message_type === 'session_welcome') {
+      eventsubSessionId = msg.payload.session.id;
+      eventsubConnected = true;
+      const keepaliveMs = msg.payload.session.keepalive_timeout_seconds * 1000 * 0.8;
+      eventsubKeepalive = setInterval(() => {
+        if (ws.readyState === 1) ws.ping();
+      }, keepaliveMs);
+      // Subscribe to channel.chat.message
+      await subscribeEventSub(broadcasterId, accessToken);
+    }
+    if (msg.metadata?.message_type === 'notification' && msg.metadata?.subscription_type === 'channel.chat.message') {
+      const e = msg.payload.event;
+      await handleChatMessage(
+        e.broadcaster_user_id,
+        e.chatter_user_id,
+        e.chatter_user_login,
+        e.chatter_user_name,
+        e.message.text,
+        e.badges ? e.badges.map(b => b.set_id) : []
+      );
+    }
+    if (msg.metadata?.message_type === 'session_reconnect') {
+      const newUrl = msg.payload.session.reconnect_url;
+      if (newUrl) {
+        disconnectEventSub();
+        const newWs = new (require('ws'))(newUrl);
+        newWs.on('message', ws.onmessage);
+        eventsubWs = newWs;
+      }
+    }
+  });
+
+  ws.on('close', () => {
+    eventsubConnected = false;
+    clearInterval(eventsubKeepalive);
+    eventsubSessionId = null;
+  });
+
+  ws.on('error', (err) => {
+    console.error('EventSub WebSocket error:', err.message);
+    eventsubConnected = false;
+  });
+}
+
+async function subscribeEventSub(broadcasterId, accessToken) {
+  if (!eventsubSessionId) return;
+  try {
+    await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+      method: 'POST',
+      headers: {
+        'Client-ID': TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        type: 'channel.chat.message',
+        version: '1',
+        condition: { broadcaster_user_id: broadcasterId, user_id: broadcasterId },
+        transport: { method: 'websocket', session_id: eventsubSessionId }
+      })
+    });
+  } catch (err) {
+    console.error('EventSub subscribe error:', err.message);
+  }
+}
+
+function disconnectEventSub() {
+  clearInterval(eventsubKeepalive);
+  if (eventsubWs) { try { eventsubWs.close(); } catch {} }
+  eventsubWs = null;
+  eventsubSessionId = null;
+  eventsubConnected = false;
+  eventsubBroadcasterId = null;
+}
+
+app.post('/api/commands/eventsub/connect', requireAuth, async (req, res) => {
+  connectEventSub(req.auth.user.id, req.auth.accessToken);
+  res.json({ status: 'connecting' });
+});
+
+app.post('/api/commands/eventsub/disconnect', requireAuth, (req, res) => {
+  disconnectEventSub();
+  res.json({ status: 'disconnected' });
+});
+
+app.get('/api/commands/eventsub/status', requireAuth, (req, res) => {
+  res.json({ data: { connected: eventsubConnected, sessionId: eventsubSessionId || null, broadcasterId: eventsubBroadcasterId } });
+});
+
+// ===== ALERT TEMPLATES =====
+app.get('/api/alerts/templates', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const templates = alertTemplates.get(channelId) || {
+    follow: { message: '{user} te ha seguido!', duration: 5, sound: 'follow' },
+    sub: { message: '{user} se ha suscrito! ({tier})', duration: 7, sound: 'sub' },
+    bits: { message: '{user} ha enviado {amount} bits!', duration: 5, sound: 'bits' },
+    raid: { message: '{user} ha raideado con {amount} espectadores!', duration: 7, sound: 'raid' }
+  };
+  res.json({ data: templates });
+});
+
+app.put('/api/alerts/templates', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const templates = req.body;
+  if (!templates || typeof templates !== 'object') return res.status(400).json({ error: 'Templates object required' });
+  alertTemplates.set(channelId, templates);
+  res.json({ data: templates });
+});
+
+app.post('/api/alerts/push-custom', requireAuth, (req, res) => {
+  const { type, user, detail, amount, game } = req.body;
+  if (!type) return res.status(400).json({ error: 'type required' });
+  const channelId = req.auth.user.id;
+  const templates = alertTemplates.get(channelId) || {};
+  const tmpl = templates[type] || {};
+  const message = (tmpl.message || '{user} - {type}')
+    .replace(/{user}/g, user || 'User')
+    .replace(/{username}/g, user || 'user')
+    .replace(/{type}/g, type)
+    .replace(/{amount}/g, amount || '')
+    .replace(/{game}/g, game || '')
+    .replace(/{detail}/g, detail || '');
+  const alert = {
+    id: 'al_' + Date.now(),
+    type,
+    user: user || '',
+    detail: detail || '',
+    amount: amount || null,
+    game: game || null,
+    message,
+    duration: tmpl.duration || 5,
+    sound: tmpl.sound || type,
+    timestamp: new Date().toISOString()
+  };
+  liveAlerts.push(alert);
+  if (liveAlerts.length > 100) liveAlerts.shift();
+  res.json({ data: alert });
+});
+
+// ===== EMAIL DIGEST =====
+app.get('/api/email/config', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const config = emailConfigs.get(channelId) || { email: '', smtpHost: 'smtp.gmail.com', smtpPort: 587, smtpUser: '', enabled: false };
+  res.json({ data: { ...config, smtpPass: config.smtpPass ? '***' : '' } });
+});
+
+app.put('/api/email/config', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const { email, smtpHost, smtpPort, smtpUser, smtpPass, enabled } = req.body;
+  const existing = emailConfigs.get(channelId) || {};
+  const config = {
+    email: email || existing.email || '',
+    smtpHost: smtpHost || existing.smtpHost || 'smtp.gmail.com',
+    smtpPort: parseInt(smtpPort) || existing.smtpPort || 587,
+    smtpUser: smtpUser || existing.smtpUser || '',
+    smtpPass: smtpPass && smtpPass !== '***' ? smtpPass : existing.smtpPass || '',
+    enabled: enabled !== undefined ? enabled : existing.enabled || false,
+    lastSent: existing.lastSent || null
+  };
+  emailConfigs.set(channelId, config);
+  res.json({ data: { ...config, smtpPass: config.smtpPass ? '***' : '' } });
+});
+
+app.post('/api/email/test', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const config = emailConfigs.get(channelId);
+  if (!config || !config.email || !config.smtpPass) {
+    return res.status(400).json({ error: 'Email no configurado' });
+  }
+  try {
+    const transporter = nodemailer.createTransport({
+      host: config.smtpHost,
+      port: config.smtpPort,
+      secure: config.smtpPort === 465,
+      auth: { user: config.smtpUser, pass: config.smtpPass }
+    });
+    await transporter.sendMail({
+      from: config.smtpUser,
+      to: config.email,
+      subject: 'TwitchMod Dashboard - Test de Email Digest',
+      html: '<h2>Email digest configurado correctamente</h2><p>Recibiras resumenes semanales de tu canal de Twitch.</p>'
+    });
+    res.json({ data: { sent: true } });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al enviar: ' + err.message });
+  }
+});
+
+app.post('/api/email/send-digest', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const config = emailConfigs.get(channelId);
+  if (!config || !config.email || !config.smtpPass) {
+    return res.status(400).json({ error: 'Email no configurado' });
+  }
+
+  // Gather weekly metrics
+  const now = Date.now();
+  const weekAgo = now - 7 * 24 * 3600000;
+  const recentViewers = viewerHistory.filter(v => v.t > weekAgo);
+  const recentFollowers = followerSnapshots.filter(f => f.t > weekAgo);
+  const recentActions = actionLog.filter(a => a.timestamp && new Date(a.timestamp).getTime() > weekAgo);
+  const recentChatterCount = chatterMessages.filter(m => m.timestamp > weekAgo);
+
+  const avgViewers = recentViewers.length > 0
+    ? Math.round(recentViewers.reduce((s, v) => s + v.viewers, 0) / recentViewers.length)
+    : 0;
+  const peakViewers = recentViewers.length > 0
+    ? Math.max(...recentViewers.map(v => v.viewers))
+    : 0;
+  const peakGame = recentViewers.length > 0
+    ? recentViewers.reduce((best, v) => (v.viewers > (best.viewers || 0) ? v : best), {}).game || '--'
+    : '--';
+  const uniqueChatters = new Set(recentChatterCount.map(m => m.user)).size;
+
+  const user = req.auth.user;
+  const html = `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#1a1125;color:#e0d4f5;padding:32px;border-radius:12px">
+      <h1 style="color:#a855f7;text-align:center">Resumen Semanal</h1>
+      <p style="text-align:center;color:#9585c0">Canal: <strong>${user.display_name}</strong></p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0">
+        <div style="background:#2a1f3d;padding:16px;border-radius:8px;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:#a855f7">${avgViewers}</div>
+          <div style="color:#9585c0;font-size:14px">Viewers promedio</div>
+        </div>
+        <div style="background:#2a1f3d;padding:16px;border-radius:8px;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:#ec4899">${peakViewers}</div>
+          <div style="color:#9585c0;font-size:14px">Peak viewers</div>
+        </div>
+        <div style="background:#2a1f3d;padding:16px;border-radius:8px;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:#10b981">${recentFollowers.length}</div>
+          <div style="color:#9585c0;font-size:14px">Nuevos seguidores</div>
+        </div>
+        <div style="background:#2a1f3d;padding:16px;border-radius:8px;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:#f59e0b">${uniqueChatters}</div>
+          <div style="color:#9585c0;font-size:14px">Chatters unicos</div>
+        </div>
+      </div>
+      <p style="color:#9585c0;font-size:14px;text-align:center">Juego mas jugado: <strong style="color:#e0d4f5">${peakGame}</strong></p>
+      <hr style="border-color:#2a1f3d;margin:24px 0">
+      <p style="color:#5a4d7a;font-size:12px;text-align:center">TwitchMod Dashboard - Resumen automatico semanal</p>
+    </div>`;
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: config.smtpHost,
+      port: config.smtpPort,
+      secure: config.smtpPort === 465,
+      auth: { user: config.smtpUser, pass: config.smtpPass }
+    });
+    await transporter.sendMail({
+      from: config.smtpUser,
+      to: config.email,
+      subject: `Resumen Semanal - ${user.display_name}`,
+      html
+    });
+    config.lastSent = new Date().toISOString();
+    emailConfigs.set(channelId, config);
+    res.json({ data: { sent: true, lastSent: config.lastSent } });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al enviar: ' + err.message });
+  }
 });
 
 // ===== ALERTS WIDGET =====

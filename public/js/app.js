@@ -741,10 +741,10 @@ function loadPageData(page) {
     case 'mod-activity': loadModActivity(); break;
     case 'suspicious': loadSuspiciousUsers(); break;
     case 'chat-rules': loadChatRules(); break;
-    case 'alerts-widget': loadAlerts(); break;
+    case 'alerts-widget': loadAlerts(); loadAlertTemplates(); break;
     case 'appeals': loadAppeals(); break;
     case 'share': loadShareLinks(); break;
-    case 'settings': loadModeratorAccounts(); break;
+    case 'settings': loadModeratorAccounts(); loadEmailConfig(); break;
   }
 }
 
@@ -3365,4 +3365,348 @@ function copyAppealLink() {
   const url = window.location.origin + '/appeal';
   navigator.clipboard.writeText(url);
   showToast('Link copiado', 'success');
+}
+
+// ============================================================
+// FEATURE: ALERT TEMPLATES (Custom Variables)
+// ============================================================
+let alertTemplatesData = {};
+
+async function loadAlertTemplates() {
+  const data = await api('/api/alerts/templates');
+  if (data && data.data) alertTemplatesData = data.data;
+}
+
+function showAlertConfigModal() {
+  const types = [
+    { key: 'follow', label: 'Follow', vars: '{user}, {username}' },
+    { key: 'sub', label: 'Sub', vars: '{user}, {username}, {tier}' },
+    { key: 'bits', label: 'Bits', vars: '{user}, {username}, {amount}' },
+    { key: 'raid', label: 'Raid', vars: '{user}, {username}, {amount}' }
+  ];
+  const html = types.map(t => {
+    const tmpl = alertTemplatesData[t.key] || {};
+    return `
+      <div class="form-group">
+        <label><strong>${t.label}</strong> — Variables: <code>${t.vars}</code></label>
+        <input type="text" class="form-input alert-tmpl-input" data-type="${t.key}" value="${escapeHtml(tmpl.message || '')}" placeholder="Mensaje de alerta...">
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <div class="form-group" style="margin:0;flex:1">
+            <label style="font-size:0.75rem">Duracion (seg)</label>
+            <input type="number" class="form-input alert-tmpl-duration" data-type="${t.key}" value="${tmpl.duration || 5}" min="1" max="30">
+          </div>
+          <div class="form-group" style="margin:0;flex:1">
+            <label style="font-size:0.75rem">Sonido</label>
+            <select class="form-input alert-tmpl-sound" data-type="${t.key}">
+              <option value="default" ${tmpl.sound === 'default' ? 'selected' : ''}>Por defecto</option>
+              <option value="follow" ${tmpl.sound === 'follow' ? 'selected' : ''}>Follow</option>
+              <option value="sub" ${tmpl.sound === 'sub' ? 'selected' : ''}>Sub</option>
+              <option value="bits" ${tmpl.sound === 'bits' ? 'selected' : ''}>Bits</option>
+              <option value="raid" ${tmpl.sound === 'raid' ? 'selected' : ''}>Raid</option>
+              <option value="none" ${tmpl.sound === 'none' ? 'selected' : ''}>Sin sonido</option>
+            </select>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  showModal('Configurar Plantillas de Alertas', html, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: 'Guardar', class: 'btn-primary', action: 'saveAlertTemplates()' }
+  ]);
+}
+
+async function saveAlertTemplates() {
+  const templates = {};
+  document.querySelectorAll('.alert-tmpl-input').forEach(el => {
+    const type = el.dataset.type;
+    const duration = document.querySelector(`.alert-tmpl-duration[data-type="${type}"]`);
+    const sound = document.querySelector(`.alert-tmpl-sound[data-type="${type}"]`);
+    templates[type] = {
+      message: el.value.trim() || `{user} - ${type}`,
+      duration: parseInt(duration?.value) || 5,
+      sound: sound?.value || 'default'
+    };
+  });
+  const result = await api('/api/alerts/templates', { method: 'PUT', body: templates });
+  if (result && result.data) {
+    alertTemplatesData = templates;
+    closeModal();
+    showToast('Plantillas guardadas', 'success');
+  } else {
+    showToast('Error al guardar', 'error');
+  }
+}
+
+// ============================================================
+// FEATURE: EMAIL DIGEST
+// ============================================================
+async function loadEmailConfig() {
+  const data = await api('/api/email/config');
+  if (data && data.data) {
+    const c = data.data;
+    const enabled = document.getElementById('emailDigestEnabled');
+    const email = document.getElementById('emailDigestAddress');
+    const host = document.getElementById('emailSmtpHost');
+    const port = document.getElementById('emailSmtpPort');
+    const user = document.getElementById('emailSmtpUser');
+    if (enabled) enabled.checked = c.enabled || false;
+    if (email) email.value = c.email || '';
+    if (host) host.value = c.smtpHost || 'smtp.gmail.com';
+    if (port) port.port = c.smtpPort || 587;
+    if (user) user.value = c.smtpUser || '';
+  }
+}
+
+async function saveEmailConfig() {
+  const config = {
+    email: document.getElementById('emailDigestAddress')?.value || '',
+    smtpHost: document.getElementById('emailSmtpHost')?.value || 'smtp.gmail.com',
+    smtpPort: parseInt(document.getElementById('emailSmtpPort')?.value) || 587,
+    smtpUser: document.getElementById('emailSmtpUser')?.value || '',
+    smtpPass: document.getElementById('emailSmtpPass')?.value || '',
+    enabled: document.getElementById('emailDigestEnabled')?.checked || false
+  };
+  const result = await api('/api/email/config', { method: 'PUT', body: config });
+  if (result && result.data) {
+    showToast('Configuracion de email guardada', 'success');
+    document.getElementById('emailSmtpPass').value = '';
+  } else {
+    showToast('Error al guardar', 'error');
+  }
+}
+
+async function testEmailDigest() {
+  showToast('Enviando email de prueba...', 'info');
+  const result = await api('/api/email/test', { method: 'POST' });
+  if (result && result.data && result.data.sent) {
+    showToast('Email de prueba enviado!', 'success');
+  } else {
+    showToast(result?.error || 'Error al enviar', 'error');
+  }
+}
+
+async function sendDigestNow() {
+  showToast('Generando resumen semanal...', 'info');
+  const result = await api('/api/email/send-digest', { method: 'POST' });
+  if (result && result.data && result.data.sent) {
+    showToast('Resumen enviado!', 'success');
+  } else {
+    showToast(result?.error || 'Error al enviar', 'error');
+  }
+}
+
+// ============================================================
+// FEATURE: CUSTOM COMMANDS BOT (EventSub + Server-side)
+// ============================================================
+async function loadCommands() {
+  const list = document.getElementById('commandsList');
+  // Try server-side commands first
+  const data = await api('/api/commands');
+  if (data && data.data && data.data.length > 0) {
+    list.innerHTML = data.data.map(cmd => `
+      <div class="command-item">
+        <div class="command-info">
+          <span class="command-name">!${escapeHtml(cmd.name)}</span>
+          <span class="command-response">${escapeHtml(cmd.response)}</span>
+          <div class="command-meta">
+            <span class="command-badge ${cmd.enabled ? 'enabled' : 'disabled'}">${cmd.enabled ? 'Activo' : 'Inactivo'}</span>
+            <span class="command-badge">${cmd.permissions === 'broadcaster' ? 'Broadcaster' : cmd.permissions === 'moderator' ? 'Moderador' : 'Todos'}</span>
+            ${cmd.cooldown > 0 ? `<span class="command-badge">Cooldown: ${cmd.cooldown}s</span>` : ''}
+            <span class="command-badge">Usos: ${cmd.uses || 0}</span>
+          </div>
+        </div>
+        <div class="command-actions">
+          <button class="btn btn-secondary btn-sm" onclick="editCommand('${cmd.id}')">Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCommand('${cmd.id}')">X</button>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    // Fallback to localStorage
+    const localCmds = JSON.parse(localStorage.getItem('twitchmod_commands') || '[]');
+    if (localCmds.length > 0) {
+      list.innerHTML = localCmds.map((cmd, i) => `
+        <div class="command-item">
+          <div class="command-info">
+            <span class="command-name">!${escapeHtml(cmd.name)}</span>
+            <span class="command-response">${escapeHtml(cmd.response)}</span>
+          </div>
+          <div class="command-actions">
+            <button class="btn btn-primary btn-sm" onclick="useCommand(${i})">Usar</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteLocalCommand(${i})">X</button>
+          </div>
+        </div>
+      `).join('');
+      list.innerHTML += '<p class="text-muted" style="margin-top:12px;font-size:0.8rem">Estos comandos estan guardados localmente. Crea nuevos comandos con el boton de arriba para usar el bot automatico.</p>';
+    } else {
+      list.innerHTML = '<div class="empty-state"><p>No hay comandos personalizados. Crea uno con el boton de arriba.</p><p class="text-muted" style="margin-top:8px">Los comandos se ejecutan automaticamente en el chat cuando el bot esta conectado.</p></div>';
+    }
+  }
+}
+
+function showAddCommandModal() {
+  showModal('Nuevo Comando Personalizado', `
+    <div class="form-group">
+      <label>Nombre del comando (sin !)</label>
+      <input type="text" id="cmdName" class="form-input" placeholder="ej: social">
+    </div>
+    <div class="form-group">
+      <label>Respuesta</label>
+      <textarea id="cmdResponse" class="form-input" rows="3" placeholder="ej: Sigueme en Twitter @twitchuser"></textarea>
+      <p class="help-text">Variables: <code>{user}</code> <code>{username}</code> <code>{args}</code> <code>{date}</code> <code>{time}</code></p>
+    </div>
+    <div class="form-group">
+      <label>Cooldown (segundos, 0 = sin limite)</label>
+      <input type="number" id="cmdCooldown" class="form-input" value="0" min="0">
+    </div>
+    <div class="form-group">
+      <label>Permisos</label>
+      <select id="cmdPermissions" class="form-input">
+        <option value="everyone">Todos</option>
+        <option value="moderator">Solo Moderadores</option>
+        <option value="broadcaster">Solo Broadcaster</option>
+      </select>
+    </div>
+  `, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: 'Crear', class: 'btn-primary', action: 'addCommand()' }
+  ]);
+}
+
+async function addCommand() {
+  const name = document.getElementById('cmdName').value.trim().toLowerCase().replace(/^!/, '');
+  const response = document.getElementById('cmdResponse').value.trim();
+  const cooldown = parseInt(document.getElementById('cmdCooldown').value) || 0;
+  const permissions = document.getElementById('cmdPermissions').value;
+  if (!name || !response) return showToast('Nombre y respuesta son requeridos', 'error');
+
+  const result = await api('/api/commands', { method: 'POST', body: { name, response, cooldown, permissions } });
+  if (result && result.data) {
+    closeModal();
+    showToast(`Comando !${name} creado`, 'success');
+    loadCommands();
+  } else {
+    // Fallback to localStorage
+    let cmds = JSON.parse(localStorage.getItem('twitchmod_commands') || '[]');
+    if (cmds.find(c => c.name === name)) return showToast('Ya existe ese comando', 'error');
+    cmds.push({ name, response });
+    localStorage.setItem('twitchmod_commands', JSON.stringify(cmds));
+    closeModal();
+    showToast(`Comando !${name} creado (local)`, 'success');
+    loadCommands();
+  }
+}
+
+async function editCommand(id) {
+  const data = await api('/api/commands');
+  const cmd = data?.data?.find(c => c.id === id);
+  if (!cmd) return;
+  showModal('Editar Comando', `
+    <div class="form-group">
+      <label>Nombre del comando (sin !)</label>
+      <input type="text" id="cmdEditName" class="form-input" value="${escapeHtml(cmd.name)}">
+    </div>
+    <div class="form-group">
+      <label>Respuesta</label>
+      <textarea id="cmdEditResponse" class="form-input" rows="3">${escapeHtml(cmd.response)}</textarea>
+      <p class="help-text">Variables: <code>{user}</code> <code>{username}</code> <code>{args}</code> <code>{date}</code> <code>{time}</code></p>
+    </div>
+    <div class="form-group">
+      <label>Cooldown (segundos)</label>
+      <input type="number" id="cmdEditCooldown" class="form-input" value="${cmd.cooldown || 0}" min="0">
+    </div>
+    <div class="form-group">
+      <label>Permisos</label>
+      <select id="cmdEditPermissions" class="form-input">
+        <option value="everyone" ${cmd.permissions === 'everyone' ? 'selected' : ''}>Todos</option>
+        <option value="moderator" ${cmd.permissions === 'moderator' ? 'selected' : ''}>Solo Moderadores</option>
+        <option value="broadcaster" ${cmd.permissions === 'broadcaster' ? 'selected' : ''}>Solo Broadcaster</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Activo</label>
+      <label class="toggle-switch">
+        <input type="checkbox" id="cmdEditEnabled" ${cmd.enabled ? 'checked' : ''}>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  `, [
+    { text: 'Cancelar', class: 'btn-secondary', action: 'closeModal()' },
+    { text: 'Guardar', class: 'btn-primary', action: `updateCommand('${id}')` }
+  ]);
+}
+
+async function updateCommand(id) {
+  const name = document.getElementById('cmdEditName').value.trim().toLowerCase().replace(/^!/, '');
+  const response = document.getElementById('cmdEditResponse').value.trim();
+  const cooldown = parseInt(document.getElementById('cmdEditCooldown').value) || 0;
+  const permissions = document.getElementById('cmdEditPermissions').value;
+  const enabled = document.getElementById('cmdEditEnabled').checked;
+  if (!name || !response) return showToast('Nombre y respuesta son requeridos', 'error');
+
+  const result = await api(`/api/commands/${id}`, { method: 'PUT', body: { name, response, cooldown, permissions, enabled } });
+  if (result && result.data) {
+    closeModal();
+    showToast('Comando actualizado', 'success');
+    loadCommands();
+  } else {
+    showToast('Error al actualizar', 'error');
+  }
+}
+
+async function deleteCommand(id) {
+  if (!confirm('Eliminar este comando?')) return;
+  const result = await api(`/api/commands/${id}`, { method: 'DELETE' });
+  if (result) {
+    showToast('Comando eliminado', 'success');
+    loadCommands();
+  } else {
+    showToast('Error al eliminar', 'error');
+  }
+}
+
+function deleteLocalCommand(index) {
+  let cmds = JSON.parse(localStorage.getItem('twitchmod_commands') || '[]');
+  cmds.splice(index, 1);
+  localStorage.setItem('twitchmod_commands', JSON.stringify(cmds));
+  showToast('Comando eliminado', 'success');
+  loadCommands();
+}
+
+// EventSub WebSocket management
+async function connectEventSub() {
+  showToast('Conectando bot al chat...', 'info');
+  const result = await api('/api/commands/eventsub/connect', { method: 'POST' });
+  if (result) {
+    showToast('Bot conectándose...', 'success');
+    setTimeout(checkEventSubStatus, 2000);
+  }
+}
+
+async function disconnectEventSub() {
+  const result = await api('/api/commands/eventsub/disconnect', { method: 'POST' });
+  if (result) {
+    showToast('Bot desconectado', 'success');
+    updateEventsubUI(false);
+  }
+}
+
+async function checkEventSubStatus() {
+  const data = await api('/api/commands/eventsub/status');
+  if (data && data.data) {
+    updateEventsubUI(data.data.connected);
+  }
+}
+
+function updateEventsubUI(connected) {
+  const el = document.getElementById('eventsubStatus');
+  if (!el) return;
+  if (connected) {
+    el.className = 'eventsub-badge eventsub-connected';
+    el.innerHTML = '<span class="eventsub-dot"></span> Conectado';
+  } else {
+    el.className = 'eventsub-badge eventsub-disconnected';
+    el.innerHTML = '<span class="eventsub-dot"></span> Desconectado';
+  }
 }

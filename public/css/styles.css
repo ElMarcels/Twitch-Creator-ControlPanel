@@ -2508,6 +2508,76 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
   font-size: 0.9rem;
 }
 
+.command-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.command-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--glass-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+}
+
+.command-badge.enabled {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.command-badge.disabled {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.eventsub-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.eventsub-connected {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+}
+
+.eventsub-disconnected {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error);
+}
+
+.eventsub-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.eventsub-connected .eventsub-dot {
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+  animation: pulse 2s infinite;
+}
+
+.eventsub-disconnected .eventsub-dot {
+  background: var(--error);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* Goals */
 .goals-grid {
   display: grid;
