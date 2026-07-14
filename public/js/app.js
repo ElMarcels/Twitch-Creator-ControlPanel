@@ -4388,12 +4388,14 @@ function checkNightbotCallback() {
 async function checkNightbotStatus() {
   const data = await api('/api/nightbot/status');
   if (data && data.data) {
-    const { connected, user } = data.data;
+    const { connected, joined, user } = data.data;
     const statusEl = document.getElementById('nightbotStatus');
     const infoEl = document.getElementById('nightbotInfo');
     const connectBtn = document.getElementById('nightbotConnectBtn');
     const disconnectBtn = document.getElementById('nightbotDisconnectBtn');
+    const joinBtn = document.getElementById('nightbotJoinBtn');
     const userEl = document.getElementById('nightbotUser');
+    const joinEl = document.getElementById('nightbotJoinStatus');
 
     if (connected) {
       if (statusEl) {
@@ -4404,6 +4406,20 @@ async function checkNightbotStatus() {
       if (userEl && user) userEl.textContent = `🌙 ${user.displayName || user.name}`;
       if (connectBtn) connectBtn.style.display = 'none';
       if (disconnectBtn) disconnectBtn.style.display = '';
+
+      if (joined) {
+        if (joinEl) {
+          joinEl.textContent = '✅ Nightbot está en el canal';
+          joinEl.className = 'nightbot-join-badge nightbot-joined';
+        }
+        if (joinBtn) joinBtn.style.display = 'none';
+      } else {
+        if (joinEl) {
+          joinEl.textContent = '⚠️ Nightbot no está en el canal';
+          joinEl.className = 'nightbot-join-badge nightbot-not-joined';
+        }
+        if (joinBtn) joinBtn.style.display = '';
+      }
     } else {
       if (statusEl) {
         statusEl.className = 'nightbot-badge nightbot-disconnected';
@@ -4412,12 +4428,24 @@ async function checkNightbotStatus() {
       if (infoEl) infoEl.style.display = 'none';
       if (connectBtn) connectBtn.style.display = '';
       if (disconnectBtn) disconnectBtn.style.display = 'none';
+      if (joinBtn) joinBtn.style.display = 'none';
     }
   }
 }
 
 function connectNightbot() {
   window.location.href = '/auth/nightbot';
+}
+
+async function joinNightbot() {
+  showToast('Uniendo Nightbot al canal...', 'info');
+  const result = await api('/api/nightbot/join', { method: 'POST' });
+  if (result && result.status === 200) {
+    showToast('Nightbot se unió al canal', 'success');
+    checkNightbotStatus();
+  } else {
+    showToast(result?.message || 'Error al unir Nightbot', 'error');
+  }
 }
 
 async function disconnectNightbot() {
@@ -4483,16 +4511,19 @@ async function syncToNightbot() {
     showToast('No hay comandos locales para sincronizar', 'warning');
     return;
   }
-  if (!confirm(`Sincronizar ${localCmds.data.length} comandos a Nightbot?`)) return;
-  showToast('Sincronizando comandos a Nightbot...', 'info');
+  if (!confirm(`Sincronizar ${localCmds.data.length} comandos a Nightbot?\n\nNightbot se unirá automáticamente a tu canal si no está.`)) return;
+  showToast('Sincronizando... Nightbot se está uniendo al canal', 'info');
   const result = await api('/api/nightbot/sync', { method: 'POST' });
   if (result && result.data) {
-    const { synced, errors } = result.data;
-    if (synced > 0) showToast(`${synced} comandos sincronizados a Nightbot`, 'success');
+    const { synced, updated, errors } = result.data;
+    const parts = [];
+    if (synced > 0) parts.push(`${synced} creados`);
+    if (updated > 0) parts.push(`${updated} actualizados`);
+    if (parts.length > 0) showToast(`Nightbot: ${parts.join(', ')}`, 'success');
     if (errors.length > 0) {
       errors.forEach(e => showToast(`Error con !${e.name}: ${e.error}`, 'error'));
     }
-    if (synced === 0 && errors.length === 0) showToast('No se sincronizaron comandos', 'warning');
+    if (parts.length === 0 && errors.length === 0) showToast('No se sincronizaron comandos', 'warning');
   } else {
     showToast('Error al sincronizar', 'error');
   }

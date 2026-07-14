@@ -845,10 +845,12 @@
               <p class="text-muted" style="margin-bottom:12px">Sincroniza tus comandos con Nightbot. Puedes importar comandos existentes de Nightbot o sincronizar los tuyos para que Nightbot los ejecuten.</p>
               <div id="nightbotInfo" style="display:none" class="nightbot-connected-info">
                 <span id="nightbotUser" class="nightbot-user-badge"></span>
+                <span id="nightbotJoinStatus" class="nightbot-join-badge"></span>
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
                 <button class="btn btn-nightbot btn-sm" id="nightbotConnectBtn" onclick="connectNightbot()">🌙 Conectar Nightbot</button>
                 <button class="btn btn-secondary btn-sm" id="nightbotDisconnectBtn" onclick="disconnectNightbot()" style="display:none">Desconectar</button>
+                <button class="btn btn-nightbot btn-sm" id="nightbotJoinBtn" onclick="joinNightbot()" style="display:none">🚀 Unir Nightbot al canal</button>
                 <button class="btn btn-secondary btn-sm" onclick="loadNightbotCommands()">Ver comandos Nightbot</button>
                 <button class="btn btn-primary btn-sm" onclick="syncToNightbot()">⬆ Sincronizar a Nightbot</button>
                 <button class="btn btn-secondary btn-sm" onclick="importFromNightbot()">⬇ Importar de Nightbot</button>

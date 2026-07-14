@@ -1575,9 +1575,18 @@ app.get('/api/nightbot/status', requireAuth, async (req, res) => {
   if (!nbData) return res.json({ data: { connected: false } });
   const token = await getNightbotToken(channelId);
   if (!token) return res.json({ data: { connected: false } });
+
+  // Check if Nightbot is joined to the channel
+  let joined = false;
+  try {
+    const channelData = await nightbotApi(channelId, 'GET', '/channel');
+    joined = channelData && channelData.channel && channelData.channel.joined === true;
+  } catch (e) { /* ignore */ }
+
   res.json({
     data: {
       connected: true,
+      joined,
       user: nbData.user || null,
       hasClientId: !!NIGHTBOT_CLIENT_ID
     }
@@ -1589,6 +1598,12 @@ app.post('/api/nightbot/disconnect', requireAuth, async (req, res) => {
   nightbotTokens.delete(channelId);
   await saveToRedis();
   res.json({ status: 200 });
+});
+
+app.post('/api/nightbot/join', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const data = await nightbotApi(channelId, 'POST', '/channel/join');
+  res.json(data);
 });
 
 app.get('/api/nightbot/commands', requireAuth, async (req, res) => {
@@ -1648,23 +1663,53 @@ app.put('/api/nightbot/commands/default/:name', requireAuth, async (req, res) =>
 // Nightbot sync: push all local commands to Nightbot
 app.post('/api/nightbot/sync', requireAuth, async (req, res) => {
   const channelId = req.auth.user.id;
+
+  // First, ensure Nightbot is joined to the channel
+  try {
+    await nightbotApi(channelId, 'POST', '/channel/join');
+  } catch (e) { /* ignore, might already be joined */ }
+
   const localCmds = customCommands.get(channelId) || [];
   if (localCmds.length === 0) return res.json({ data: { synced: 0, errors: [] } });
 
-  const results = { synced: 0, errors: [] };
+  // Get existing Nightbot commands to avoid duplicates
+  const existingNb = await nightbotApi(channelId, 'GET', '/commands');
+  const existingNames = new Set((existingNb.commands || []).map(c => (c.name || '').replace(/^!/, '').toLowerCase()));
+
+  const results = { synced: 0, updated: 0, skipped: 0, errors: [] };
   for (const cmd of localCmds) {
     try {
+      const cmdName = `!${cmd.name}`;
+      // Convert local variables to Nightbot format
+      let nbMessage = cmd.response
+        .replace(/{user}/g, '$(twitch $(user))')
+        .replace(/{username}/g, '$(channel)')
+        .replace(/{args}/g, '$(querystring)')
+        .replace(/{date}/g, '$(date)')
+        .replace(/{time}/g, '$(time)')
+        .substring(0, 400);
+
       const body = {
-        name: `!${cmd.name}`,
-        message: cmd.response.substring(0, 400),
+        name: cmdName,
+        message: nbMessage,
         coolDown: String(cmd.cooldown || 5),
-        userLevel: cmd.permissions || 'everyone'
+        userLevel: cmd.permissions === 'broadcaster' ? 'owner' : cmd.permissions || 'everyone'
       };
-      const data = await nightbotApi(channelId, 'POST', '/commands', body);
-      if (data && data.status === 200) {
-        results.synced++;
+
+      if (existingNames.has(cmd.name)) {
+        // Find the existing command ID and update it
+        const existingCmd = (existingNb.commands || []).find(c => (c.name || '').replace(/^!/, '').toLowerCase() === cmd.name);
+        if (existingCmd) {
+          await nightbotApi(channelId, 'PUT', `/commands/${existingCmd._id}`, body);
+          results.updated++;
+        }
       } else {
-        results.errors.push({ name: cmd.name, error: data.message || 'Unknown error' });
+        const data = await nightbotApi(channelId, 'POST', '/commands', body);
+        if (data && data.status === 200) {
+          results.synced++;
+        } else {
+          results.errors.push({ name: cmd.name, error: data.message || 'Unknown error' });
+        }
       }
     } catch (err) {
       results.errors.push({ name: cmd.name, error: err.message });
@@ -1690,11 +1735,22 @@ app.post('/api/nightbot/import', requireAuth, async (req, res) => {
       continue;
     }
     try {
-      const permMap = { everyone: 'everyone', moderator: 'moderator', owner: 'broadcaster' };
+      // Convert Nightbot variables to local format
+      let response = nbCmd.message
+        .replace(/\$\(twitch\s+\$\(user\)\)/g, '{user}')
+        .replace(/\$\(channel\)/g, '{username}')
+        .replace(/\$\(querystring\)/g, '{args}')
+        .replace(/\$\(query\s+\d+\)/g, '{args}')
+        .replace(/\$\(date\)/g, '{date}')
+        .replace(/\$\(time\)/g, '{time}')
+        .replace(/\$\(count\)/g, '{count}')
+        .replace(/\$\(touser\)/g, '{user}');
+
+      const permMap = { everyone: 'everyone', moderator: 'moderator', owner: 'broadcaster', regular: 'everyone', subscriber: 'everyone' };
       const cmd = {
         id: 'cmd_nb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
         name: cmdName,
-        response: nbCmd.message,
+        response: response,
         enabled: true,
         cooldown: nbCmd.coolDown || 5,
         permissions: permMap[nbCmd.userLevel] || 'everyone',
