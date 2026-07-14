@@ -833,6 +833,41 @@
               </div>
             </div>
           </div>
+          <!-- Nightbot Integration -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header">
+              <h3>🌙 Nightbot</h3>
+              <div id="nightbotStatus" class="nightbot-badge nightbot-disconnected">
+                <span class="nightbot-dot"></span> No conectado
+              </div>
+            </div>
+            <div class="card-body">
+              <p class="text-muted" style="margin-bottom:12px">Sincroniza tus comandos con Nightbot. Puedes importar comandos existentes de Nightbot o sincronizar los tuyos para que Nightbot los ejecuten.</p>
+              <div id="nightbotInfo" style="display:none" class="nightbot-connected-info">
+                <span id="nightbotUser" class="nightbot-user-badge"></span>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+                <button class="btn btn-nightbot btn-sm" id="nightbotConnectBtn" onclick="connectNightbot()">🌙 Conectar Nightbot</button>
+                <button class="btn btn-secondary btn-sm" id="nightbotDisconnectBtn" onclick="disconnectNightbot()" style="display:none">Desconectar</button>
+                <button class="btn btn-secondary btn-sm" onclick="loadNightbotCommands()">Ver comandos Nightbot</button>
+                <button class="btn btn-primary btn-sm" onclick="syncToNightbot()">⬆ Sincronizar a Nightbot</button>
+                <button class="btn btn-secondary btn-sm" onclick="importFromNightbot()">⬇ Importar de Nightbot</button>
+              </div>
+              <div class="help-text" style="margin-top:8px">
+                <strong>Sincronizar:</strong> Envía tus comandos locales a Nightbot. <strong>Importar:</strong> Trae los comandos de Nightbot al dashboard.
+              </div>
+            </div>
+          </div>
+          <!-- Nightbot Commands List (hidden by default) -->
+          <div id="nightbotCommandsSection" style="display:none">
+            <div class="card" style="margin-bottom:16px">
+              <div class="card-header">
+                <h3>🌙 Comandos de Nightbot</h3>
+                <button class="btn btn-secondary btn-sm" onclick="hideNightbotCommands()">Cerrar</button>
+              </div>
+              <div class="commands-list" id="nightbotCommandsList"></div>
+            </div>
+          </div>
           <div class="commands-list" id="commandsList"></div>
         </div>
 

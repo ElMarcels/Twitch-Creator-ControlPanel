@@ -11,6 +11,8 @@ const PORT = process.env.PORT || 3000;
 
 const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
+const NIGHTBOT_CLIENT_ID = process.env.NIGHTBOT_CLIENT_ID || '';
+const NIGHTBOT_CLIENT_SECRET = process.env.NIGHTBOT_CLIENT_SECRET || '';
 const JWT_SECRET = process.env.JWT_SECRET || 'fav-twitch-jwt-secret-change-me';
 let BASE_URL = process.env.BASE_URL || process.env.VERCEL_URL || `http://localhost:${PORT}`;
 if (BASE_URL && !BASE_URL.startsWith('http')) {
@@ -82,6 +84,9 @@ let eventsubKeepalive = null;
 let eventsubBroadcasterId = null;
 let eventsubConnected = false;
 
+// ===== NIGHTBOT INTEGRATION =====
+const nightbotTokens = new Map(); // channelId -> { accessToken, refreshToken, expiresAt, user }
+
 // Moderator access system
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || '';
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
@@ -134,20 +139,24 @@ function migrateRedisData(data) {
 async function loadFromRedis() {
   if (!REDIS_URL) return;
   try {
-    const [tokensRaw, accountsRaw] = await Promise.all([
+    const [tokensRaw, accountsRaw, nightbotRaw] = await Promise.all([
       redisGet('fav-twitch:ownerTokens'),
-      redisGet('fav-twitch:moderatorAccounts')
+      redisGet('fav-twitch:moderatorAccounts'),
+      redisGet('fav-twitch:nightbotTokens')
     ]);
     let tokens = typeof tokensRaw === 'string' ? JSON.parse(tokensRaw) : tokensRaw;
     let accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : accountsRaw;
+    let nightbot = typeof nightbotRaw === 'string' ? JSON.parse(nightbotRaw) : nightbotRaw;
     const tMigrate = migrateRedisData(tokens);
     const aMigrate = migrateRedisData(accounts);
     tokens = tMigrate.data;
     accounts = aMigrate.data;
     ownerTokens.clear();
     moderatorAccounts.clear();
+    nightbotTokens.clear();
     if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
     if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
+    if (nightbot && typeof nightbot === 'object') Object.entries(nightbot).forEach(([k, v]) => nightbotTokens.set(k, v));
     if (tMigrate.migrated || aMigrate.migrated) await saveToRedis();
   } catch (err) {
     console.error('Failed to load from Redis:', err.message);
@@ -156,13 +165,15 @@ async function loadFromRedis() {
 
 async function saveToRedis() {
   if (!REDIS_URL) return;
-  const obj = { ownerTokens: {}, moderatorAccounts: {} };
+  const obj = { ownerTokens: {}, moderatorAccounts: {}, nightbotTokens: {} };
   ownerTokens.forEach((v, k) => obj.ownerTokens[k] = v);
   moderatorAccounts.forEach((v, k) => obj.moderatorAccounts[k] = v);
+  nightbotTokens.forEach((v, k) => obj.nightbotTokens[k] = v);
   try {
     await Promise.all([
       redisSet('fav-twitch:ownerTokens', obj.ownerTokens),
-      redisSet('fav-twitch:moderatorAccounts', obj.moderatorAccounts)
+      redisSet('fav-twitch:moderatorAccounts', obj.moderatorAccounts),
+      redisSet('fav-twitch:nightbotTokens', obj.nightbotTokens)
     ]);
   } catch (err) {
     console.error('Failed to save to Redis:', err.message);
@@ -471,6 +482,128 @@ app.get('/auth/logout', (req, res) => {
   res.clearCookie(COOKIE_NAME, { path: '/' });
   res.redirect('/');
 });
+
+// ===== NIGHTBOT OAUTH =====
+const NIGHTBOT_SCOPES = ['commands', 'commands_default', 'channel', 'channel_send'];
+
+app.get('/auth/nightbot', requireAuth, (req, res) => {
+  if (!NIGHTBOT_CLIENT_ID) return res.status(400).json({ error: 'Nightbot client ID not configured' });
+  const params = new URLSearchParams({
+    client_id: NIGHTBOT_CLIENT_ID,
+    redirect_uri: `${BASE_URL}/auth/nightbot/callback`,
+    response_type: 'code',
+    scope: NIGHTBOT_SCOPES.join(' '),
+    state: req.auth.user.id
+  });
+  res.redirect(`https://api.nightbot.tv/oauth2/authorize?${params}`);
+});
+
+app.get('/auth/nightbot/callback', async (req, res) => {
+  const { code, state: channelId, error } = req.query;
+  if (error) return res.redirect('/dashboard?nightbot=denied');
+  if (!code) return res.redirect('/dashboard?nightbot=no_code');
+
+  try {
+    const tokenResp = await fetch('https://api.nightbot.tv/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: NIGHTBOT_CLIENT_ID,
+        client_secret: NIGHTBOT_CLIENT_SECRET,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: `${BASE_URL}/auth/nightbot/callback`
+      })
+    });
+    const tokenData = await tokenResp.json();
+
+    if (!tokenData.access_token) {
+      return res.redirect('/dashboard?nightbot=token_failed');
+    }
+
+    // Fetch Nightbot user info
+    const userResp = await fetch('https://api.nightbot.tv/1/me', {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+    });
+    const userData = await userResp.json();
+
+    const nbUser = userData.user || {};
+    nightbotTokens.set(channelId, {
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      expiresAt: Date.now() + (tokenData.expires_in * 1000),
+      user: { id: nbUser._id, name: nbUser.name, displayName: nbUser.displayName }
+    });
+    await saveToRedis();
+    res.redirect('/dashboard?nightbot=connected');
+  } catch (err) {
+    console.error('Nightbot auth error:', err);
+    res.redirect('/dashboard?nightbot=error');
+  }
+});
+
+async function refreshNightbotToken(channelId) {
+  const nbData = nightbotTokens.get(channelId);
+  if (!nbData || !nbData.refreshToken) return null;
+  try {
+    const resp = await fetch('https://api.nightbot.tv/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: NIGHTBOT_CLIENT_ID,
+        client_secret: NIGHTBOT_CLIENT_SECRET,
+        grant_type: 'refresh_token',
+        redirect_uri: `${BASE_URL}/auth/nightbot/callback`,
+        refresh_token: nbData.refreshToken
+      })
+    });
+    const data = await resp.json();
+    if (!data.access_token) return null;
+    nbData.accessToken = data.access_token;
+    nbData.refreshToken = data.refresh_token;
+    nbData.expiresAt = Date.now() + (data.expires_in * 1000);
+    nightbotTokens.set(channelId, nbData);
+    await saveToRedis();
+    return nbData.accessToken;
+  } catch {
+    return null;
+  }
+}
+
+async function getNightbotToken(channelId) {
+  const nbData = nightbotTokens.get(channelId);
+  if (!nbData) return null;
+  if (nbData.expiresAt && Date.now() > nbData.expiresAt - 60000) {
+    return await refreshNightbotToken(channelId);
+  }
+  return nbData.accessToken;
+}
+
+async function nightbotApi(channelId, method, endpoint, body) {
+  const token = await getNightbotToken(channelId);
+  if (!token) return { error: 'Nightbot not connected' };
+  const opts = {
+    method,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  };
+  if (body && method !== 'GET') {
+    opts.body = new URLSearchParams(body).toString();
+  }
+  const resp = await fetch(`https://api.nightbot.tv/1${endpoint}`, opts);
+  const data = await resp.json();
+  if (resp.status === 401) {
+    const newToken = await refreshNightbotToken(channelId);
+    if (newToken) {
+      opts.headers['Authorization'] = `Bearer ${newToken}`;
+      const retry = await fetch(`https://api.nightbot.tv/1${endpoint}`, opts);
+      return await retry.json();
+    }
+  }
+  return data;
+}
 
 app.get('/auth/me', async (req, res) => {
   const token = req.cookies[COOKIE_NAME];
@@ -1433,6 +1566,150 @@ app.delete('/api/share/:token', requireAuth, (req, res) => {
   if (!entry || entry.userId !== req.auth.userId) return res.status(404).json({ error: 'Not found' });
   sharedDashboards.delete(req.params.token);
   res.json({ status: 204 });
+});
+
+// ===== NIGHTBOT API =====
+app.get('/api/nightbot/status', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const nbData = nightbotTokens.get(channelId);
+  if (!nbData) return res.json({ data: { connected: false } });
+  const token = await getNightbotToken(channelId);
+  if (!token) return res.json({ data: { connected: false } });
+  res.json({
+    data: {
+      connected: true,
+      user: nbData.user || null,
+      hasClientId: !!NIGHTBOT_CLIENT_ID
+    }
+  });
+});
+
+app.post('/api/nightbot/disconnect', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  nightbotTokens.delete(channelId);
+  await saveToRedis();
+  res.json({ status: 200 });
+});
+
+app.get('/api/nightbot/commands', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const data = await nightbotApi(channelId, 'GET', '/commands');
+  res.json(data);
+});
+
+app.post('/api/nightbot/commands', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const { name, message, coolDown, userLevel } = req.body;
+  if (!name || !message) return res.status(400).json({ error: 'Name and message required' });
+  const data = await nightbotApi(channelId, 'POST', '/commands', {
+    name: name.startsWith('!') ? name : `!${name}`,
+    message,
+    coolDown: String(coolDown || 5),
+    userLevel: userLevel || 'everyone'
+  });
+  res.json(data);
+});
+
+app.put('/api/nightbot/commands/:id', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const { name, message, coolDown, userLevel } = req.body;
+  const body = {};
+  if (name !== undefined) body.name = name.startsWith('!') ? name : `!${name}`;
+  if (message !== undefined) body.message = message;
+  if (coolDown !== undefined) body.coolDown = String(coolDown);
+  if (userLevel !== undefined) body.userLevel = userLevel;
+  const data = await nightbotApi(channelId, 'PUT', `/commands/${req.params.id}`, body);
+  res.json(data);
+});
+
+app.delete('/api/nightbot/commands/:id', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const data = await nightbotApi(channelId, 'DELETE', `/commands/${req.params.id}`);
+  res.json(data);
+});
+
+app.get('/api/nightbot/commands/default', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const data = await nightbotApi(channelId, 'GET', '/commands/default');
+  res.json(data);
+});
+
+app.put('/api/nightbot/commands/default/:name', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const { coolDown, enabled, userLevel } = req.body;
+  const body = {};
+  if (coolDown !== undefined) body.coolDown = String(coolDown);
+  if (enabled !== undefined) body.enabled = String(enabled);
+  if (userLevel !== undefined) body.userLevel = userLevel;
+  const data = await nightbotApi(channelId, 'PUT', `/commands/default/${req.params.name}`, body);
+  res.json(data);
+});
+
+// Nightbot sync: push all local commands to Nightbot
+app.post('/api/nightbot/sync', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const localCmds = customCommands.get(channelId) || [];
+  if (localCmds.length === 0) return res.json({ data: { synced: 0, errors: [] } });
+
+  const results = { synced: 0, errors: [] };
+  for (const cmd of localCmds) {
+    try {
+      const body = {
+        name: `!${cmd.name}`,
+        message: cmd.response.substring(0, 400),
+        coolDown: String(cmd.cooldown || 5),
+        userLevel: cmd.permissions || 'everyone'
+      };
+      const data = await nightbotApi(channelId, 'POST', '/commands', body);
+      if (data && data.status === 200) {
+        results.synced++;
+      } else {
+        results.errors.push({ name: cmd.name, error: data.message || 'Unknown error' });
+      }
+    } catch (err) {
+      results.errors.push({ name: cmd.name, error: err.message });
+    }
+  }
+  res.json({ data: results });
+});
+
+// Nightbot import: pull all Nightbot commands into local
+app.post('/api/nightbot/import', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const data = await nightbotApi(channelId, 'GET', '/commands');
+  if (!data || !data.commands) return res.json({ data: { imported: 0, errors: [] } });
+
+  const localCmds = customCommands.get(channelId) || [];
+  const results = { imported: 0, skipped: 0, errors: [] };
+
+  for (const nbCmd of data.commands) {
+    const cmdName = (nbCmd.name || '').replace(/^!/, '').trim().toLowerCase();
+    if (!cmdName || !nbCmd.message) continue;
+    if (localCmds.find(c => c.name === cmdName)) {
+      results.skipped++;
+      continue;
+    }
+    try {
+      const permMap = { everyone: 'everyone', moderator: 'moderator', owner: 'broadcaster' };
+      const cmd = {
+        id: 'cmd_nb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        name: cmdName,
+        response: nbCmd.message,
+        enabled: true,
+        cooldown: nbCmd.coolDown || 5,
+        permissions: permMap[nbCmd.userLevel] || 'everyone',
+        uses: nbCmd.count || 0,
+        source: 'nightbot',
+        createdAt: new Date().toISOString()
+      };
+      localCmds.push(cmd);
+      results.imported++;
+    } catch (err) {
+      results.errors.push({ name: nbCmd.name, error: err.message });
+    }
+  }
+  customCommands.set(channelId, localCmds);
+  res.json({ data: results });
 });
 
 // ===== CUSTOM COMMANDS (server-side bot) =====

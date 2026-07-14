@@ -4103,3 +4103,86 @@ select.form-input:focus {
   color: #fff !important;
   border-color: var(--purple-600) !important;
 }
+
+/* ===== NIGHTBOT INTEGRATION ===== */
+.nightbot-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.nightbot-connected {
+  background: rgba(30, 30, 30, 0.6);
+  color: #9146ff;
+  border: 1px solid rgba(145, 70, 255, 0.3);
+}
+.nightbot-disconnected {
+  background: rgba(30, 30, 30, 0.4);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.nightbot-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.nightbot-connected .nightbot-dot {
+  background: #9146ff;
+  box-shadow: 0 0 6px rgba(145, 70, 255, 0.6);
+  animation: nightbotPulse 2s ease-in-out infinite;
+}
+.nightbot-disconnected .nightbot-dot {
+  background: var(--text-muted);
+}
+@keyframes nightbotPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.btn-nightbot {
+  background: linear-gradient(135deg, #9146ff 0%, #772ce8 100%) !important;
+  color: #fff !important;
+  border: none !important;
+}
+.btn-nightbot:hover {
+  background: linear-gradient(135deg, #a06aff 0%, #8b3df0 100%) !important;
+}
+.nightbot-source-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(145, 70, 255, 0.15);
+  color: #9146ff;
+  border: 1px solid rgba(145, 70, 255, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.nightbot-command {
+  border-left: 3px solid rgba(145, 70, 255, 0.4) !important;
+}
+.nightbot-command:hover {
+  border-left-color: #9146ff !important;
+}
+.nightbot-connected-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.nightbot-user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(145, 70, 255, 0.1);
+  color: #9146ff;
+  border: 1px solid rgba(145, 70, 255, 0.2);
+}

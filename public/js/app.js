@@ -1154,6 +1154,7 @@ function setupLanguage() {
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   if (checkAppealRoute()) return;
+  checkNightbotCallback();
   applyTheme(localStorage.getItem('theme') || 'dark');
   setupTheme();
   setupLanguage();
@@ -1389,7 +1390,7 @@ function loadPageData(page) {
     case 'ads': loadAdsSchedule(); break;
     case 'clips': loadClips(); break;
     case 'shield': loadShieldStatus(); break;
-    case 'custom-commands': loadCommands(); break;
+    case 'custom-commands': loadCommands(); checkNightbotStatus(); break;
     case 'goals': loadGoals(); break;
     case 'chat-log': loadChatLog(); break;
     case 'spam': loadSpamLog(); break;
@@ -4169,6 +4170,7 @@ async function loadCommands() {
             <span class="command-badge">${cmd.permissions === 'broadcaster' ? 'Broadcaster' : cmd.permissions === 'moderator' ? 'Moderador' : 'Todos'}</span>
             ${cmd.cooldown > 0 ? `<span class="command-badge">Cooldown: ${cmd.cooldown}s</span>` : ''}
             <span class="command-badge">Usos: ${cmd.uses || 0}</span>
+            ${cmd.source === 'nightbot' ? '<span class="nightbot-source-badge">Nightbot</span>' : ''}
           </div>
         </div>
         <div class="command-actions">
@@ -4363,5 +4365,153 @@ function updateEventsubUI(connected) {
   } else {
     el.className = 'eventsub-badge eventsub-disconnected';
     el.innerHTML = '<span class="eventsub-dot"></span> Desconectado';
+  }
+}
+
+// ============================================================
+// FEATURE: NIGHTBOT INTEGRATION
+// ============================================================
+
+function checkNightbotCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const nbStatus = params.get('nightbot');
+  if (nbStatus) {
+    window.history.replaceState({}, '', window.location.pathname);
+    if (nbStatus === 'connected') showToast('Nightbot conectado exitosamente', 'success');
+    else if (nbStatus === 'denied') showToast('Nightbot: acceso denegado', 'warning');
+    else if (nbStatus === 'token_failed') showToast('Nightbot: error al obtener token', 'error');
+    else if (nbStatus === 'no_code') showToast('Nightbot: no se recibió código', 'error');
+    else showToast('Nightbot: error desconocido', 'error');
+  }
+}
+
+async function checkNightbotStatus() {
+  const data = await api('/api/nightbot/status');
+  if (data && data.data) {
+    const { connected, user } = data.data;
+    const statusEl = document.getElementById('nightbotStatus');
+    const infoEl = document.getElementById('nightbotInfo');
+    const connectBtn = document.getElementById('nightbotConnectBtn');
+    const disconnectBtn = document.getElementById('nightbotDisconnectBtn');
+    const userEl = document.getElementById('nightbotUser');
+
+    if (connected) {
+      if (statusEl) {
+        statusEl.className = 'nightbot-badge nightbot-connected';
+        statusEl.innerHTML = '<span class="nightbot-dot"></span> Conectado';
+      }
+      if (infoEl) infoEl.style.display = 'flex';
+      if (userEl && user) userEl.textContent = `🌙 ${user.displayName || user.name}`;
+      if (connectBtn) connectBtn.style.display = 'none';
+      if (disconnectBtn) disconnectBtn.style.display = '';
+    } else {
+      if (statusEl) {
+        statusEl.className = 'nightbot-badge nightbot-disconnected';
+        statusEl.innerHTML = '<span class="nightbot-dot"></span> No conectado';
+      }
+      if (infoEl) infoEl.style.display = 'none';
+      if (connectBtn) connectBtn.style.display = '';
+      if (disconnectBtn) disconnectBtn.style.display = 'none';
+    }
+  }
+}
+
+function connectNightbot() {
+  window.location.href = '/auth/nightbot';
+}
+
+async function disconnectNightbot() {
+  if (!confirm('Desconectar Nightbot?')) return;
+  const result = await api('/api/nightbot/disconnect', { method: 'POST' });
+  if (result) {
+    showToast('Nightbot desconectado', 'success');
+    checkNightbotStatus();
+  }
+}
+
+async function loadNightbotCommands() {
+  const section = document.getElementById('nightbotCommandsSection');
+  const list = document.getElementById('nightbotCommandsList');
+  if (!section || !list) return;
+  section.style.display = '';
+  list.innerHTML = '<div class="empty-state">Cargando comandos de Nightbot...</div>';
+
+  const data = await api('/api/nightbot/commands');
+  if (!data || !data.commands || data.commands.length === 0) {
+    list.innerHTML = '<div class="empty-state">No hay comandos en Nightbot o no está conectado.</div>';
+    return;
+  }
+
+  list.innerHTML = data.commands.map(cmd => `
+    <div class="command-item nightbot-command">
+      <div class="command-info">
+        <span class="command-name">${escapeHtml(cmd.name)}</span>
+        <span class="command-response">${escapeHtml((cmd.message || '').substring(0, 120))}${(cmd.message || '').length > 120 ? '...' : ''}</span>
+        <div class="command-meta">
+          <span class="command-badge">Cooldown: ${cmd.coolDown || 0}s</span>
+          <span class="command-badge">${cmd.userLevel || 'everyone'}</span>
+          <span class="command-badge">Usos: ${cmd.count || 0}</span>
+          <span class="nightbot-source-badge">Nightbot</span>
+        </div>
+      </div>
+      <div class="command-actions">
+        <button class="btn btn-danger btn-sm" onclick="deleteNightbotCommand('${cmd._id}', '${escapeHtml(cmd.name)}')">X</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function hideNightbotCommands() {
+  const section = document.getElementById('nightbotCommandsSection');
+  if (section) section.style.display = 'none';
+}
+
+async function deleteNightbotCommand(id, name) {
+  if (!confirm(`Eliminar comando ${name} de Nightbot?`)) return;
+  const result = await api(`/api/nightbot/commands/${id}`, { method: 'DELETE' });
+  if (result && result.status === 200) {
+    showToast(`Comando ${name} eliminado de Nightbot`, 'success');
+    loadNightbotCommands();
+  } else {
+    showToast(result?.message || 'Error al eliminar', 'error');
+  }
+}
+
+async function syncToNightbot() {
+  const localCmds = await api('/api/commands');
+  if (!localCmds || !localCmds.data || localCmds.data.length === 0) {
+    showToast('No hay comandos locales para sincronizar', 'warning');
+    return;
+  }
+  if (!confirm(`Sincronizar ${localCmds.data.length} comandos a Nightbot?`)) return;
+  showToast('Sincronizando comandos a Nightbot...', 'info');
+  const result = await api('/api/nightbot/sync', { method: 'POST' });
+  if (result && result.data) {
+    const { synced, errors } = result.data;
+    if (synced > 0) showToast(`${synced} comandos sincronizados a Nightbot`, 'success');
+    if (errors.length > 0) {
+      errors.forEach(e => showToast(`Error con !${e.name}: ${e.error}`, 'error'));
+    }
+    if (synced === 0 && errors.length === 0) showToast('No se sincronizaron comandos', 'warning');
+  } else {
+    showToast('Error al sincronizar', 'error');
+  }
+}
+
+async function importFromNightbot() {
+  showToast('Importando comandos de Nightbot...', 'info');
+  const result = await api('/api/nightbot/import', { method: 'POST' });
+  if (result && result.data) {
+    const { imported, skipped, errors } = result.data;
+    if (imported > 0) {
+      showToast(`${imported} comandos importados de Nightbot`, 'success');
+      loadCommands();
+    }
+    if (skipped > 0) showToast(`${skipped} comandos omitidos (ya existen localmente)`, 'info');
+    if (imported === 0 && skipped === 0 && errors.length === 0) {
+      showToast('No hay comandos nuevos para importar', 'warning');
+    }
+  } else {
+    showToast('Error al importar', 'error');
   }
 }
