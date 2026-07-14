@@ -1255,7 +1255,7 @@
                 <div class="settings-row">
                   <div class="settings-info">
                     <h3 data-i18n="settings_version">Version</h3>
-                    <p>v1.1</p>
+                    <p>v1.1.3</p>
                   </div>
                 </div>
               </div>
@@ -1269,6 +1269,10 @@
             <button class="doc-tab" data-doc-tab="guide" onclick="switchDocTab('guide')">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
               <span data-i18n="doc_tab_guide">Guia de la Aplicacion</span>
+            </button>
+            <button class="doc-tab" data-doc-tab="changelog" onclick="switchDocTab('changelog')">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <span data-i18n="doc_tab_changelog">Registro de Cambios</span>
             </button>
           </div>
 
@@ -1454,6 +1458,91 @@
                   <a href="https://dev.twitch.tv" target="_blank" rel="noopener">Twitch Developers</a>
                 </p>
               </div>
+            </div>
+          </div>
+
+          <!-- CHANGELOG TAB -->
+          <div class="doc-tab-content" id="docTab-changelog">
+            <div class="about-container">
+              <div class="about-hero">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;color:var(--purple-400)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <h1 class="about-title" data-i18n="changelog_title">Registro de Cambios</h1>
+                <p class="about-version" data-i18n="changelog_subtitle">Historial de versiones y novedades de TwitchMod Dashboard</p>
+              </div>
+
+              <div class="changelog-entry">
+                <div class="changelog-header">
+                  <span class="changelog-version">v1.1.3</span>
+                  <span class="changelog-date">14 de julio de 2026</span>
+                </div>
+                <ul class="changelog-list">
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_113_1">Nueva seccion de Documentacion con Guia de la Aplicacion</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_113_2">Registro de Cambios en la seccion Documentacion</span></li>
+                  <li><span class="changelog-tag removed" data-i18n="cl_tag_removed">Eliminado</span> <span data-i18n="cl_113_3">Pagina "Acerca de" (integrada en Documentacion)</span></li>
+                </ul>
+              </div>
+
+              <div class="changelog-entry">
+                <div class="changelog-header">
+                  <span class="changelog-version">v1.1.2</span>
+                  <span class="changelog-date">13 de julio de 2026</span>
+                </div>
+                <ul class="changelog-list">
+                  <li><span class="changelog-tag fixed" data-i18n="cl_tag_fixed">Corregido</span> <span data-i18n="cl_112_1">Traducciones en 7 idiomas (es, en, de, fr, pt, ja, ko)</span></li>
+                  <li><span class="changelog-tag changed" data-i18n="cl_tag_changed">Cambiado</span> <span data-i18n="cl_112_2">Optimizacion del CSS con variables de colores</span></li>
+                </ul>
+              </div>
+
+              <div class="changelog-entry">
+                <div class="changelog-header">
+                  <span class="changelog-version">v1.1.1</span>
+                  <span class="changelog-date">12 de julio de 2026</span>
+                </div>
+                <ul class="changelog-list">
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_1">Detector de Spam con configuracion de ventana de tiempo</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_2">Alertas en Vivo con vista previa y test de sub/follow/bits</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_3">Actividad de Moderadores con leaderboard y registro de acciones</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_4">Usuarios Sospechosos con razones predefinidas</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_5">Reglas del Chat con editor y saludo automatico</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_6">Compartir Dashboard con enlaces</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_7">Atajos de Teclado (Alt+1-9, Alt+S, Alt+R, Alt+D, Esc)</span></li>
+                </ul>
+              </div>
+
+              <div class="changelog-entry">
+                <div class="changelog-header">
+                  <span class="changelog-version">v1.1.0</span>
+                  <span class="changelog-date">10 de julio de 2026</span>
+                </div>
+                <ul class="changelog-list">
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_1">Modo Escudo para proteger el chat durante raids no deseados</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_2">Comandos Personalizados con variables ({user}, {args}, {date}, {time})</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_3">Metas de seguidores, suscriptores y visualizaciones</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_4">Log del Chat con busqueda integrada</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_5">Clips con creacion rapida y vista previa</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_6">Anuncios con programacion y control de pre-roll</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_7">Raids con busqueda de canales</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_8">Predicciones y Encuestas</span></li>
+                </ul>
+              </div>
+
+              <div class="changelog-entry">
+                <div class="changelog-header">
+                  <span class="changelog-version">v1.0.0</span>
+                  <span class="changelog-date">1 de julio de 2026</span>
+                </div>
+                <ul class="changelog-list">
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_1">Version inicial del TwitchMod Dashboard</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_2">Inicio con estadisticas y estado del directo</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_3">Moderacion (seguidores, chatters, baneados, VIPs)</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_4">Puntos del Canal con recompensas personalizadas</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_5">Configuracion del Directo (titulo, categoria, idioma, tags)</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_6">Chat en vivo con envio de mensajes</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_7">Estadisticas con graficos interactivos</span></li>
+                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_8">Ajustes con tema oscuro/claro e idioma</span></li>
+                </ul>
+              </div>
+
             </div>
           </div>
         </div>
