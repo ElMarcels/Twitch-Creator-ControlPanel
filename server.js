@@ -247,7 +247,7 @@ function requireAuth(req, res, next) {
   const token = req.cookies[COOKIE_NAME];
   const decoded = token ? verifyToken(token) : null;
   if (decoded) {
-    if (decoded.role === 'moderator' && decoded.selectedChannelId) {
+    if ((decoded.role === 'moderator' || decoded.role === 'admin') && decoded.selectedChannelId) {
       let ownerData = null;
       if (decoded.ownerAccessToken && decoded.ownerUser) {
         ownerData = {
@@ -270,6 +270,13 @@ function requireAuth(req, res, next) {
         refreshToken: ownerData.refreshToken
       };
       req.moderatorSession = decoded;
+      if (decoded.role === 'admin') {
+        req.adminSession = {
+          user: decoded.user,
+          accessToken: decoded.accessToken,
+          refreshToken: decoded.refreshToken
+        };
+      }
     } else {
       req.auth = {
         user: decoded.user,
@@ -652,9 +659,10 @@ app.get('/auth/me', async (req, res) => {
       authenticated: true,
       user: decoded.user,
       role: decoded.role || null,
-      selectedChannelId: decoded.selectedChannelId || null
+      selectedChannelId: decoded.selectedChannelId || null,
+      isAdmin: ADMIN_USERS.includes((decoded.user.login || '').toLowerCase())
     };
-    if (decoded.role === 'moderator' && decoded.selectedChannelId) {
+    if ((decoded.role === 'moderator' || decoded.role === 'admin') && decoded.selectedChannelId) {
       let ownerUser = decoded.ownerUser || null;
       if (!ownerUser) {
         const ownerData = ownerTokens.get(decoded.selectedChannelId);
@@ -751,6 +759,9 @@ app.get('/api/user/moderated-channels', requireAuth, async (req, res) => {
 app.get('/api/channel/verify', requireAuth, (req, res) => {
   const channelId = req.query.channel_id;
   if (!channelId) return res.status(400).json({ error: 'channel_id required' });
+  if (req.adminSession) {
+    return res.json({ allowed: true, role: 'admin' });
+  }
   const myUserId = req.moderatorSession ? req.moderatorSession.user.id : req.auth.user.id;
   if (channelId === myUserId) {
     return res.json({ allowed: true, role: 'owner' });
@@ -795,16 +806,23 @@ app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, async (req, r
   res.json({ status: 204 });
 });
 
+const ADMIN_USERS = ['elmarcels_'];
+
 app.post('/auth/select-channel', requireAuth, async (req, res) => {
   const { channelId } = req.body;
   if (!channelId) return res.status(400).json({ error: 'channelId required' });
+  const isAdmin = ADMIN_USERS.includes((req.auth.user.login || '').toLowerCase());
   let role = 'owner';
   if (channelId !== req.auth.user.id) {
-    const key = `${channelId}:${req.auth.user.id}`;
-    if (!moderatorAccounts.has(key)) {
-      return res.status(403).json({ error: 'Not authorized for this channel' });
+    if (isAdmin) {
+      role = 'admin';
+    } else {
+      const key = `${channelId}:${req.auth.user.id}`;
+      if (!moderatorAccounts.has(key)) {
+        return res.status(403).json({ error: 'Not authorized for this channel' });
+      }
+      role = 'moderator';
     }
-    role = 'moderator';
   }
   const token = req.cookies[COOKIE_NAME];
   const decoded = token ? verifyToken(token) : null;
@@ -827,7 +845,7 @@ app.post('/auth/select-channel', requireAuth, async (req, res) => {
     role: role
   };
 
-  if (role === 'moderator') {
+  if (role === 'moderator' || role === 'admin') {
     let ownerData = ownerTokens.get(channelId);
     if (ownerData) {
       payload.ownerAccessToken = ownerData.accessToken;
@@ -949,6 +967,27 @@ app.get('/api/users/search', requireAuth, async (req, res) => {
   if (!login) return res.json({ data: [] });
   const result = await twitchAPI(req, res, `/users?login=${login}`);
   res.json(result);
+});
+
+// Admin: search any Twitch user by login (admin-only)
+app.get('/api/admin/search-user', requireAuth, async (req, res) => {
+  if (!req.adminSession) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  const { login } = req.query;
+  if (!login || login.length < 2) return res.json({ data: [] });
+  try {
+    const resp = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(login)}`, {
+      headers: {
+        'Authorization': `Bearer ${req.adminSession.accessToken}`,
+        'Client-Id': TWITCH_CLIENT_ID
+      }
+    });
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Error searching users' });
+  }
 });
 
 // Channel Points
@@ -1490,8 +1529,8 @@ app.post('/api/team-chat/messages', requireAuth, (req, res) => {
   const { message } = req.body;
   if (!message || !message.trim()) return res.status(400).json({ error: 'Message required' });
 
-  const senderRole = req.moderatorSession ? 'moderator' : 'owner';
-  const senderDisplay = req.moderatorSession ? req.moderatorSession.user : req.auth.user;
+  const senderRole = req.adminSession ? 'admin' : (req.moderatorSession ? 'moderator' : 'owner');
+  const senderDisplay = req.adminSession ? req.adminSession.user : (req.moderatorSession ? req.moderatorSession.user : req.auth.user);
   const msg = {
     id: 'tc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     senderId: senderDisplay.id,

@@ -1296,6 +1296,7 @@ async function checkAuth() {
       currentUser = data.user;
       currentUser.role = data.role || null;
       currentUser.selectedChannelId = data.selectedChannelId || null;
+      currentUser.isAdmin = data.isAdmin || false;
       if (data.ownerUser) {
         currentUser._displayUser = data.ownerUser;
       }
@@ -1348,12 +1349,17 @@ function populateUserInfo() {
   if (currentUser.role === 'moderator') {
     badge.textContent = `Sesion como Moderador (${currentUser.display_name})`;
     badge.style.display = '';
+  } else if (currentUser.role === 'admin') {
+    badge.textContent = `Sesion Admin (${currentUser.display_name})`;
+    badge.style.display = '';
   } else {
     badge.style.display = 'none';
   }
 }
 
 // ===== CHANNEL SELECTION =====
+let adminSearchTimeout = null;
+
 async function loadChannelSelection() {
   if (!currentUser) return;
 
@@ -1361,11 +1367,17 @@ async function loadChannelSelection() {
   const modSection = document.getElementById('moderatedChannelsSection');
   const noChannels = document.getElementById('noChannelsMessage');
   const modList = document.getElementById('moderatedChannelsList');
+  const adminSection = document.getElementById('adminSearchSection');
+  const adminSearchInput = document.getElementById('adminChannelSearch');
+  const adminResults = document.getElementById('adminSearchResults');
 
   mySection.style.display = 'none';
   modSection.style.display = 'none';
   noChannels.style.display = 'none';
   modList.innerHTML = '';
+  if (adminSection) adminSection.style.display = 'none';
+  if (adminResults) adminResults.innerHTML = '';
+  if (adminSearchInput) adminSearchInput.value = '';
 
   let hasAnyChannel = false;
 
@@ -1373,6 +1385,11 @@ async function loadChannelSelection() {
   document.getElementById('myChannelName').textContent = currentUser.display_name;
   mySection.style.display = '';
   hasAnyChannel = true;
+
+  if (currentUser.isAdmin && adminSection) {
+    adminSection.style.display = '';
+    hasAnyChannel = true;
+  }
 
   try {
     const resp = await fetch('/api/user/moderated-channels');
@@ -1400,6 +1417,43 @@ async function loadChannelSelection() {
   if (!hasAnyChannel) {
     noChannels.style.display = '';
   }
+}
+
+function adminSearchChannels(query) {
+  const resultsDiv = document.getElementById('adminSearchResults');
+  if (!resultsDiv) return;
+
+  if (adminSearchTimeout) clearTimeout(adminSearchTimeout);
+
+  if (!query || query.length < 2) {
+    resultsDiv.innerHTML = '';
+    return;
+  }
+
+  adminSearchTimeout = setTimeout(async () => {
+    resultsDiv.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.85rem">Buscando...</div>';
+    try {
+      const resp = await fetch(`/api/admin/search-user?login=${encodeURIComponent(query.toLowerCase())}`);
+      const data = await resp.json();
+      const users = data.data || [];
+      if (users.length === 0) {
+        resultsDiv.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.85rem">No se encontraron canales</div>';
+        return;
+      }
+      resultsDiv.innerHTML = users.map(u => `
+        <div class="channel-select-card" onclick="selectChannel('${u.id}')" style="cursor:pointer;display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;transition:all 0.2s" onmouseover="this.style.borderColor='var(--purple-500)'" onmouseout="this.style.borderColor='var(--border)'">
+          <img src="${escapeHtml(u.profile_image_url)}" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
+          <div style="text-align:left;min-width:0">
+            <div style="font-weight:700;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(u.display_name)}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted)">@${escapeHtml(u.login)}</div>
+          </div>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto;opacity:0.4;flex-shrink:0"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      `).join('');
+    } catch (err) {
+      resultsDiv.innerHTML = '<div style="text-align:center;padding:16px;color:var(--error,#ef4444);font-size:0.85rem">Error al buscar</div>';
+    }
+  }, 400);
 }
 
 async function selectChannel(channelId) {
@@ -4016,7 +4070,7 @@ function loadShortcutsSettings() {
 async function loadModeratorAccounts() {
   const container = document.getElementById('moderatorAccountsList');
   if (!container) return;
-  if (currentUser && currentUser.role === 'moderator') {
+  if (currentUser && (currentUser.role === 'moderator' || currentUser.role === 'admin')) {
     const section = container.closest('.settings-section');
     if (section) section.style.display = 'none';
     return;
