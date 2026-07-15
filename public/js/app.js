@@ -1494,14 +1494,14 @@ function switchDocTab(tab) {
 
 function toggleChangelogOlder(btn) {
   const container = btn.closest('.about-container');
-  const hidden = container.querySelectorAll('.changelog-entry.changelog-hidden');
-  const isExpanded = hidden.length > 0 && hidden[0].style.display !== 'none';
+  const allEntries = container.querySelectorAll('.changelog-entry');
+  const isExpanded = btn.classList.contains('expanded');
   if (isExpanded) {
-    hidden.forEach(e => { e.style.display = ''; e.classList.add('changelog-hidden'); });
+    allEntries.forEach((e, i) => { if (i >= 4) { e.style.display = ''; e.classList.add('changelog-hidden'); } });
     btn.classList.remove('expanded');
     btn.querySelector('span').textContent = 'Mostrar versiones anteriores';
   } else {
-    hidden.forEach(e => { e.style.display = 'block'; e.classList.remove('changelog-hidden'); });
+    allEntries.forEach((e, i) => { if (i >= 4) { e.style.display = 'block'; e.classList.remove('changelog-hidden'); } });
     btn.classList.add('expanded');
     btn.querySelector('span').textContent = 'Ocultar versiones anteriores';
   }
