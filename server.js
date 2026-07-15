@@ -526,6 +526,25 @@ app.get('/auth/logout', (req, res) => {
   res.redirect('/');
 });
 
+// Back to channel selection (keep login, clear channel)
+app.post('/auth/back-to-channels', requireAuth, (req, res) => {
+  const token = req.cookies[COOKIE_NAME];
+  const decoded = token ? verifyToken(token) : null;
+  if (!decoded) return res.status(401).json({ error: 'Not authenticated' });
+  const payload = {
+    user: decoded.user,
+    accessToken: decoded.accessToken,
+    refreshToken: decoded.refreshToken
+  };
+  const newToken = signToken(payload);
+  res.cookie(COOKIE_NAME, newToken, {
+    maxAge: COOKIE_MAX_AGE, httpOnly: true,
+    secure: process.env.NODE_ENV === 'production' || process.env.VERCEL,
+    sameSite: 'lax', path: '/'
+  });
+  res.json({ success: true });
+});
+
 // ===== NIGHTBOT OAUTH =====
 const NIGHTBOT_SCOPES = ['commands', 'commands_default', 'channel', 'channel_send'];
 
@@ -977,14 +996,26 @@ app.get('/api/admin/search-user', requireAuth, async (req, res) => {
   const { login } = req.query;
   if (!login || login.length < 2) return res.json({ data: [] });
   try {
-    const resp = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(login)}`, {
+    const resp = await fetch(`https://api.twitch.tv/kraken/users?login=${encodeURIComponent(login)}`, {
       headers: {
-        'Authorization': `Bearer ${req.adminSession.accessToken}`,
-        'Client-Id': TWITCH_CLIENT_ID
+        'Authorization': `OAuth ${req.adminSession.accessToken}`,
+        'Accept': 'application/vnd.twitchtv.v5+json',
+        'Client-ID': TWITCH_CLIENT_ID
       }
     });
     const data = await resp.json();
-    res.json(data);
+    if (data.users && data.users.length > 0) {
+      const users = data.users.map(u => ({
+        id: u._id,
+        login: u.name,
+        display_name: u.display_name,
+        profile_image_url: u.logo || '',
+        description: u.bio || '',
+        followers_count: 0
+      }));
+      return res.json({ data: users });
+    }
+    res.json({ data: [] });
   } catch (err) {
     res.status(500).json({ error: 'Error searching users' });
   }

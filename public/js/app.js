@@ -1481,6 +1481,20 @@ async function selectChannel(channelId) {
   }
 }
 
+async function backToChannels() {
+  try {
+    const resp = await fetch('/auth/back-to-channels', { method: 'POST' });
+    const data = await resp.json();
+    if (data.success) {
+      await checkAuth();
+    } else {
+      showToast('Error al cambiar de canal', 'error');
+    }
+  } catch (err) {
+    showToast('Error de conexion', 'error');
+  }
+}
+
 // ===== NAVIGATION =====
 function setupNavigation() {
   document.querySelectorAll('.nav-item[data-page]').forEach(item => {
