@@ -1491,7 +1491,7 @@ app.post('/api/team-chat/messages', requireAuth, (req, res) => {
   if (!message || !message.trim()) return res.status(400).json({ error: 'Message required' });
 
   const senderRole = req.moderatorSession ? 'moderator' : 'owner';
-  const senderDisplay = req.auth.user;
+  const senderDisplay = req.moderatorSession ? req.moderatorSession.user : req.auth.user;
   const msg = {
     id: 'tc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     senderId: senderDisplay.id,

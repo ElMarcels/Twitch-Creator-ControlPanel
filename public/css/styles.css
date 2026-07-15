@@ -2379,46 +2379,97 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
 }
 
 /* CHANGELOG STYLES - TIMELINE */
+.changelog-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(147, 51, 234, 0.2));
+  border: 1px solid rgba(236, 72, 153, 0.25);
+  color: #ec4899;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  animation: changelogPulse 2s ease-in-out infinite;
+}
+
+@keyframes changelogPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.15); }
+  50% { box-shadow: 0 0 0 6px rgba(236, 72, 153, 0); }
+}
+
 .changelog-timeline {
   position: relative;
-  padding-left: 32px;
+  padding-left: 36px;
 }
 
 .changelog-timeline::before {
   content: '';
   position: absolute;
-  left: 11px;
-  top: 0;
-  bottom: 0;
+  left: 13px;
+  top: 8px;
+  bottom: 24px;
   width: 2px;
-  background: linear-gradient(180deg, var(--purple-400), rgba(147, 51, 234, 0.1));
+  background: linear-gradient(180deg, rgba(236, 72, 153, 0.5), var(--purple-400), rgba(147, 51, 234, 0.08));
   border-radius: 1px;
 }
 
 .changelog-entry {
   position: relative;
-  margin-bottom: 28px;
-  padding-left: 20px;
+  margin-bottom: 24px;
+  padding-left: 22px;
+  animation: changelogFadeIn 0.4s ease-out both;
+}
+
+.changelog-entry:nth-child(1) { animation-delay: 0s; }
+.changelog-entry:nth-child(2) { animation-delay: 0.05s; }
+.changelog-entry:nth-child(3) { animation-delay: 0.1s; }
+.changelog-entry:nth-child(4) { animation-delay: 0.15s; }
+.changelog-entry:nth-child(5) { animation-delay: 0.2s; }
+.changelog-entry:nth-child(6) { animation-delay: 0.25s; }
+.changelog-entry:nth-child(7) { animation-delay: 0.3s; }
+.changelog-entry:nth-child(8) { animation-delay: 0.35s; }
+
+@keyframes changelogFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .changelog-entry::before {
   content: '';
   position: absolute;
-  left: -25px;
-  top: 8px;
-  width: 12px;
-  height: 12px;
+  left: -27px;
+  top: 18px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--purple-400);
-  border: 3px solid var(--bg-primary, #0e0a1a);
-  box-shadow: 0 0 0 2px var(--purple-400), 0 0 12px rgba(147, 51, 234, 0.3);
+  border: 2.5px solid var(--bg-primary, #0e0a1a);
+  box-shadow: 0 0 0 2px var(--purple-400), 0 0 10px rgba(147, 51, 234, 0.25);
   z-index: 2;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.changelog-entry:hover::before {
+  transform: scale(1.3);
+  box-shadow: 0 0 0 3px var(--purple-400), 0 0 16px rgba(147, 51, 234, 0.4);
 }
 
 .changelog-entry:first-child::before {
   background: #ec4899;
   border-color: var(--bg-primary, #0e0a1a);
-  box-shadow: 0 0 0 2px #ec4899, 0 0 16px rgba(236, 72, 153, 0.4);
+  box-shadow: 0 0 0 2px #ec4899, 0 0 14px rgba(236, 72, 153, 0.35);
+  width: 12px;
+  height: 12px;
+  left: -28px;
+  top: 17px;
+}
+
+.changelog-entry:first-child:hover::before {
+  box-shadow: 0 0 0 3px #ec4899, 0 0 20px rgba(236, 72, 153, 0.5);
 }
 
 .changelog-card {
@@ -2427,15 +2478,26 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  padding: 20px 24px;
+  padding: 22px 26px;
   position: relative;
   overflow: hidden;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
 }
 
 .changelog-card:hover {
   border-color: var(--glass-border-hover);
-  box-shadow: 0 4px 20px rgba(147, 51, 234, 0.08);
+  box-shadow: 0 8px 32px rgba(147, 51, 234, 0.1), 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.changelog-entry:first-child .changelog-card {
+  border-color: rgba(236, 72, 153, 0.2);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.04), var(--glass-bg-light));
+}
+
+.changelog-entry:first-child .changelog-card:hover {
+  border-color: rgba(236, 72, 153, 0.35);
+  box-shadow: 0 8px 32px rgba(236, 72, 153, 0.1), 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .changelog-card::before {
@@ -2456,27 +2518,41 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .changelog-version {
-  background: linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(236, 72, 153, 0.15));
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(99, 102, 241, 0.12));
   color: var(--purple-400);
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 700;
-  padding: 4px 14px;
+  padding: 5px 16px;
   border-radius: 20px;
   letter-spacing: 0.3px;
+  border: 1px solid rgba(147, 51, 234, 0.15);
 }
 
 .changelog-entry:first-child .changelog-version {
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.25), rgba(147, 51, 234, 0.15));
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(147, 51, 234, 0.12));
   color: #ec4899;
+  border-color: rgba(236, 72, 153, 0.2);
 }
 
 .changelog-date {
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.changelog-count {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 10px;
+  border-radius: 12px;
 }
 
 .changelog-list {
@@ -2489,11 +2565,16 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 7px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.035);
   color: var(--text-secondary);
-  font-size: 0.88rem;
-  line-height: 1.5;
+  font-size: 0.87rem;
+  line-height: 1.55;
+  transition: color 0.15s;
+}
+
+.changelog-list li:hover {
+  color: var(--text-primary);
 }
 
 .changelog-list li:last-child {
@@ -2502,36 +2583,42 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
 }
 
 .changelog-tag {
-  display: inline-block;
-  font-size: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 8px;
+  letter-spacing: 0.6px;
+  padding: 3px 10px;
   border-radius: 10px;
   flex-shrink: 0;
-  min-width: 70px;
-  text-align: center;
+  min-width: 74px;
+  white-space: nowrap;
 }
 
 .changelog-tag.added {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.12);
   color: var(--green-400);
+  border: 1px solid rgba(16, 185, 129, 0.15);
 }
 
 .changelog-tag.fixed {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(59, 130, 246, 0.12);
   color: var(--blue-400);
+  border: 1px solid rgba(59, 130, 246, 0.15);
 }
 
 .changelog-tag.changed {
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(245, 158, 11, 0.12);
   color: var(--orange-400);
+  border: 1px solid rgba(245, 158, 11, 0.15);
 }
 
 .changelog-tag.removed {
-  background: rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.12);
   color: var(--red-400);
+  border: 1px solid rgba(239, 68, 68, 0.15);
 }
 
 /* Guide-specific styles */
