@@ -71,6 +71,32 @@ let lastFollowerSampleTime = 0;
 const customCommands = new Map(); // channelId -> [{id, name, response, enabled, cooldown, permissions}]
 const commandCooldowns = new Map(); // `${channelId}:${commandName}:${userId}` -> lastUsedTimestamp
 
+// ===== TEAM CHAT (owner <-> moderators) =====
+const teamChatMessages = new Map(); // channelId -> [{id, senderId, senderName, senderImage, senderRole, message, timestamp}]
+
+const TEAM_CHAT_KEY = 'fav-twitch:teamChat';
+
+async function loadTeamChatFromRedis() {
+  if (!REDIS_URL) return;
+  try {
+    const raw = await redisGet(TEAM_CHAT_KEY);
+    const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (data && typeof data === 'object') {
+      teamChatMessages.clear();
+      Object.entries(data).forEach(([k, v]) => {
+        if (Array.isArray(v)) teamChatMessages.set(k, v.slice(-500));
+      });
+    }
+  } catch {}
+}
+
+async function saveTeamChatToRedis() {
+  if (!REDIS_URL) return;
+  const obj = {};
+  teamChatMessages.forEach((v, k) => { obj[k] = v.slice(-500); });
+  try { await redisSet(TEAM_CHAT_KEY, obj); } catch {}
+}
+
 // ===== ALERT TEMPLATES =====
 const alertTemplates = new Map(); // channelId -> {follow: {message, duration, sound}, sub: {...}, bits: {...}, raid: {...}}
 
@@ -139,10 +165,11 @@ function migrateRedisData(data) {
 async function loadFromRedis() {
   if (!REDIS_URL) return;
   try {
-    const [tokensRaw, accountsRaw, nightbotRaw] = await Promise.all([
+    const [tokensRaw, accountsRaw, nightbotRaw, teamChatRaw] = await Promise.all([
       redisGet('fav-twitch:ownerTokens'),
       redisGet('fav-twitch:moderatorAccounts'),
-      redisGet('fav-twitch:nightbotTokens')
+      redisGet('fav-twitch:nightbotTokens'),
+      redisGet(TEAM_CHAT_KEY)
     ]);
     let tokens = typeof tokensRaw === 'string' ? JSON.parse(tokensRaw) : tokensRaw;
     let accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : accountsRaw;
@@ -157,6 +184,12 @@ async function loadFromRedis() {
     if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
     if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
     if (nightbot && typeof nightbot === 'object') Object.entries(nightbot).forEach(([k, v]) => nightbotTokens.set(k, v));
+    // Load team chat
+    let teamChat = typeof teamChatRaw === 'string' ? JSON.parse(teamChatRaw) : teamChatRaw;
+    if (teamChat && typeof teamChat === 'object') {
+      teamChatMessages.clear();
+      Object.entries(teamChat).forEach(([k, v]) => { if (Array.isArray(v)) teamChatMessages.set(k, v.slice(-500)); });
+    }
     if (tMigrate.migrated || aMigrate.migrated) await saveToRedis();
   } catch (err) {
     console.error('Failed to load from Redis:', err.message);
@@ -169,11 +202,14 @@ async function saveToRedis() {
   ownerTokens.forEach((v, k) => obj.ownerTokens[k] = v);
   moderatorAccounts.forEach((v, k) => obj.moderatorAccounts[k] = v);
   nightbotTokens.forEach((v, k) => obj.nightbotTokens[k] = v);
+  const chatObj = {};
+  teamChatMessages.forEach((v, k) => { chatObj[k] = v.slice(-500); });
   try {
     await Promise.all([
       redisSet('fav-twitch:ownerTokens', obj.ownerTokens),
       redisSet('fav-twitch:moderatorAccounts', obj.moderatorAccounts),
-      redisSet('fav-twitch:nightbotTokens', obj.nightbotTokens)
+      redisSet('fav-twitch:nightbotTokens', obj.nightbotTokens),
+      redisSet(TEAM_CHAT_KEY, chatObj)
     ]);
   } catch (err) {
     console.error('Failed to save to Redis:', err.message);
@@ -1433,6 +1469,48 @@ app.post('/api/chat/log', requireAuth, (req, res) => {
     if (chatLog.length > 500) chatLog.shift();
   }
   res.json({ status: 200 });
+});
+
+// ===== TEAM CHAT (owner <-> moderators) =====
+app.get('/api/team-chat/messages', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const after = req.query.after;
+  let msgs = teamChatMessages.get(channelId) || [];
+  if (after) {
+    const afterTime = parseInt(after);
+    if (!isNaN(afterTime)) {
+      msgs = msgs.filter(m => m.timestamp > afterTime);
+    }
+  }
+  res.json({ data: msgs.slice(-200) });
+});
+
+app.post('/api/team-chat/messages', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const { message } = req.body;
+  if (!message || !message.trim()) return res.status(400).json({ error: 'Message required' });
+
+  const senderRole = req.moderatorSession ? 'moderator' : 'owner';
+  const senderDisplay = req.auth.user;
+  const msg = {
+    id: 'tc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    senderId: senderDisplay.id,
+    senderName: senderDisplay.display_name || senderDisplay.login,
+    senderImage: senderDisplay.profile_image_url || '',
+    senderRole: senderRole,
+    message: message.trim().substring(0, 500),
+    timestamp: Date.now()
+  };
+
+  let msgs = teamChatMessages.get(channelId) || [];
+  msgs.push(msg);
+  if (msgs.length > 500) msgs = msgs.slice(-500);
+  teamChatMessages.set(channelId, msgs);
+
+  // Save async (fire and forget)
+  saveTeamChatToRedis().catch(() => {});
+
+  res.json({ data: msg });
 });
 
 // ===== CHATTER TRACKING (for spam detector + top chatters) =====

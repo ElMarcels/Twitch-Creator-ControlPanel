@@ -19,6 +19,7 @@ const translations = {
     nav_settings: 'Ajustes', nav_documentation: 'Documentacion', nav_logout: 'Cerrar sesion',
     nav_spam: 'Spam Detector', nav_alerts_widget: 'Alertas', nav_share: 'Compartir',
     nav_mod_activity: 'Actividad Mods', nav_suspicious: 'Usuarios Sospechosos', nav_chat_rules: 'Reglas del Chat',
+    nav_team_chat: 'Chat del Equipo',
     settings_appearance: 'Apariencia', settings_theme: 'Tema',
     settings_theme_desc: 'Elige el tema visual de la aplicacion',
     theme_dark: 'Oscuro', theme_light: 'Claro',
@@ -137,6 +138,8 @@ const translations = {
     title_chat_rules: 'Reglas del Chat',
     title_alerts_widget: 'Alertas en Vivo',
     title_share: 'Compartir Dashboard',
+    title_team_chat: 'Chat del Equipo',
+    team_chat_empty: 'Envia un mensaje para iniciar la conversacion con tu equipo.',
     stat_followers: 'Seguidores', stat_views: 'Visitas totales',
     stat_viewers: 'Espectadores', stat_stream_time: 'Tiempo en directo',
     login_subtitle: 'Administra tu canal con estilo. Moderacion, recompensas, estadisticas y mas.',
@@ -182,6 +185,7 @@ const translations = {
     nav_settings: 'Settings', nav_documentation: 'Documentation', nav_logout: 'Log out',
     nav_spam: 'Spam Detector', nav_alerts_widget: 'Alerts',
     nav_mod_activity: 'Mod Activity', nav_suspicious: 'Suspicious Users', nav_chat_rules: 'Chat Rules',
+    nav_team_chat: 'Team Chat',
     settings_appearance: 'Appearance', settings_theme: 'Theme',
     settings_theme_desc: 'Choose the visual theme of the app',
     theme_dark: 'Dark', theme_light: 'Light',
@@ -300,6 +304,8 @@ const translations = {
     title_chat_rules: 'Chat Rules',
     title_alerts_widget: 'Live Alerts',
     title_share: 'Share Dashboard',
+    title_team_chat: 'Team Chat',
+    team_chat_empty: 'Send a message to start the conversation with your team.',
     stat_followers: 'Followers', stat_views: 'Total Views',
     stat_viewers: 'Viewers', stat_stream_time: 'Stream Time',
     login_subtitle: 'Manage your channel with style. Moderation, rewards, statistics and more.',
@@ -345,6 +351,7 @@ const translations = {
     nav_settings: 'Einstellungen', nav_documentation: 'Dokumentation', nav_logout: 'Abmelden',
     nav_spam: 'Spam Detektor', nav_alerts_widget: 'Alerten',
     nav_mod_activity: 'Mod Aktivitaet', nav_suspicious: 'Verdaechtige User', nav_chat_rules: 'Chat Regeln',
+    nav_team_chat: 'Team-Chat',
     settings_appearance: 'Darstellung', settings_theme: 'Thema',
     settings_theme_desc: 'Das visuelle Thema der App wahlen',
     theme_dark: 'Dunkel', theme_light: 'Hell',
@@ -463,6 +470,8 @@ const translations = {
     title_chat_rules: 'Chat Regeln',
     title_alerts_widget: 'Live Alerten',
     title_share: 'Dashboard Teilen',
+    title_team_chat: 'Team-Chat',
+    team_chat_empty: 'Senden Sie eine Nachricht, um das Gespraech mit Ihrem Team zu starten.',
     stat_followers: 'Follower', stat_views: 'Gesamtaufrufe',
     stat_viewers: 'Zuschauer', stat_stream_time: 'Streamzeit',
     login_subtitle: 'Verwalte deinen Kanal mit Stil. Moderation, Belohnungen, Statistiken und mehr.',
@@ -508,6 +517,7 @@ const translations = {
     nav_settings: 'Parametres', nav_documentation: 'Documentation', nav_logout: 'Deconnexion',
     nav_spam: 'Detecteur Spam', nav_alerts_widget: 'Alertes',
     nav_mod_activity: 'Activite Mod', nav_suspicious: 'Utilisateurs Suspects', nav_chat_rules: 'Regles du Chat',
+    nav_team_chat: 'Chat Equipe',
     settings_appearance: 'Apparence', settings_theme: 'Theme',
     settings_theme_desc: 'Choisir le theme visuel de l\'application',
     theme_dark: 'Sombre', theme_light: 'Clair',
@@ -626,6 +636,8 @@ const translations = {
     title_chat_rules: 'Regles du Chat',
     title_alerts_widget: 'Alertes En Direct',
     title_share: 'Partager Dashboard',
+    title_team_chat: 'Chat Equipe',
+    team_chat_empty: 'Envoyez un message pour demarrer la conversation avec votre equipe.',
     stat_followers: 'Abonnes', stat_views: 'Vues totales',
     stat_viewers: 'Spectateurs', stat_stream_time: 'Temps en direct',
     login_subtitle: 'Gerez votre chaine avec style. Moderation, recompenses, statistiques et plus.',
@@ -671,6 +683,7 @@ const translations = {
     nav_settings: 'Configuracoes', nav_documentation: 'Documentacao', nav_logout: 'Sair',
     nav_spam: 'Detector Spam', nav_alerts_widget: 'Alertas',
     nav_mod_activity: 'Atividade Mods', nav_suspicious: 'Usuarios Suspeitos', nav_chat_rules: 'Regras do Chat',
+    nav_team_chat: 'Chat da Equipe',
     settings_appearance: 'Aparencia', settings_theme: 'Tema',
     settings_theme_desc: 'Escolher o tema visual do aplicativo',
     theme_dark: 'Escuro', theme_light: 'Claro',
@@ -789,6 +802,8 @@ const translations = {
     title_chat_rules: 'Regras do Chat',
     title_alerts_widget: 'Alertas ao Vivo',
     title_share: 'Compartilhar Dashboard',
+    title_team_chat: 'Chat da Equipe',
+    team_chat_empty: 'Envie uma mensagem para iniciar a conversa com sua equipe.',
     stat_followers: 'Seguidores', stat_views: 'Visualizacoes',
     stat_viewers: 'Espectadores', stat_stream_time: 'Tempo ao vivo',
     login_subtitle: 'Gerencie seu canal com estilo. Moderacao, recompensas, estatisticas e mais.',
@@ -834,6 +849,7 @@ const translations = {
     nav_settings: '設定', nav_documentation: 'ドキュメント', nav_logout: 'ログアウト',
     nav_spam: 'スパム検出', nav_alerts_widget: 'アラート',
     nav_mod_activity: 'モデレーター活動', nav_suspicious: '不審なユーザー', nav_chat_rules: 'チャットルール',
+    nav_team_chat: 'チームチャット',
     settings_appearance: '外観', settings_theme: 'テーマ',
     settings_theme_desc: 'ダークテーマとライトテーマを切り替え',
     theme_dark: 'ダーク', theme_light: 'ライト',
@@ -952,6 +968,8 @@ const translations = {
     title_chat_rules: 'チャットルール',
     title_alerts_widget: 'ライブアラート',
     title_share: 'ダッシュボード共有',
+    title_team_chat: 'チームチャット',
+    team_chat_empty: 'メッセージを送信してチームとの会話を始めましょう。',
     stat_followers: 'フォロワー', stat_views: '総視聴数',
     stat_viewers: '視聴者', stat_stream_time: '配信時間',
     login_subtitle: 'チャンネルをスタイリッシュに管理。モデレーション、報酬、統計など。',
@@ -997,6 +1015,7 @@ const translations = {
     nav_settings: '설정', nav_documentation: '문서', nav_logout: '로그아웃',
     nav_spam: '스팸 감지', nav_alerts_widget: '알림',
     nav_mod_activity: '모더레이터 활동', nav_suspicious: '의심 사용자', nav_chat_rules: '채팅 규칙',
+    nav_team_chat: '팀 채팅',
     settings_appearance: '외관', settings_theme: '테마',
     settings_theme_desc: '다크 테마와 라이트 테마 전환',
     theme_dark: '다크', theme_light: '라이트',
@@ -1115,6 +1134,8 @@ const translations = {
     title_chat_rules: '채팅 규칙',
     title_alerts_widget: '실시간 알림',
     title_share: '대시보드 공유',
+    title_team_chat: '팀 채팅',
+    team_chat_empty: '메시지를 보내 팀과 대화를 시작하세요.',
     stat_followers: '팔로워', stat_views: '총 조회수',
     stat_viewers: '시청자', stat_stream_time: '방송 시간',
     login_subtitle: '채널을 스타일리시하게 관리. 채팅 관리, 보상, 통계 등.',
@@ -1411,6 +1432,7 @@ function navigateTo(page) {
     'alerts-widget': t('title_alerts_widget'),
     'appeals': 'Solicitudes',
     'share': t('title_share'),
+    'team-chat': t('title_team_chat'),
     'settings': t('title_settings'),
     'about': t('title_about'),
     'documentation': t('title_documentation')
@@ -1449,6 +1471,7 @@ function loadPageData(page) {
     case 'custom-commands': loadCommands(); checkNightbotStatus(); break;
     case 'goals': loadGoals(); break;
     case 'chat-log': loadChatLog(); break;
+    case 'team-chat': loadTeamChat(); break;
     case 'spam': loadSpamLog(); break;
     case 'mod-activity': loadModActivity(); break;
     case 'suspicious': loadSuspiciousUsers(); break;
@@ -3442,6 +3465,100 @@ function filterChatLog() {
   const q = document.getElementById('chatLogSearch').value.toLowerCase().trim();
   if (!q) return renderChatLog(chatLogData);
   renderChatLog(chatLogData.filter(m => m.user.toLowerCase().includes(q) || m.message.toLowerCase().includes(q)));
+}
+
+// ===== TEAM CHAT =====
+let teamChatPolling = null;
+let teamChatLastTimestamp = 0;
+
+async function loadTeamChat() {
+  const container = document.getElementById('teamChatMessages');
+  try {
+    const data = await api('/api/team-chat/messages');
+    if (data && data.data && data.data.length > 0) {
+      container.innerHTML = '';
+      data.data.forEach(msg => appendTeamChatMessage(msg, false));
+      if (data.data.length > 0) {
+        teamChatLastTimestamp = data.data[data.data.length - 1].timestamp;
+      }
+      container.scrollTop = container.scrollHeight;
+    }
+  } catch (e) {}
+  startTeamChatPolling();
+}
+
+function startTeamChatPolling() {
+  if (teamChatPolling) clearInterval(teamChatPolling);
+  teamChatPolling = setInterval(pollTeamChat, 3000);
+}
+
+function stopTeamChatPolling() {
+  if (teamChatPolling) { clearInterval(teamChatPolling); teamChatPolling = null; }
+}
+
+async function pollTeamChat() {
+  if (currentPage !== 'team-chat') { stopTeamChatPolling(); return; }
+  try {
+    const data = await api(`/api/team-chat/messages?after=${teamChatLastTimestamp}`);
+    if (data && data.data && data.data.length > 0) {
+      const container = document.getElementById('teamChatMessages');
+      const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+      data.data.forEach(msg => appendTeamChatMessage(msg, false));
+      teamChatLastTimestamp = data.data[data.data.length - 1].timestamp;
+      if (wasAtBottom) container.scrollTop = container.scrollHeight;
+    }
+  } catch (e) {}
+}
+
+function appendTeamChatMessage(msg, scrollToBottom) {
+  const container = document.getElementById('teamChatMessages');
+  const empty = container.querySelector('.team-chat-empty');
+  if (empty) empty.remove();
+
+  const isOwner = msg.senderRole === 'owner';
+  const isMe = currentUser && msg.senderId === currentUser.id;
+  const div = document.createElement('div');
+  div.className = 'team-chat-msg' + (isMe ? ' team-chat-msg--me' : '') + (isOwner ? ' team-chat-msg--owner' : '');
+
+  const time = new Date(msg.timestamp).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+  const roleBadge = isOwner ? '<span class="team-chat-role-badge owner">Owner</span>' : '<span class="team-chat-role-badge mod">Mod</span>';
+
+  div.innerHTML = `
+    <div class="team-chat-msg-avatar">
+      <img src="${escapeHtml(msg.senderImage)}" alt="" onerror="this.style.display='none'">
+    </div>
+    <div class="team-chat-msg-body">
+      <div class="team-chat-msg-header">
+        <span class="team-chat-msg-name">${escapeHtml(msg.senderName)}</span>
+        ${roleBadge}
+        <span class="team-chat-msg-time">${time}</span>
+      </div>
+      <div class="team-chat-msg-text">${escapeHtml(msg.message)}</div>
+    </div>
+  `;
+  container.appendChild(div);
+  if (scrollToBottom !== false) container.scrollTop = container.scrollHeight;
+}
+
+async function sendTeamChatMessage() {
+  const input = document.getElementById('teamChatInput');
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = '';
+
+  try {
+    const data = await api('/api/team-chat/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    if (data && data.data) {
+      appendTeamChatMessage(data.data, true);
+      teamChatLastTimestamp = data.data.timestamp;
+    }
+  } catch (e) {
+    input.value = message;
+  }
 }
 
 // ============================================================
