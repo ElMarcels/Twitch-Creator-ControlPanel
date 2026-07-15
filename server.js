@@ -261,10 +261,19 @@ function requireAuth(req, res, next) {
         ownerData = ownerTokens.get(decoded.selectedChannelId);
       }
       if (!ownerData) {
-        if (req.path.startsWith('/api/')) {
-          return res.status(401).json({ error: 'Owner not connected' });
+        const isAdmin = ADMIN_USERS.includes((decoded.user.login || '').toLowerCase());
+        if (isAdmin) {
+          ownerData = {
+            user: decoded.ownerUser || decoded.user,
+            accessToken: decoded.accessToken,
+            refreshToken: decoded.refreshToken
+          };
+        } else {
+          if (req.path.startsWith('/api/')) {
+            return res.status(401).json({ error: 'Owner not connected' });
+          }
+          return res.status(401).send('Owner not connected');
         }
-        return res.status(401).send('Owner not connected');
       }
       req.auth = {
         user: ownerData.user,
