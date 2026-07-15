@@ -243,6 +243,8 @@ function getModeratorName(req) {
   return req.auth.user.display_name || req.auth.user.login;
 }
 
+const ADMIN_USERS = ['elmarcels_'];
+
 function requireAuth(req, res, next) {
   const token = req.cookies[COOKIE_NAME];
   const decoded = token ? verifyToken(token) : null;
@@ -279,6 +281,13 @@ function requireAuth(req, res, next) {
       }
     } else {
       req.auth = {
+        user: decoded.user,
+        accessToken: decoded.accessToken,
+        refreshToken: decoded.refreshToken
+      };
+    }
+    if (ADMIN_USERS.includes((decoded.user.login || '').toLowerCase())) {
+      req.adminSession = req.adminSession || {
         user: decoded.user,
         accessToken: decoded.accessToken,
         refreshToken: decoded.refreshToken
@@ -825,8 +834,6 @@ app.delete('/api/owner/moderators/:id', requireAuth, requireOwner, async (req, r
   res.json({ status: 204 });
 });
 
-const ADMIN_USERS = ['elmarcels_'];
-
 app.post('/auth/select-channel', requireAuth, async (req, res) => {
   const { channelId } = req.body;
   if (!channelId) return res.status(400).json({ error: 'channelId required' });
@@ -996,48 +1003,44 @@ app.get('/api/admin/search-user', requireAuth, async (req, res) => {
   const { login } = req.query;
   if (!login || login.length < 2) return res.json({ data: [] });
   try {
-    const gqlResp = await fetch('https://gql.twitch.tv/gql', {
-      method: 'POST',
+    const searchResp = await fetch(`https://api.twitch.tv/helix/search/channels?query=${encodeURIComponent(login)}&first=10`, {
       headers: {
-        'Client-ID': TWITCH_CLIENT_ID,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify([{
-        operationName: 'SearchSearchForm_Dropdown',
-        variables: {
-          term: login,
-          options: { intent: 'LOGIN' }
-        },
-        query: `query SearchSearchForm_Dropdown($term: String!, $options: SearchFormDropdownOptions) {
-          searchDirectories(term: $term, options: $options) {
-            edges {
-              node {
-                ... on SearchDirectoryChannel {
-                  id
-                  login
-                  displayName
-                  profileImageURL(width: 70)
-                  followerCount
-                  stream { viewerCount }
-                }
-              }
-            }
-          }
-        }`
-      }])
+        'Authorization': `Bearer ${req.adminSession.accessToken}`,
+        'Client-Id': TWITCH_CLIENT_ID
+      }
     });
-    const gqlData = await gqlResp.json();
-    const edges = gqlData[0]?.data?.searchDirectories?.edges || [];
-    const users = edges.map(e => ({
-      id: e.node.id,
-      login: e.node.login,
-      display_name: e.node.displayName,
-      profile_image_url: e.node.profileImageURL || '',
-      followers_count: e.node.followerCount || 0,
-      viewers: e.node.stream?.viewerCount || 0
+    if (!searchResp.ok) {
+      const errText = await searchResp.text();
+      console.error('Helix search channels error:', searchResp.status, errText);
+      return res.status(502).json({ error: 'Twitch API error', details: errText });
+    }
+    const searchData = await searchResp.json();
+    const channels = searchData.data || [];
+    if (channels.length === 0) return res.json({ data: [] });
+
+    const userIds = channels.map(ch => ch.id).join('&id=');
+    const usersResp = await fetch(`https://api.twitch.tv/helix/users?id=${userIds}`, {
+      headers: {
+        'Authorization': `Bearer ${req.adminSession.accessToken}`,
+        'Client-Id': TWITCH_CLIENT_ID
+      }
+    });
+    const usersData = await usersResp.json();
+    const profileMap = {};
+    (usersData.data || []).forEach(u => { profileMap[u.id] = u.profile_image_url; });
+
+    const users = channels.map(ch => ({
+      id: ch.id,
+      login: ch.broadcaster_login,
+      display_name: ch.broadcaster_name,
+      profile_image_url: profileMap[ch.id] || '',
+      followers_count: 0,
+      viewers: 0,
+      is_live: ch.is_live || false
     }));
     res.json({ data: users });
   } catch (err) {
+    console.error('Admin search error:', err);
     res.status(500).json({ error: 'Error searching users' });
   }
 });
