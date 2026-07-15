@@ -1537,13 +1537,34 @@
           <!-- CHANGELOG TAB -->
           <div class="doc-tab-content" id="docTab-changelog">
             <div class="about-container">
-              <div class="about-hero">
-                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;color:var(--purple-400)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                <h1 class="about-title" data-i18n="changelog_title">Registro de Cambios</h1>
-                <p class="about-version" data-i18n="changelog_subtitle">Historial de versiones y novedades de TwitchMod Dashboard</p>
+              <div class="changelog-hero">
+                <div class="changelog-hero-icon">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <h1 class="changelog-hero-title" data-i18n="changelog_title">Registro de Cambios</h1>
+                <p class="changelog-hero-subtitle" data-i18n="changelog_subtitle">Historial de versiones y novedades de TwitchMod Dashboard</p>
+                <div class="changelog-hero-latest" data-i18n="changelog_latest">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  <span>ULTIMA VERSION</span>
+                </div>
               </div>
 
-              <div class="changelog-hero-badge" data-i18n="changelog_latest">ULTIMA VERSION</div>
+              <div class="changelog-stats">
+                <div class="changelog-stat">
+                  <span class="changelog-stat-value">9</span>
+                  <span data-i18n="cl_stat_versions">versiones</span>
+                </div>
+                <div class="changelog-stat-dot"></div>
+                <div class="changelog-stat">
+                  <span class="changelog-stat-value">50</span>
+                  <span data-i18n="cl_stat_changes">cambios</span>
+                </div>
+                <div class="changelog-stat-dot"></div>
+                <div class="changelog-stat">
+                  <span class="changelog-stat-value">1 jul - 15 jul</span>
+                  <span data-i18n="cl_stat_period">2026</span>
+                </div>
+              </div>
 
               <div class="changelog-timeline">
 
@@ -1555,9 +1576,9 @@
                   <span class="changelog-count">3 cambios</span>
                 </div>
                 <ul class="changelog-list">
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_116_1">Chat de Equipo: canal de comunicacion privado entre el dueño del canal y los moderadores del panel</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_116_2">Mensajes en tiempo real con polling automatico cada 3 segundos</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_116_3">Avatar, nombre de usuario de Twitch y badge de rol en cada mensaje</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_116_1">Chat de Equipo: canal de comunicacion privado entre el dueño del canal y los moderadores del panel</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_116_2">Mensajes en tiempo real con polling automatico cada 3 segundos</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_116_3">Avatar, nombre de usuario de Twitch y badge de rol en cada mensaje</span></li>
                 </ul>
                 </div>
               </div>
@@ -1570,14 +1591,14 @@
                   <span class="changelog-count">8 cambios</span>
                 </div>
                 <ul class="changelog-list">
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_115_1">Integracion con Nightbot: conectar tu cuenta Nightbot al dashboard</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_115_2">Sincronizar comandos locales a Nightbot con un clic</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_115_3">Importar comandos existentes de Nightbot al dashboard</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_115_4">Auto-join de Nightbot al canal al sincronizar</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_115_5">Conversion automatica de variables entre formato local y Nightbot</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_115_6">Badge de estado de Nightbot (conectado/unido al canal)</span></li>
-                  <li><span class="changelog-tag changed" data-i18n="cl_tag_changed">Cambiado</span> <span data-i18n="cl_115_7">Pagina de Comandos actualizada con panel de Nightbot integrado</span></li>
-                  <li><span class="changelog-tag changed" data-i18n="cl_tag_changed">Cambiado</span> <span data-i18n="cl_115_8">Sincronizacion automatica con Nightbot al crear, editar o eliminar comandos</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_115_1">Integracion con Nightbot: conectar tu cuenta Nightbot al dashboard</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_115_2">Sincronizar comandos locales a Nightbot con un clic</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_115_3">Importar comandos existentes de Nightbot al dashboard</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_115_4">Auto-join de Nightbot al canal al sincronizar</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_115_5">Conversion automatica de variables entre formato local y Nightbot</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_115_6">Badge de estado de Nightbot (conectado/unido al canal)</span></li>
+                  <li><span class="changelog-tag changed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span data-i18n="cl_tag_changed">Cambiado</span></span> <span data-i18n="cl_115_7">Pagina de Comandos actualizada con panel de Nightbot integrado</span></li>
+                  <li><span class="changelog-tag changed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span data-i18n="cl_tag_changed">Cambiado</span></span> <span data-i18n="cl_115_8">Sincronizacion automatica con Nightbot al crear, editar o eliminar comandos</span></li>
                 </ul>
                 </div>
               </div>
@@ -1590,9 +1611,9 @@
                   <span class="changelog-count">3 cambios</span>
                 </div>
                 <ul class="changelog-list">
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_114_1">3 nuevos temas visuales: Midnight (azul), Emerald (verde) y Dracula (morado)</span></li>
-                  <li><span class="changelog-tag changed" data-i18n="cl_tag_changed">Cambiado</span> <span data-i18n="cl_114_2">Selector de temas redisenado para soportar 5 temas</span></li>
-                  <li><span class="changelog-tag changed" data-i18n="cl_tag_changed">Cambiado</span> <span data-i18n="cl_114_3">Sistema de temas refactorizado para escalar con nuevas paletas</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_114_1">3 nuevos temas visuales: Midnight (azul), Emerald (verde) y Dracula (morado)</span></li>
+                  <li><span class="changelog-tag changed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span data-i18n="cl_tag_changed">Cambiado</span></span> <span data-i18n="cl_114_2">Selector de temas redisenado para soportar 5 temas</span></li>
+                  <li><span class="changelog-tag changed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span data-i18n="cl_tag_changed">Cambiado</span></span> <span data-i18n="cl_114_3">Sistema de temas refactorizado para escalar con nuevas paletas</span></li>
                 </ul>
                 </div>
               </div>
@@ -1605,9 +1626,9 @@
                   <span class="changelog-count">3 cambios</span>
                 </div>
                 <ul class="changelog-list">
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_113_1">Nueva seccion de Documentacion con Guia de la Aplicacion</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_113_2">Registro de Cambios en la seccion Documentacion</span></li>
-                  <li><span class="changelog-tag removed" data-i18n="cl_tag_removed">Eliminado</span> <span data-i18n="cl_113_3">Pagina "Acerca de" (integrada en Documentacion)</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_113_1">Nueva seccion de Documentacion con Guia de la Aplicacion</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_113_2">Registro de Cambios en la seccion Documentacion</span></li>
+                  <li><span class="changelog-tag removed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_removed">Eliminado</span></span> <span data-i18n="cl_113_3">Pagina "Acerca de" (integrada en Documentacion)</span></li>
                 </ul>
                 </div>
               </div>
@@ -1620,13 +1641,13 @@
                   <span class="changelog-count">2 cambios</span>
                 </div>
                 <ul class="changelog-list">
-                  <li><span class="changelog-tag fixed" data-i18n="cl_tag_fixed">Corregido</span> <span data-i18n="cl_112_1">Traducciones en 7 idiomas (es, en, de, fr, pt, ja, ko)</span></li>
-                  <li><span class="changelog-tag changed" data-i18n="cl_tag_changed">Cambiado</span> <span data-i18n="cl_112_2">Optimizacion del CSS con variables de colores</span></li>
+                  <li><span class="changelog-tag fixed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span data-i18n="cl_tag_fixed">Corregido</span></span> <span data-i18n="cl_112_1">Traducciones en 7 idiomas (es, en, de, fr, pt, ja, ko)</span></li>
+                  <li><span class="changelog-tag changed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span data-i18n="cl_tag_changed">Cambiado</span></span> <span data-i18n="cl_112_2">Optimizacion del CSS con variables de colores</span></li>
                 </ul>
                 </div>
               </div>
 
-              <div class="changelog-entry">
+              <div class="changelog-entry changelog-hidden">
                 <div class="changelog-card">
                 <div class="changelog-header">
                   <span class="changelog-version">v1.1.1</span>
@@ -1634,18 +1655,18 @@
                   <span class="changelog-count">7 cambios</span>
                 </div>
                 <ul class="changelog-list">
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_1">Detector de Spam con configuracion de ventana de tiempo</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_2">Alertas en Vivo con vista previa y test de sub/follow/bits</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_3">Actividad de Moderadores con leaderboard y registro de acciones</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_4">Usuarios Sospechosos con razones predefinidas</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_5">Reglas del Chat con editor y saludo automatico</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_6">Compartir Dashboard con enlaces</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_111_7">Atajos de Teclado (Alt+1-9, Alt+S, Alt+R, Alt+D, Esc)</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_111_1">Detector de Spam con configuracion de ventana de tiempo</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_111_2">Alertas en Vivo con vista previa y test de sub/follow/bits</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_111_3">Actividad de Moderadores con leaderboard y registro de acciones</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_111_4">Usuarios Sospechosos con razones predefinidas</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_111_5">Reglas del Chat con editor y saludo automatico</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_111_6">Compartir Dashboard con enlaces</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_111_7">Atajos de Teclado (Alt+1-9, Alt+S, Alt+R, Alt+D, Esc)</span></li>
                 </ul>
                 </div>
               </div>
 
-              <div class="changelog-entry">
+              <div class="changelog-entry changelog-hidden">
                 <div class="changelog-card">
                 <div class="changelog-header">
                   <span class="changelog-version">v1.1.0</span>
@@ -1653,19 +1674,19 @@
                   <span class="changelog-count">8 cambios</span>
                 </div>
                 <ul class="changelog-list">
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_1">Modo Escudo para proteger el chat durante raids no deseados</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_2">Comandos Personalizados con variables ({user}, {args}, {date}, {time})</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_3">Metas de seguidores, suscriptores y visualizaciones</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_4">Log del Chat con busqueda integrada</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_5">Clips con creacion rapida y vista previa</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_6">Anuncios con programacion y control de pre-roll</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_7">Raids con busqueda de canales</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_110_8">Predicciones y Encuestas</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_110_1">Modo Escudo para proteger el chat durante raids no deseados</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_110_2">Comandos Personalizados con variables ({user}, {args}, {date}, {time})</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_110_3">Metas de seguidores, suscriptores y visualizaciones</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_110_4">Log del Chat con busqueda integrada</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_110_5">Clips con creacion rapida y vista previa</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_110_6">Anuncios con programacion y control de pre-roll</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_110_7">Raids con busqueda de canales</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_110_8">Predicciones y Encuestas</span></li>
                 </ul>
                 </div>
               </div>
 
-              <div class="changelog-entry">
+              <div class="changelog-entry changelog-hidden">
                 <div class="changelog-card">
                 <div class="changelog-header">
                   <span class="changelog-version">v1.0.0</span>
@@ -1673,19 +1694,24 @@
                   <span class="changelog-count">8 cambios</span>
                 </div>
                 <ul class="changelog-list">
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_1">Version inicial del TwitchMod Dashboard</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_2">Inicio con estadisticas y estado del directo</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_3">Moderacion (seguidores, chatters, baneados, VIPs)</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_4">Puntos del Canal con recompensas personalizadas</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_5">Configuracion del Directo (titulo, categoria, idioma, tags)</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_6">Chat en vivo con envio de mensajes</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_7">Estadisticas con graficos interactivos</span></li>
-                  <li><span class="changelog-tag added" data-i18n="cl_tag_added">Anadido</span> <span data-i18n="cl_100_8">Ajustes con tema oscuro/claro e idioma</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_100_1">Version inicial del TwitchMod Dashboard</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_100_2">Inicio con estadisticas y estado del directo</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_100_3">Moderacion (seguidores, chatters, baneados, VIPs)</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_100_4">Puntos del Canal con recompensas personalizadas</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_100_5">Configuracion del Directo (titulo, categoria, idioma, tags)</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_100_6">Chat en vivo con envio de mensajes</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_100_7">Estadisticas con graficos interactivos</span></li>
+                  <li><span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span> <span data-i18n="cl_100_8">Ajustes con tema oscuro/claro e idioma</span></li>
                 </ul>
                 </div>
               </div>
 
               </div>
+
+              <button class="changelog-show-more" onclick="toggleChangelogOlder(this)" data-i18n="cl_show_more">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                <span>Mostrar versiones anteriores</span>
+              </button>
 
             </div>
           </div>

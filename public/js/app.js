@@ -93,6 +93,8 @@ const translations = {
     changelog_title: 'Registro de Cambios',
     changelog_subtitle: 'Historial de versiones y novedades de TwitchMod Dashboard',
     changelog_latest: 'ULTIMA VERSION',
+    cl_stat_versions: 'versiones', cl_stat_changes: 'cambios', cl_stat_period: '2026',
+    cl_show_more: 'Mostrar versiones anteriores',
     cl_tag_added: 'Anadido', cl_tag_fixed: 'Corregido', cl_tag_changed: 'Cambiado', cl_tag_removed: 'Eliminado',
     cl_113_1: 'Nueva seccion de Documentacion con Guia de la Aplicacion',
     cl_113_2: 'Registro de Cambios en la seccion Documentacion',
@@ -263,6 +265,8 @@ const translations = {
     changelog_title: 'Changelog',
     changelog_subtitle: 'Version history and updates for TwitchMod Dashboard',
     changelog_latest: 'LATEST VERSION',
+    cl_stat_versions: 'versions', cl_stat_changes: 'changes', cl_stat_period: '2026',
+    cl_show_more: 'Show older versions',
     cl_tag_added: 'Added', cl_tag_fixed: 'Fixed', cl_tag_changed: 'Changed', cl_tag_removed: 'Removed',
     cl_113_1: 'New Documentation section with Application Guide',
     cl_113_2: 'Changelog in Documentation section',
@@ -433,6 +437,8 @@ const translations = {
     changelog_title: 'Versionshistorie',
     changelog_subtitle: 'Versionsverlauf und Neuigkeiten des TwitchMod Dashboard',
     changelog_latest: 'NEUESTE VERSION',
+    cl_stat_versions: 'Versionen', cl_stat_changes: 'Aenderungen', cl_stat_period: '2026',
+    cl_show_more: 'Aeltere Versionen anzeigen',
     cl_tag_added: 'Hinzugefuegt', cl_tag_fixed: 'Behoben', cl_tag_changed: 'Geaendert', cl_tag_removed: 'Entfernt',
     cl_113_1: 'Neuer Dokumentationsbereich mit Anwendungsanleitung',
     cl_113_2: 'Versionshistorie im Dokumentationsbereich',
@@ -603,6 +609,8 @@ const translations = {
     changelog_title: 'Journal des Modifications',
     changelog_subtitle: 'Historique des versions et nouveautes du TwitchMod Dashboard',
     changelog_latest: 'DERNIERE VERSION',
+    cl_stat_versions: 'versions', cl_stat_changes: 'modifications', cl_stat_period: '2026',
+    cl_show_more: 'Afficher les versions anciennes',
     cl_tag_added: 'Ajoute', cl_tag_fixed: 'Corrige', cl_tag_changed: 'Modifie', cl_tag_removed: 'Supprime',
     cl_113_1: 'Nouvelle section Documentation avec Guide de l\'Application',
     cl_113_2: 'Journal des Modifications dans la section Documentation',
@@ -773,6 +781,8 @@ const translations = {
     changelog_title: 'Registro de Alteracoes',
     changelog_subtitle: 'Historico de versoes e novidades do TwitchMod Dashboard',
     changelog_latest: 'ULTIMA VERSAO',
+    cl_stat_versions: 'versoes', cl_stat_changes: 'alteracoes', cl_stat_period: '2026',
+    cl_show_more: 'Mostrar versoes anteriores',
     cl_tag_added: 'Adicionado', cl_tag_fixed: 'Corrigido', cl_tag_changed: 'Alterado', cl_tag_removed: 'Removido',
     cl_113_1: 'Nova secao de Documentacao com Guia do Aplicativo',
     cl_113_2: 'Registro de Alteracoes na secao Documentacao',
@@ -1480,6 +1490,21 @@ function switchDocTab(tab) {
   const activeContent = document.getElementById(`docTab-${tab}`);
   if (activeTab) activeTab.classList.add('active');
   if (activeContent) activeContent.classList.add('active');
+}
+
+function toggleChangelogOlder(btn) {
+  const container = btn.closest('.about-container');
+  const hidden = container.querySelectorAll('.changelog-entry.changelog-hidden');
+  const isExpanded = hidden.length > 0 && hidden[0].style.display !== 'none';
+  if (isExpanded) {
+    hidden.forEach(e => { e.style.display = ''; e.classList.add('changelog-hidden'); });
+    btn.classList.remove('expanded');
+    btn.querySelector('span').textContent = 'Mostrar versiones anteriores';
+  } else {
+    hidden.forEach(e => { e.style.display = 'block'; e.classList.remove('changelog-hidden'); });
+    btn.classList.add('expanded');
+    btn.querySelector('span').textContent = 'Ocultar versiones anteriores';
+  }
 }
 
 function loadPageData(page) {
