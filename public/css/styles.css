@@ -2378,20 +2378,67 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
   display: block;
 }
 
-/* CHANGELOG STYLES */
+/* CHANGELOG STYLES - TIMELINE */
+.changelog-timeline {
+  position: relative;
+  padding-left: 32px;
+}
+
+.changelog-timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--purple-400), rgba(147, 51, 234, 0.1));
+  border-radius: 1px;
+}
+
 .changelog-entry {
+  position: relative;
+  margin-bottom: 28px;
+  padding-left: 20px;
+}
+
+.changelog-entry::before {
+  content: '';
+  position: absolute;
+  left: -25px;
+  top: 8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--purple-400);
+  border: 3px solid var(--bg-primary, #0e0a1a);
+  box-shadow: 0 0 0 2px var(--purple-400), 0 0 12px rgba(147, 51, 234, 0.3);
+  z-index: 2;
+}
+
+.changelog-entry:first-child::before {
+  background: #ec4899;
+  border-color: var(--bg-primary, #0e0a1a);
+  box-shadow: 0 0 0 2px #ec4899, 0 0 16px rgba(236, 72, 153, 0.4);
+}
+
+.changelog-card {
   background: var(--glass-bg-light);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  padding: 24px;
-  margin-bottom: 20px;
+  padding: 20px 24px;
   position: relative;
   overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.changelog-entry::before {
+.changelog-card:hover {
+  border-color: var(--glass-border-hover);
+  box-shadow: 0 4px 20px rgba(147, 51, 234, 0.08);
+}
+
+.changelog-card::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -2400,7 +2447,7 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
   pointer-events: none;
 }
 
-.changelog-entry > * {
+.changelog-card > * {
   position: relative;
   z-index: 1;
 }
@@ -2409,21 +2456,27 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .changelog-version {
-  background: rgba(147, 51, 234, 0.2);
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(236, 72, 153, 0.15));
   color: var(--purple-400);
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
-  padding: 4px 12px;
-  border-radius: var(--radius-sm);
+  padding: 4px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+
+.changelog-entry:first-child .changelog-version {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.25), rgba(147, 51, 234, 0.15));
+  color: #ec4899;
 }
 
 .changelog-date {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 .changelog-list {
@@ -2436,10 +2489,10 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   line-height: 1.5;
 }
 
@@ -2450,12 +2503,12 @@ select.form-input { cursor: pointer; appearance: none; background-image: url("da
 
 .changelog-tag {
   display: inline-block;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   flex-shrink: 0;
   min-width: 70px;
   text-align: center;
