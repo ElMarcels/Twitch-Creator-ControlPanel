@@ -1269,6 +1269,7 @@ function setupLanguage() {
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   if (checkAppealRoute()) return;
+  if (checkChangelogRoute()) return;
   checkNightbotCallback();
   applyTheme(localStorage.getItem('theme') || 'dark');
   setupTheme();
@@ -4149,7 +4150,19 @@ function checkAppealRoute() {
   if (window.location.pathname === '/appeal') {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('changelog-screen').style.display = 'none';
     document.getElementById('appeal-screen').style.display = '';
+    return true;
+  }
+  return false;
+}
+
+function checkChangelogRoute() {
+  if (window.location.pathname === '/changelog') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('changelog-screen').style.display = '';
+    applyTranslations();
     return true;
   }
   return false;

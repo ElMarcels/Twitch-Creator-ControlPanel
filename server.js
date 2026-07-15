@@ -2381,6 +2381,10 @@ app.get('/appeal', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+app.get('/changelog', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Vercel: export app, skip listen
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {

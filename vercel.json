@@ -32,6 +32,10 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/changelog",
+      "dest": "/api/index.js"
+    },
+    {
       "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json))",
       "dest": "/public/$1"
     },
