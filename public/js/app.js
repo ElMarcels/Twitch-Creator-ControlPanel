@@ -1495,15 +1495,18 @@ function switchDocTab(tab) {
 function toggleChangelogOlder(btn) {
   const container = btn.closest('.about-container');
   const allEntries = container.querySelectorAll('.changelog-entry');
+  const hiddenCount = Array.from(allEntries).filter(e => e.classList.contains('changelog-hidden')).length;
+  const threshold = allEntries.length - hiddenCount;
   const isExpanded = btn.classList.contains('expanded');
+  const span = btn.querySelector('span');
   if (isExpanded) {
-    allEntries.forEach((e, i) => { if (i >= 4) { e.style.display = ''; e.classList.add('changelog-hidden'); } });
+    allEntries.forEach((e, i) => { if (i >= threshold) { e.style.display = ''; e.classList.add('changelog-hidden'); } });
     btn.classList.remove('expanded');
-    btn.querySelector('span').textContent = 'Mostrar versiones anteriores';
+    if (span) span.textContent = t('cl_show_more');
   } else {
-    allEntries.forEach((e, i) => { if (i >= 4) { e.style.display = 'block'; e.classList.remove('changelog-hidden'); } });
+    allEntries.forEach((e, i) => { if (i >= threshold) { e.style.display = 'block'; e.classList.remove('changelog-hidden'); } });
     btn.classList.add('expanded');
-    btn.querySelector('span').textContent = 'Ocultar versiones anteriores';
+    if (span) span.textContent = 'Ocultar versiones anteriores';
   }
 }
 
