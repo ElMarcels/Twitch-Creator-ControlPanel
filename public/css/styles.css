@@ -4293,6 +4293,12 @@ select.form-input:focus {
   color: var(--text-primary);
 }
 
+.team-chat-msg-login {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
 .team-chat-role-badge {
   display: inline-block;
   padding: 1px 7px;

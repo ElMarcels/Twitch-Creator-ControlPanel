@@ -1496,6 +1496,7 @@ app.post('/api/team-chat/messages', requireAuth, (req, res) => {
     id: 'tc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     senderId: senderDisplay.id,
     senderName: senderDisplay.display_name || senderDisplay.login,
+    senderLogin: senderDisplay.login || '',
     senderImage: senderDisplay.profile_image_url || '',
     senderRole: senderRole,
     message: message.trim().substring(0, 500),

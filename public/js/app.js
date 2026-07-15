@@ -3530,6 +3530,7 @@ function appendTeamChatMessage(msg, scrollToBottom) {
     <div class="team-chat-msg-body">
       <div class="team-chat-msg-header">
         <span class="team-chat-msg-name">${escapeHtml(msg.senderName)}</span>
+        ${msg.senderLogin ? '<span class="team-chat-msg-login">@' + escapeHtml(msg.senderLogin) + '</span>' : ''}
         ${roleBadge}
         <span class="team-chat-msg-time">${time}</span>
       </div>
@@ -3549,8 +3550,7 @@ async function sendTeamChatMessage() {
   try {
     const data = await api('/api/team-chat/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message })
+      body: { message }
     });
     if (data && data.data) {
       appendTeamChatMessage(data.data, true);
