@@ -245,7 +245,7 @@ function getModeratorName(req) {
 
 const ADMIN_USERS = ['elmarcels_'];
 
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const token = req.cookies[COOKIE_NAME];
   const decoded = token ? verifyToken(token) : null;
   if (decoded) {
@@ -263,8 +263,18 @@ function requireAuth(req, res, next) {
       if (!ownerData) {
         const isAdmin = ADMIN_USERS.includes((decoded.user.login || '').toLowerCase());
         if (isAdmin) {
+          let channelUser = decoded.ownerUser || null;
+          if (!channelUser) {
+            try {
+              const resp = await fetch(`https://api.twitch.tv/helix/users?id=${decoded.selectedChannelId}`, {
+                headers: { 'Authorization': `Bearer ${decoded.accessToken}`, 'Client-Id': TWITCH_CLIENT_ID }
+              });
+              const data = await resp.json();
+              if (data.data && data.data[0]) channelUser = data.data[0];
+            } catch {}
+          }
           ownerData = {
-            user: decoded.ownerUser || decoded.user,
+            user: channelUser || decoded.user,
             accessToken: decoded.accessToken,
             refreshToken: decoded.refreshToken
           };
