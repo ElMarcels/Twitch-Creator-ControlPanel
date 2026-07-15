@@ -1297,6 +1297,7 @@ async function checkAuth() {
       currentUser.role = data.role || null;
       currentUser.selectedChannelId = data.selectedChannelId || null;
       currentUser.isAdmin = data.isAdmin || false;
+      currentUser.ownerConnected = data.ownerConnected || false;
       if (data.ownerUser) {
         currentUser._displayUser = data.ownerUser;
       }
@@ -1352,8 +1353,14 @@ function populateUserInfo() {
   } else if (currentUser.role === 'admin') {
     badge.textContent = `Sesion Admin (${currentUser.display_name})`;
     badge.style.display = '';
+    const ownerWarn = document.getElementById('ownerNotConnectedBanner');
+    if (ownerWarn) {
+      ownerWarn.style.display = currentUser.ownerConnected ? 'none' : '';
+    }
   } else {
     badge.style.display = 'none';
+    const ownerWarn = document.getElementById('ownerNotConnectedBanner');
+    if (ownerWarn) ownerWarn.style.display = 'none';
   }
 }
 
@@ -1627,7 +1634,19 @@ async function api(endpoint, options = {}) {
       body: options.body ? JSON.stringify(options.body) : undefined
     });
     if (resp.status === 401) {
-      showToast('Sesion expirada. Recarga la pagina.', 'error');
+      if (currentUser && currentUser.role === 'admin' && !currentUser.ownerConnected) {
+        showToast('El dueño del canal no se ha conectado. Solo lectura disponible.', 'warning');
+      } else {
+        showToast('Sesion expirada. Recarga la pagina.', 'error');
+      }
+      return null;
+    }
+    if (resp.status === 403) {
+      if (currentUser && currentUser.role === 'admin' && !currentUser.ownerConnected) {
+        showToast('Sin permisos — el dueño del canal debe conectarse primero.', 'warning');
+      } else {
+        showToast('No tienes permisos para esta accion.', 'error');
+      }
       return null;
     }
     return await resp.json();

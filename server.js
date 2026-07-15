@@ -725,6 +725,7 @@ app.get('/auth/me', async (req, res) => {
         } catch {}
       }
       if (ownerUser) response.ownerUser = ownerUser;
+      response.ownerConnected = ownerTokens.has(decoded.selectedChannelId) || !!(decoded.ownerAccessToken);
     }
     return res.json(response);
   }
