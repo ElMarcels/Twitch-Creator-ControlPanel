@@ -996,26 +996,47 @@ app.get('/api/admin/search-user', requireAuth, async (req, res) => {
   const { login } = req.query;
   if (!login || login.length < 2) return res.json({ data: [] });
   try {
-    const resp = await fetch(`https://api.twitch.tv/kraken/users?login=${encodeURIComponent(login)}`, {
+    const gqlResp = await fetch('https://gql.twitch.tv/gql', {
+      method: 'POST',
       headers: {
-        'Authorization': `OAuth ${req.adminSession.accessToken}`,
-        'Accept': 'application/vnd.twitchtv.v5+json',
-        'Client-ID': TWITCH_CLIENT_ID
-      }
+        'Client-ID': TWITCH_CLIENT_ID,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify([{
+        operationName: 'SearchSearchForm_Dropdown',
+        variables: {
+          term: login,
+          options: { intent: 'LOGIN' }
+        },
+        query: `query SearchSearchForm_Dropdown($term: String!, $options: SearchFormDropdownOptions) {
+          searchDirectories(term: $term, options: $options) {
+            edges {
+              node {
+                ... on SearchDirectoryChannel {
+                  id
+                  login
+                  displayName
+                  profileImageURL(width: 70)
+                  followerCount
+                  stream { viewerCount }
+                }
+              }
+            }
+          }
+        }`
+      }])
     });
-    const data = await resp.json();
-    if (data.users && data.users.length > 0) {
-      const users = data.users.map(u => ({
-        id: u._id,
-        login: u.name,
-        display_name: u.display_name,
-        profile_image_url: u.logo || '',
-        description: u.bio || '',
-        followers_count: 0
-      }));
-      return res.json({ data: users });
-    }
-    res.json({ data: [] });
+    const gqlData = await gqlResp.json();
+    const edges = gqlData[0]?.data?.searchDirectories?.edges || [];
+    const users = edges.map(e => ({
+      id: e.node.id,
+      login: e.node.login,
+      display_name: e.node.displayName,
+      profile_image_url: e.node.profileImageURL || '',
+      followers_count: e.node.followerCount || 0,
+      viewers: e.node.stream?.viewerCount || 0
+    }));
+    res.json({ data: users });
   } catch (err) {
     res.status(500).json({ error: 'Error searching users' });
   }
