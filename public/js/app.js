@@ -1649,7 +1649,11 @@ async function api(endpoint, options = {}) {
       }
       return null;
     }
-    return await resp.json();
+    const json = await resp.json();
+    if (json && json.data && json.data.data) {
+      return { ...json, data: json.data.data };
+    }
+    return json;
   } catch (err) {
     console.error('API Error:', err);
     showToast('Error de conexion', 'error');
