@@ -1346,6 +1346,20 @@ async function showDashboard() {
   startStreamRefresh();
   startViewerTracking();
   startFollowerTracking();
+  autoConnectEventSub();
+}
+
+async function autoConnectEventSub() {
+  try {
+    const data = await api('/api/commands/eventsub/status');
+    if (data && data.data && data.data.connected) {
+      updateEventsubUI(true);
+      return;
+    }
+    connectEventSub();
+  } catch (_) {
+    connectEventSub();
+  }
 }
 
 function populateUserInfo() {
