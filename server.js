@@ -97,6 +97,120 @@ async function saveTeamChatToRedis() {
   try { await redisSet(TEAM_CHAT_KEY, obj); } catch {}
 }
 
+// ===== WELCOME MESSAGES =====
+const welcomeConfigs = new Map(); // channelId -> {follow: {enabled, message}, firstMessage: {enabled, message}, sub: {enabled, message}, giftSub: {enabled, message}}
+const knownFollowers = new Map(); // channelId -> Set of user IDs that have followed
+const knownChatters = new Map(); // channelId -> Set of user IDs that have chatted
+const WELCOME_KEY = 'fav-twitch:welcomeConfigs';
+const WELCOME_FOLLOWERS_KEY = 'fav-twitch:welcomeFollowers';
+const WELCOME_CHATTERS_KEY = 'fav-twitch:welcomeChatters';
+
+const defaultWelcomeMessages = {
+  follow: { enabled: true, message: 'Muchas Gracias Por Ese Follow {user}! / Thank you for the follow {user}!' },
+  firstMessage: { enabled: true, message: 'Bienvenido al Directo {user}! / Welcome to the stream {user}!' },
+  sub: { enabled: true, message: 'Gracias por la sub {user}! / Thank you for the sub {user}!' },
+  giftSub: { enabled: true, message: 'Gracias por regalar subs {user}! / Thank you for the gifted subs {user}!' }
+};
+
+async function loadWelcomeConfigs() {
+  if (!REDIS_URL) return;
+  try {
+    const [configsRaw, followersRaw, chattersRaw] = await Promise.all([
+      redisGet(WELCOME_KEY),
+      redisGet(WELCOME_FOLLOWERS_KEY),
+      redisGet(WELCOME_CHATTERS_KEY)
+    ]);
+    let configs = typeof configsRaw === 'string' ? JSON.parse(configsRaw) : configsRaw;
+    if (configs && typeof configs === 'object') {
+      welcomeConfigs.clear();
+      Object.entries(configs).forEach(([k, v]) => welcomeConfigs.set(k, v));
+    }
+    let followers = typeof followersRaw === 'string' ? JSON.parse(followersRaw) : followersRaw;
+    if (followers && typeof followers === 'object') {
+      knownFollowers.clear();
+      Object.entries(followers).forEach(([k, v]) => knownFollowers.set(k, new Set(v)));
+    }
+    let chatters = typeof chattersRaw === 'string' ? JSON.parse(chattersRaw) : chattersRaw;
+    if (chatters && typeof chatters === 'object') {
+      knownChatters.clear();
+      Object.entries(chatters).forEach(([k, v]) => knownChatters.set(k, new Set(v)));
+    }
+  } catch (err) {
+    console.error('Failed to load welcome configs:', err.message);
+  }
+}
+
+async function saveWelcomeConfigs() {
+  if (!REDIS_URL) return;
+  const configs = {};
+  welcomeConfigs.forEach((v, k) => { configs[k] = v; });
+  const followers = {};
+  knownFollowers.forEach((v, k) => { followers[k] = Array.from(v).slice(-5000); });
+  const chatters = {};
+  knownChatters.forEach((v, k) => { chatters[k] = Array.from(v).slice(-5000); });
+  try {
+    await Promise.all([
+      redisSet(WELCOME_KEY, configs),
+      redisSet(WELCOME_FOLLOWERS_KEY, followers),
+      redisSet(WELCOME_CHATTERS_KEY, chatters)
+    ]);
+  } catch (err) {
+    console.error('Failed to save welcome configs:', err.message);
+  }
+}
+
+function getWelcomeConfig(channelId) {
+  return welcomeConfigs.get(channelId) || { ...defaultWelcomeMessages };
+}
+
+function isKnownFollower(channelId, userId) {
+  const followers = knownFollowers.get(channelId);
+  return followers ? followers.has(userId) : false;
+}
+
+function markAsKnownFollower(channelId, userId) {
+  if (!knownFollowers.has(channelId)) knownFollowers.set(channelId, new Set());
+  knownFollowers.get(channelId).add(userId);
+}
+
+function isKnownChatter(channelId, userId) {
+  const chatters = knownChatters.get(channelId);
+  return chatters ? chatters.has(userId) : false;
+}
+
+function markAsKnownChatter(channelId, userId) {
+  if (!knownChatters.has(channelId)) knownChatters.set(channelId, new Set());
+  knownChatters.get(channelId).add(userId);
+}
+
+async function sendWelcomeMessage(channelId, type, userName) {
+  const config = getWelcomeConfig(channelId);
+  const typeConfig = config[type];
+  if (!typeConfig || !typeConfig.enabled) return;
+
+  const message = typeConfig.message.replace(/{user}/g, userName);
+
+  try {
+    const ownerData = ownerTokens.get(channelId);
+    if (!ownerData) return;
+    await fetch('https://api.twitch.tv/helix/chat/messages', {
+      method: 'POST',
+      headers: {
+        'Client-ID': TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${ownerData.accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        broadcaster_id: channelId,
+        sender_id: channelId,
+        message
+      })
+    });
+  } catch (err) {
+    console.error('Welcome message send error:', err.message);
+  }
+}
+
 // ===== ALERT TEMPLATES =====
 const alertTemplates = new Map(); // channelId -> {follow: {message, duration, sound}, sub: {...}, bits: {...}, raid: {...}}
 
@@ -165,6 +279,7 @@ function migrateRedisData(data) {
 async function loadFromRedis() {
   if (!REDIS_URL) return;
   try {
+    await loadWelcomeConfigs();
     const [tokensRaw, accountsRaw, nightbotRaw, teamChatRaw] = await Promise.all([
       redisGet('fav-twitch:ownerTokens'),
       redisGet('fav-twitch:moderatorAccounts'),
@@ -2152,16 +2267,55 @@ function connectEventSub(broadcasterId, accessToken) {
       // Subscribe to channel.chat.message
       await subscribeEventSub(broadcasterId, accessToken);
     }
-    if (msg.metadata?.message_type === 'notification' && msg.metadata?.subscription_type === 'channel.chat.message') {
+    if (msg.metadata?.message_type === 'notification') {
+      const subType = msg.metadata?.subscription_type;
       const e = msg.payload.event;
-      await handleChatMessage(
-        e.broadcaster_user_id,
-        e.chatter_user_id,
-        e.chatter_user_login,
-        e.chatter_user_name,
-        e.message.text,
-        e.badges ? e.badges.map(b => b.set_id) : []
-      );
+
+      if (subType === 'channel.chat.message') {
+        // Check for first message welcome
+        const channelId = e.broadcaster_user_id;
+        const chatterId = e.chatter_user_id;
+        const chatterName = e.chatter_user_name;
+
+        if (!isKnownChatter(channelId, chatterId)) {
+          markAsKnownChatter(channelId, chatterId);
+          await sendWelcomeMessage(channelId, 'firstMessage', chatterName);
+          saveWelcomeConfigs().catch(() => {});
+        }
+
+        await handleChatMessage(
+          channelId,
+          chatterId,
+          e.chatter_user_login,
+          chatterName,
+          e.message.text,
+          e.badges ? e.badges.map(b => b.set_id) : []
+        );
+      }
+
+      if (subType === 'channel.follow') {
+        const channelId = e.broadcaster_user_id;
+        const userId = e.user_id;
+        const userName = e.user_name;
+
+        if (!isKnownFollower(channelId, userId)) {
+          markAsKnownFollower(channelId, userId);
+          await sendWelcomeMessage(channelId, 'follow', userName);
+          saveWelcomeConfigs().catch(() => {});
+        }
+      }
+
+      if (subType === 'channel.subscription.new') {
+        const channelId = e.broadcaster_user_id;
+        const userName = e.user_name;
+        await sendWelcomeMessage(channelId, 'sub', userName);
+      }
+
+      if (subType === 'channel.subscription.gift') {
+        const channelId = e.broadcaster_user_id;
+        const userName = e.user_name;
+        await sendWelcomeMessage(channelId, 'giftSub', userName);
+      }
     }
     if (msg.metadata?.message_type === 'session_reconnect') {
       const newUrl = msg.payload.session.reconnect_url;
@@ -2188,23 +2342,32 @@ function connectEventSub(broadcasterId, accessToken) {
 
 async function subscribeEventSub(broadcasterId, accessToken) {
   if (!eventsubSessionId) return;
-  try {
-    await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
-      method: 'POST',
-      headers: {
-        'Client-ID': TWITCH_CLIENT_ID,
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        type: 'channel.chat.message',
-        version: '1',
-        condition: { broadcaster_user_id: broadcasterId, user_id: broadcasterId },
-        transport: { method: 'websocket', session_id: eventsubSessionId }
-      })
-    });
-  } catch (err) {
-    console.error('EventSub subscribe error:', err.message);
+  const subscriptions = [
+    { type: 'channel.chat.message', version: '1', condition: { broadcaster_user_id: broadcasterId, user_id: broadcasterId } },
+    { type: 'channel.follow', version: '2', condition: { broadcaster_user_id: broadcasterId, moderator_user_id: broadcasterId } },
+    { type: 'channel.subscription.new', version: '1', condition: { broadcaster_user_id: broadcasterId } },
+    { type: 'channel.subscription.gift', version: '1', condition: { broadcaster_user_id: broadcasterId } }
+  ];
+
+  for (const sub of subscriptions) {
+    try {
+      await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+        method: 'POST',
+        headers: {
+          'Client-ID': TWITCH_CLIENT_ID,
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: sub.type,
+          version: sub.version,
+          condition: sub.condition,
+          transport: { method: 'websocket', session_id: eventsubSessionId }
+        })
+      });
+    } catch (err) {
+      console.error(`EventSub subscribe ${sub.type} error:`, err.message);
+    }
   }
 }
 
@@ -2229,6 +2392,62 @@ app.post('/api/commands/eventsub/disconnect', requireAuth, (req, res) => {
 
 app.get('/api/commands/eventsub/status', requireAuth, (req, res) => {
   res.json({ data: { connected: eventsubConnected, sessionId: eventsubSessionId || null, broadcasterId: eventsubBroadcasterId } });
+});
+
+// ===== WELCOME MESSAGES CONFIG =====
+app.get('/api/welcome/config', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const config = getWelcomeConfig(channelId);
+  res.json({ data: config });
+});
+
+app.put('/api/welcome/config', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const { type, enabled, message } = req.body;
+
+  if (!type || !['follow', 'firstMessage', 'sub', 'giftSub'].includes(type)) {
+    return res.status(400).json({ error: 'Invalid type. Must be: follow, firstMessage, sub, giftSub' });
+  }
+
+  const config = getWelcomeConfig(channelId);
+  if (!config[type]) config[type] = { enabled: true, message: '' };
+  if (enabled !== undefined) config[type].enabled = !!enabled;
+  if (message !== undefined) config[type].message = message.trim();
+
+  welcomeConfigs.set(channelId, config);
+  await saveWelcomeConfigs();
+  res.json({ data: config });
+});
+
+app.get('/api/welcome/stats', requireAuth, (req, res) => {
+  const channelId = req.auth.user.id;
+  const followers = knownFollowers.get(channelId);
+  const chatters = knownChatters.get(channelId);
+  res.json({
+    data: {
+      knownFollowers: followers ? followers.size : 0,
+      knownChatters: chatters ? chatters.size : 0
+    }
+  });
+});
+
+app.post('/api/welcome/reset', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  const { type } = req.body;
+
+  if (type === 'followers') {
+    knownFollowers.delete(channelId);
+  } else if (type === 'chatters') {
+    knownChatters.delete(channelId);
+  } else if (type === 'all') {
+    knownFollowers.delete(channelId);
+    knownChatters.delete(channelId);
+  } else {
+    return res.status(400).json({ error: 'Invalid type. Must be: followers, chatters, or all' });
+  }
+
+  await saveWelcomeConfigs();
+  res.json({ status: 200, message: 'Reset successful' });
 });
 
 // ===== ALERT TEMPLATES =====

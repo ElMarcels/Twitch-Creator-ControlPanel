@@ -113,6 +113,14 @@ const translations = {
     cl_116_1: 'Chat de Equipo: canal de comunicacion privado entre el dueño del canal y los moderadores del panel',
     cl_116_2: 'Mensajes en tiempo real con polling automatico cada 3 segundos',
     cl_116_3: 'Avatar, nombre de usuario de Twitch y badge de rol en cada mensaje',
+    cl_120_1: 'Cambio Rapido de Canal: cambia entre canales que moderas sin cerrar sesion',
+    cl_120_2: 'Mensajes Automaticos: saludos automaticos por follow, primera vez en el chat, sub y sub regalado',
+    cl_120_3: 'Solicitudes de Apelacion: sistema externo para que usuarios baneados soliciten Revision',
+    cl_120_4: 'Changelog Interactivo: cada item del registro de cambios ahora es expandible con descripcion detallada',
+    cl_120_5: 'EventSub WebSocket mejorado: suscripcion automatica a follows, suscripciones y subs regalados',
+    cl_120_6: 'Seccion de Ajustes ampliada con panel de Mensajes de Bienvenida',
+    cl_120_7: 'Persistencia de datos en Redis: welcome configs, follows conocidos y chatters conocidos',
+    cl_120_8: 'API de Welcome Messages: endpoints REST para configurar, consultar estadisticas y resetear listas',
     cl_112_1: 'Traducciones en 7 idiomas (es, en, de, fr, pt, ja, ko)',
     cl_112_2: 'Optimizacion del CSS con variables de colores',
     cl_111_1: 'Detector de Spam con configuracion de ventana de tiempo',
@@ -1568,6 +1576,10 @@ function switchDocTab(tab) {
   if (activeContent) activeContent.classList.add('active');
 }
 
+function toggleChangelogItem(item) {
+  item.classList.toggle('expanded');
+}
+
 function toggleChangelogOlder(btn) {
   const container = btn.closest('.about-container');
   const allEntries = container.querySelectorAll('.changelog-entry');
@@ -1611,7 +1623,7 @@ function loadPageData(page) {
     case 'alerts-widget': loadAlerts(); loadAlertTemplates(); break;
     case 'appeals': loadAppeals(); break;
     case 'share': loadShareLinks(); break;
-    case 'settings': loadModeratorAccounts(); loadEmailConfig(); break;
+    case 'settings': loadModeratorAccounts(); loadEmailConfig(); loadWelcomeConfig(); break;
   }
 }
 
@@ -4482,6 +4494,81 @@ async function sendDigestNow() {
     showToast('Resumen enviado!', 'success');
   } else {
     showToast(result?.error || 'Error al enviar', 'error');
+  }
+}
+
+// ============================================================
+// FEATURE: WELCOME MESSAGES
+// ============================================================
+async function loadWelcomeConfig() {
+  const data = await api('/api/welcome/config');
+  if (data && data.data) {
+    const c = data.data;
+    const types = ['follow', 'firstMessage', 'sub', 'giftSub'];
+    const fields = {
+      follow: { enabled: 'welcomeFollowEnabled', msg: 'welcomeFollowMsg' },
+      firstMessage: { enabled: 'welcomeFirstMessageEnabled', msg: 'welcomeFirstMessageMsg' },
+      sub: { enabled: 'welcomeSubEnabled', msg: 'welcomeSubMsg' },
+      giftSub: { enabled: 'welcomeGiftSubEnabled', msg: 'welcomeGiftSubMsg' }
+    };
+
+    for (const type of types) {
+      const cfg = c[type] || {};
+      const enabledEl = document.getElementById(fields[type].enabled);
+      const msgEl = document.getElementById(fields[type].msg);
+      if (enabledEl) enabledEl.checked = cfg.enabled || false;
+      if (msgEl) msgEl.value = cfg.message || '';
+    }
+  }
+
+  const stats = await api('/api/welcome/stats');
+  if (stats && stats.data) {
+    const followerCount = document.getElementById('welcomeFollowerCount');
+    const chatterCount = document.getElementById('welcomeChatterCount');
+    if (followerCount) followerCount.textContent = stats.data.knownFollowers || 0;
+    if (chatterCount) chatterCount.textContent = stats.data.knownChatters || 0;
+  }
+}
+
+async function saveWelcomeConfig(type) {
+  const fields = {
+    follow: { enabled: 'welcomeFollowEnabled', msg: 'welcomeFollowMsg' },
+    firstMessage: { enabled: 'welcomeFirstMessageEnabled', msg: 'welcomeFirstMessageMsg' },
+    sub: { enabled: 'welcomeSubEnabled', msg: 'welcomeSubMsg' },
+    giftSub: { enabled: 'welcomeGiftSubEnabled', msg: 'welcomeGiftSubMsg' }
+  };
+
+  const f = fields[type];
+  if (!f) return;
+
+  const enabled = document.getElementById(f.enabled)?.checked || false;
+  const message = document.getElementById(f.msg)?.value || '';
+
+  const result = await api('/api/welcome/config', {
+    method: 'PUT',
+    body: { type, enabled, message }
+  });
+
+  if (result && result.data) {
+    showToast('Configuracion guardada', 'success');
+  } else {
+    showToast('Error al guardar', 'error');
+  }
+}
+
+async function resetWelcomeStats(type) {
+  if (type === 'all') {
+    if (!confirm('Esto reseteará todos los seguidores y chatters conocidos. Los usuarios recibiran los mensajes de bienvenida de nuevo. Continuar?')) return;
+  } else {
+    if (!confirm('Los seguidores conocidos seran reseteados. Recibiran el mensaje de follow de nuevo si vuelven a seguir. Continuar?')) return;
+  }
+
+  const result = await api('/api/welcome/reset', { method: 'POST', body: { type } });
+  if (result && result.status === 200) {
+    showToast('Reset completado', 'success');
+    loadWelcomeConfig();
+  } else {
+    showToast('Error al resetear', 'error');
   }
 }
 

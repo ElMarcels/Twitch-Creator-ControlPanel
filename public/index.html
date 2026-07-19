@@ -159,22 +159,140 @@
 
         <div class="changelog-stats">
           <div class="changelog-stat">
-            <span class="changelog-stat-value">9</span>
+            <span class="changelog-stat-value">10</span>
             <span data-i18n="cl_stat_versions">versiones</span>
           </div>
           <div class="changelog-stat-dot"></div>
           <div class="changelog-stat">
-            <span class="changelog-stat-value">50</span>
+            <span class="changelog-stat-value">58</span>
             <span data-i18n="cl_stat_changes">cambios</span>
           </div>
           <div class="changelog-stat-dot"></div>
           <div class="changelog-stat">
-            <span class="changelog-stat-value">1 jul - 15 jul</span>
+            <span class="changelog-stat-value">1 jul - 19 jul</span>
             <span data-i18n="cl_stat_period">2026</span>
           </div>
         </div>
 
         <div class="changelog-timeline">
+
+        <div class="changelog-entry">
+          <div class="changelog-card">
+          <div class="changelog-header">
+            <span class="changelog-version">v1.2.0</span>
+            <span class="changelog-date">19 de julio de 2026</span>
+            <span class="changelog-count">8 cambios</span>
+          </div>
+          <ul class="changelog-list">
+            <li class="changelog-item" onclick="toggleChangelogItem(this)">
+              <div class="changelog-item-header">
+                <span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span>
+                <span class="changelog-item-text" data-i18n="cl_120_1">Cambio Rapido de Canal: cambia entre canales que moderas sin cerrar sesion</span>
+                <svg class="changelog-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="changelog-item-details">
+                <div class="changelog-item-details-content">
+                  <strong>Como funciona:</strong> Si eres moderador de varios canales, ahora puedes cambiar entre ellos con un solo clic desde el selector de canales. Tu sesion se mantiene activa y no necesitas volver a autenticarte. Ideal para moderadores que gestionan multiples canales de streamers.
+                </div>
+              </div>
+            </li>
+            <li class="changelog-item" onclick="toggleChangelogItem(this)">
+              <div class="changelog-item-header">
+                <span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span>
+                <span class="changelog-item-text" data-i18n="cl_120_2">Mensajes Automaticos: saludos automaticos por follow, primera vez en el chat, sub y sub regalado</span>
+                <svg class="changelog-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="changelog-item-details">
+                <div class="changelog-item-details-content">
+                  <strong>4 tipos de mensajes:</strong><br>
+                  <strong>Follow:</strong> "Muchas Gracias Por Ese Follow {user}! / Thank you for the follow {user}!"<br>
+                  <strong>Primera vez en el chat:</strong> "Bienvenido al Directo {user}! / Welcome to the stream {user}!"<br>
+                  <strong>Suscripcion:</strong> "Gracias por la sub {user}! / Thank you for the sub {user}!"<br>
+                  <strong>Sub regalado:</strong> "Gracias por regalar subs {user}! / Thank you for the gifted subs {user}!"<br><br>
+                  <strong>Configuracion:</strong> Ve a Ajustes > Mensajes de Bienvenida para activar/desactivar cada tipo y personalizar los mensajes. Usa <code>{user}</code> para insertar el nombre del usuario. Los mensajes se guardan en Redis y persisten entre sesiones.
+                </div>
+              </div>
+            </li>
+            <li class="changelog-item" onclick="toggleChangelogItem(this)">
+              <div class="changelog-item-header">
+                <span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span>
+                <span class="changelog-item-text" data-i18n="cl_120_3">Solicitudes de Apelacion: sistema externo para que usuarios baneados soliciten Revision</span>
+                <svg class="changelog-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="changelog-item-details">
+                <div class="changelog-item-details-content">
+                  <strong>Para usuarios baneados:</strong> Accede a <code>/appeal</code> sin necesidad de estar logueado. Completa un formulario con tu usuario, el canal y tu explicacion. Tu solicitud se guarda en Redis y el streamer la revisa desde su dashboard.<br><br>
+                  <strong>Para streamers:</strong> En la seccion "Apelaciones" del panel, puedes ver todas las solicitudes pendientes, aprobar o denegar cada una. Las decisiones se registran con fecha y usuario que reviso.
+                </div>
+              </div>
+            </li>
+            <li class="changelog-item" onclick="toggleChangelogItem(this)">
+              <div class="changelog-item-header">
+                <span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x12="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span>
+                <span class="changelog-item-text" data-i18n="cl_120_4">Changelog Interactivo: cada item del registro de cambios ahora es expandible con descripcion detallada</span>
+                <svg class="changelog-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="changelog-item-details">
+                <div class="changelog-item-details-content">
+                  Haz clic en cualquier cambio del registro para ver una explicacion detallada de como funciona, como configurarlo y consejos de uso. La flecha indicadora aparece al pasar el mouse sobre el item.
+                </div>
+              </div>
+            </li>
+            <li class="changelog-item" onclick="toggleChangelogItem(this)">
+              <div class="changelog-item-header">
+                <span class="changelog-tag changed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span data-i18n="cl_tag_changed">Cambiado</span></span>
+                <span class="changelog-item-text" data-i18n="cl_120_5">EventSub WebSocket mejorado: suscripcion automatica a follows, suscripciones y subs regalados</span>
+                <svg class="changelog-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="changelog-item-details">
+                <div class="changelog-item-details-content">
+                  Antes el bot solo escuchaba mensajes de chat. Ahora, al conectar el Bot en la seccion de Comandos, se suscribe automaticamente a 4 eventos: <code>channel.chat.message</code>, <code>channel.follow</code>, <code>channel.subscription.new</code> y <code>channel.subscription.gift</code>. Esto permite los mensajes automaticos y future features como alertas en tiempo real.
+                </div>
+              </div>
+            </li>
+            <li class="changelog-item" onclick="toggleChangelogItem(this)">
+              <div class="changelog-item-header">
+                <span class="changelog-tag changed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span data-i18n="cl_tag_changed">Cambiado</span></span>
+                <span class="changelog-item-text" data-i18n="cl_120_6">Seccion de Ajustes ampliada con panel de Mensajes de Bienvenida</span>
+                <svg class="changelog-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="changelog-item-details">
+                <div class="changelog-item-details-content">
+                  Nueva seccion en Ajustes con 4 mensajes configurables, toggles de activacion, contador de seguidores y chatters conocidos, y botones para resetear las listas. Los cambios se guardan automaticamente al modificar cualquier campo.
+                </div>
+              </div>
+            </li>
+            <li class="changelog-item" onclick="toggleChangelogItem(this)">
+              <div class="changelog-item-header">
+                <span class="changelog-tag fixed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span data-i18n="cl_tag_fixed">Corregido</span></span>
+                <span class="changelog-item-text" data-i18n="cl_120_7">Persistencia de datos en Redis: welcome configs, follows conocidos y chatters conocidos</span>
+                <svg class="changelog-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="changelog-item-details">
+                <div class="changelog-item-details-content">
+                  Todos los datos de mensajes automaticos (configuracion, seguidores conocidos, chatters conocidos) se guardan en Redis y se cargan al iniciar el servidor. Si el servidor se reinicia, no se pierden los registros de quien ya recibio un mensaje de bienvenida.
+                </div>
+              </div>
+            </li>
+            <li class="changelog-item" onclick="toggleChangelogItem(this)">
+              <div class="changelog-item-header">
+                <span class="changelog-tag added"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span data-i18n="cl_tag_added">Anadido</span></span>
+                <span class="changelog-item-text" data-i18n="cl_120_8">API de Welcome Messages: endpoints REST para configurar, consultar estadisticas y resetear listas</span>
+                <svg class="changelog-item-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="changelog-item-details">
+                <div class="changelog-item-details-content">
+                  <strong>Endpoints:</strong><br>
+                  <code>GET /api/welcome/config</code> — Obtener configuracion actual<br>
+                  <code>PUT /api/welcome/config</code> — Guardar configuracion por tipo<br>
+                  <code>GET /api/welcome/stats</code> — Conteo de seguidores/chatters conocidos<br>
+                  <code>POST /api/welcome/reset</code> — Resetear listas de conocidos
+                </div>
+              </div>
+            </li>
+          </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-card">
@@ -1528,6 +1646,91 @@
                 </div>
                 <div id="moderatorAccountsList">
                   <div class="empty-state"><p>Cargando...</p></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h2 class="settings-section-title">Mensajes de Bienvenida</h2>
+              <div class="settings-card">
+                <p style="color:var(--text-secondary);margin-bottom:16px;font-size:0.9rem">
+                  Configura mensajes automaticos para dar la bienvenida a usuarios que interactuan por primera vez en tu canal.
+                  <br><strong>Variables disponibles:</strong> <code>{user}</code> = nombre del usuario
+                  <br><strong>Nota:</strong> Necesitas tener el Bot conectado via EventSub en la seccion de Comandos.
+                </p>
+
+                <!-- Follow Welcome -->
+                <div class="settings-row" style="align-items:flex-start">
+                  <div class="settings-info" style="flex:1">
+                    <h3>Mensaje de Follow</h3>
+                    <p>Se envia cuando alguien te sigue por primera vez.</p>
+                    <input type="text" id="welcomeFollowMsg" class="form-input" style="width:100%;margin-top:8px"
+                      placeholder="Muchas Gracias Por Ese Follow {user}! / Thank you for the follow {user}!"
+                      onchange="saveWelcomeConfig('follow')">
+                  </div>
+                  <label class="toggle-switch" style="margin-top:8px">
+                    <input type="checkbox" id="welcomeFollowEnabled" onchange="saveWelcomeConfig('follow')">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <!-- First Message Welcome -->
+                <div class="settings-row" style="align-items:flex-start">
+                  <div class="settings-info" style="flex:1">
+                    <h3>Mensaje de Primera Vez en el Chat</h3>
+                    <p>Se envia cuando alguien escribe por primera vez en tu stream (por sesion de EventSub).</p>
+                    <input type="text" id="welcomeFirstMessageMsg" class="form-input" style="width:100%;margin-top:8px"
+                      placeholder="Bienvenido al Directo {user}! / Welcome to the stream {user}!"
+                      onchange="saveWelcomeConfig('firstMessage')">
+                  </div>
+                  <label class="toggle-switch" style="margin-top:8px">
+                    <input type="checkbox" id="welcomeFirstMessageEnabled" onchange="saveWelcomeConfig('firstMessage')">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <!-- Sub Welcome -->
+                <div class="settings-row" style="align-items:flex-start">
+                  <div class="settings-info" style="flex:1">
+                    <h3>Mensaje de Suscripcion</h3>
+                    <p>Se envia cuando alguien se suscribe (Prime, Tier 1, 2 o 3).</p>
+                    <input type="text" id="welcomeSubMsg" class="form-input" style="width:100%;margin-top:8px"
+                      placeholder="Gracias por la sub {user}! / Thank you for the sub {user}!"
+                      onchange="saveWelcomeConfig('sub')">
+                  </div>
+                  <label class="toggle-switch" style="margin-top:8px">
+                    <input type="checkbox" id="welcomeSubEnabled" onchange="saveWelcomeConfig('sub')">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <!-- Gift Sub Welcome -->
+                <div class="settings-row" style="align-items:flex-start">
+                  <div class="settings-info" style="flex:1">
+                    <h3>Mensaje de Sub Regalado</h3>
+                    <p>Se envia cuando alguien regala suscripciones.</p>
+                    <input type="text" id="welcomeGiftSubMsg" class="form-input" style="width:100%;margin-top:8px"
+                      placeholder="Gracias por regalar subs {user}! / Thank you for the gifted subs {user}!"
+                      onchange="saveWelcomeConfig('giftSub')">
+                  </div>
+                  <label class="toggle-switch" style="margin-top:8px">
+                    <input type="checkbox" id="welcomeGiftSubEnabled" onchange="saveWelcomeConfig('giftSub')">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <!-- Stats & Reset -->
+                <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+                    <div style="color:var(--text-secondary);font-size:0.85rem">
+                      <span id="welcomeFollowerCount">0</span> seguidores conocidos |
+                      <span id="welcomeChatterCount">0</span> chatters conocidos
+                    </div>
+                    <div style="display:flex;gap:8px">
+                      <button class="btn btn-secondary btn-sm" onclick="resetWelcomeStats('followers')">Resetear seguidores</button>
+                      <button class="btn btn-danger btn-sm" onclick="resetWelcomeStats('all')">Resetear todo</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
