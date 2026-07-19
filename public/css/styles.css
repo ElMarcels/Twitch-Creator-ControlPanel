@@ -398,6 +398,17 @@ a { color: var(--purple-400); text-decoration: none; }
   overflow: hidden;
 }
 
+/* Changelog public screen: allow scroll */
+#changelog-screen {
+  display: block !important;
+  height: auto !important;
+  min-height: 100vh;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  align-items: unset;
+  justify-content: unset;
+}
+
 .login-bg {
   position: absolute;
   inset: 0;
