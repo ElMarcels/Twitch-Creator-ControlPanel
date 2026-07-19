@@ -398,12 +398,12 @@ a { color: var(--purple-400); text-decoration: none; }
   overflow: hidden;
 }
 
-/* Changelog public screen: allow scroll */
-#changelog-screen {
-  display: block !important;
-  height: auto !important;
+/* Changelog public screen: allow scroll when visible */
+#changelog-screen[style*="display: block"],
+#changelog-screen[style*="display:block"] {
+  height: auto;
   min-height: 100vh;
-  overflow-y: auto !important;
+  overflow-y: auto;
   overflow-x: hidden;
   align-items: unset;
   justify-content: unset;
