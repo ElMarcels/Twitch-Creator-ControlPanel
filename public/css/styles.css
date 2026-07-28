@@ -818,6 +818,7 @@ a { color: var(--purple-400); text-decoration: none; }
 /* Pages */
 .page-container {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 24px;
 }
@@ -5057,4 +5058,11 @@ select.form-input:focus {
   background: var(--bg-card);
   color: var(--text-primary);
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Platform content wrappers */
+.config-content,
+.chat-content,
+.stats-content {
+  display: block;
 }
