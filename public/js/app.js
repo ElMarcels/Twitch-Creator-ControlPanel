@@ -1617,9 +1617,9 @@ function loadPageData(page) {
     case 'dashboard-home': loadHomeData(); break;
     case 'moderation': loadModerationData(); break;
     case 'channel-points': loadRewards(); break;
-    case 'stream-config': loadStreamConfig(); break;
-    case 'chat-settings': loadChatSettings(); break;
-    case 'stats': loadStats(); break;
+    case 'stream-config': loadStreamConfig(); showPlatformTabs(); break;
+    case 'chat-settings': loadChatSettings(); showPlatformTabs(); break;
+    case 'stats': loadStats(); showPlatformTabs(); break;
     case 'predictions': loadPredictions(); break;
     case 'polls': loadPolls(); break;
     case 'raid': loadRaidPage(); break;
@@ -2536,14 +2536,16 @@ async function loadMultistreamConfigSingle(platform) {
   if (descEl) descEl.value = p.description || '';
 }
 
-function showPlatformTabs() {
-  const platforms = multistreamPlatforms || [];
-  const hasKick = platforms.some(p => p.platform === 'kick' && p.connected);
-  if (hasKick) {
-    document.getElementById('chatTabKick').style.display = '';
-    document.getElementById('configTabKick').style.display = '';
-    document.getElementById('statsTabKick').style.display = '';
-  }
+async function showPlatformTabs() {
+  const data = await api('/api/platforms/status');
+  if (!data || !data.data) return;
+  const { kick } = data.data;
+  const chatTab = document.getElementById('chatTabKick');
+  const configTab = document.getElementById('configTabKick');
+  const statsTab = document.getElementById('statsTabKick');
+  if (chatTab) chatTab.style.display = kick ? '' : 'none';
+  if (configTab) configTab.style.display = kick ? '' : 'none';
+  if (statsTab) statsTab.style.display = kick ? '' : 'none';
 }
 
 // ===== CHAT SETTINGS =====
