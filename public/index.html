@@ -559,6 +559,19 @@
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
           <span>Solicitudes</span>
         </a>
+        <div class="nav-divider"></div>
+        <a href="#" class="nav-item" data-page="multistream-chat">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Multi-Chat</span>
+        </a>
+        <a href="#" class="nav-item" data-page="multistream-stats">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Multi-Stats</span>
+        </a>
+        <a href="#" class="nav-item" data-page="multistream-config">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Multi-Config</span>
+        </a>
       </nav>
 
       <div class="sidebar-footer">
@@ -644,6 +657,27 @@
                 <span class="stat-value" id="streamTimeValue">--</span>
                 <span class="stat-label" data-i18n="stat_stream_time">Tiempo en directo</span>
               </div>
+            </div>
+          </div>
+
+          <div id="multistreamBar" class="multistream-bar" style="display:none">
+            <div class="multistream-platform" id="msPlatformTwitch">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="#9146FF"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
+              <span class="ms-label">Twitch</span>
+              <span class="ms-status offline" id="msTwitchStatus">Offline</span>
+              <span class="ms-viewers" id="msTwitchViewers"></span>
+            </div>
+            <div class="multistream-platform" id="msPlatformYoutube" style="display:none">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              <span class="ms-label">YouTube</span>
+              <span class="ms-status offline" id="msYoutubeStatus">Offline</span>
+              <span class="ms-viewers" id="msYoutubeViewers"></span>
+            </div>
+            <div class="multistream-platform" id="msPlatformKick" style="display:none">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="#53FC18"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 16.894c-.207.344-.623.459-1.023.252l-2.894-1.734v3.073c0 .433-.351.784-.784.784s-.784-.351-.784-.784v-4.268c0-.433.351-.784.784-.784h2.894c.4 0 .816-.115 1.023-.252.344-.207.459-.623.252-1.023L12.894 4.11c-.207-.344-.623-.459-1.023-.252-.344.207-.459.623-.252 1.023l2.894 1.734V3.538c0-.433.351-.784.784-.784s.784.351.784.784v4.268c0 .433-.351.784-.784.784h-2.894c-.4 0-.816.115-1.023.252-.344.207-.459.623-.252 1.023l3.426 5.725c.207.344.623.459.829.252l.013-.01.013-.005z"/></svg>
+              <span class="ms-label">Kick</span>
+              <span class="ms-status offline" id="msKickStatus">Offline</span>
+              <span class="ms-viewers" id="msKickViewers"></span>
             </div>
           </div>
 
@@ -1353,6 +1387,78 @@
           </div>
         </div>
 
+        <!-- MULTISTREAM CHAT -->
+        <div class="page" id="page-multistream-chat">
+          <div class="multistream-chat-container" id="multistreamChatContainer">
+            <div class="ms-chat-panel">
+              <div class="ms-chat-header">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="#9146FF"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
+                <span>Twitch</span>
+              </div>
+              <div class="ms-chat-messages" id="chatLogTwitch">
+                <div class="empty-state"><p>Chat de Twitch (ya integrado en la seccion Chat)</p></div>
+              </div>
+            </div>
+            <div class="ms-chat-panel" id="msChatPanelYoutube" style="display:none">
+              <div class="ms-chat-header">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                <span>YouTube</span>
+              </div>
+              <div class="ms-chat-messages" id="msChatYoutube"></div>
+              <div class="ms-chat-input">
+                <input type="text" id="msChatInput-youtube" placeholder="Mensaje a YouTube..." onkeydown="if(event.key==='Enter')sendMultistreamChat('youtube')">
+                <button class="btn btn-primary btn-sm" onclick="sendMultistreamChat('youtube')">Enviar</button>
+              </div>
+            </div>
+            <div class="ms-chat-panel" id="msChatPanelKick" style="display:none">
+              <div class="ms-chat-header">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="#53FC18"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 16.894c-.207.344-.623.459-1.023.252l-2.894-1.734v3.073c0 .433-.351.784-.784.784s-.784-.351-.784-.784v-4.268c0-.433.351-.784.784-.784h2.894c.4 0 .816-.115 1.023-.252.344-.207.459-.623.252-1.023L12.894 4.11c-.207-.344-.623-.459-1.023-.252-.344.207-.459.623-.252 1.023l2.894 1.734V3.538c0-.433.351-.784.784-.784s.784.351.784.784v4.268c0 .433-.351.784-.784.784h-2.894c-.4 0-.816.115-1.023.252-.344.207-.459.623-.252 1.023l3.426 5.725c.207.344.623.459.829.252l.013-.01.013-.005z"/></svg>
+                <span>Kick</span>
+              </div>
+              <div class="ms-chat-messages" id="msChatKick"></div>
+              <div class="ms-chat-input">
+                <input type="text" id="msChatInput-kick" placeholder="Mensaje a Kick..." onkeydown="if(event.key==='Enter')sendMultistreamChat('kick')">
+                <button class="btn btn-primary btn-sm" onclick="sendMultistreamChat('kick')">Enviar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MULTISTREAM STATS -->
+        <div class="page" id="page-multistream-stats">
+          <div class="page-actions">
+            <button class="btn btn-primary" onclick="loadMultistreamStats()">Refrescar</button>
+          </div>
+          <div class="stats-grid" id="multistreamStatsGrid">
+            <div class="loading">Cargando estadisticas multistream...</div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-header"><h3>Comparativa de Viewers</h3></div>
+            <div class="card-body">
+              <canvas id="multistreamChart" style="width:100%;height:200px"></canvas>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="card-header"><h3>Alertas Multistream</h3></div>
+            <div class="card-body" style="max-height:400px;overflow-y:auto">
+              <div id="multistreamAlertsList">
+                <div class="empty-state"><p>No hay alertas recientes</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MULTISTREAM CONFIG -->
+        <div class="page" id="page-multistream-config">
+          <div class="page-actions">
+            <button class="btn btn-secondary" onclick="applyMultistreamTitle()" title="Copiar el titulo de Twitch a todas las plataformas">Sincronizar titulo</button>
+            <button class="btn btn-primary" onclick="loadMultistreamConfig()">Refrescar</button>
+          </div>
+          <div class="multistream-config-grid" id="multistreamConfigGrid">
+            <div class="loading">Cargando configuracion...</div>
+          </div>
+        </div>
+
         <!-- MOD ACTIVITY DASHBOARD -->
         <div class="page" id="page-mod-activity">
           <div class="page-actions">
@@ -1730,6 +1836,55 @@
                       <button class="btn btn-secondary btn-sm" onclick="resetWelcomeStats('followers')">Resetear seguidores</button>
                       <button class="btn btn-danger btn-sm" onclick="resetWelcomeStats('all')">Resetear todo</button>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h2 class="settings-section-title">Plataformas Conectadas</h2>
+              <div class="settings-card">
+                <p style="color:var(--text-secondary);margin-bottom:16px;font-size:0.9rem">
+                  Conecta tus cuentas de otras plataformas para gestionar tu multistream desde un solo lugar.
+                </p>
+                
+                <!-- Twitch -->
+                <div class="settings-row" style="align-items:center">
+                  <div class="settings-info" style="display:flex;align-items:center;gap:12px">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="#9146FF"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
+                    <div>
+                      <h3>Twitch</h3>
+                      <p style="color:var(--text-secondary);font-size:0.85rem">Siempre conectado</p>
+                    </div>
+                  </div>
+                  <span style="color:#22c55e;font-weight:600;font-size:0.9rem">Conectado</span>
+                </div>
+
+                <!-- YouTube -->
+                <div class="settings-row" style="align-items:center">
+                  <div class="settings-info" style="display:flex;align-items:center;gap:12px">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    <div>
+                      <h3>YouTube</h3>
+                      <p id="youtubeStatus" style="color:var(--text-secondary);font-size:0.85rem">No conectado</p>
+                    </div>
+                  </div>
+                  <div id="youtubeActions">
+                    <button class="btn btn-primary btn-sm" onclick="connectYouTube()">Conectar</button>
+                  </div>
+                </div>
+
+                <!-- Kick -->
+                <div class="settings-row" style="align-items:center">
+                  <div class="settings-info" style="display:flex;align-items:center;gap:12px">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="#53FC18"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 16.894c-.207.344-.623.459-1.023.252l-2.894-1.734v3.073c0 .433-.351.784-.784.784s-.784-.351-.784-.784v-4.268c0-.433.351-.784.784-.784h2.894c.4 0 .816-.115 1.023-.252.344-.207.459-.623.252-1.023L12.894 4.11c-.207-.344-.623-.459-1.023-.252-.344.207-.459.623-.252 1.023l2.894 1.734V3.538c0-.433.351-.784.784-.784s.784.351.784.784v4.268c0 .433-.351.784-.784.784h-2.894c-.4 0-.816.115-1.023.252-.344.207-.459.623-.252 1.023l3.426 5.725c.207.344.623.459.829.252l.013-.01.013-.005z"/></svg>
+                    <div>
+                      <h3>Kick</h3>
+                      <p id="kickStatus" style="color:var(--text-secondary);font-size:0.85rem">No conectado</p>
+                    </div>
+                  </div>
+                  <div id="kickActions">
+                    <button class="btn btn-primary btn-sm" onclick="connectKick()">Conectar</button>
                   </div>
                 </div>
               </div>

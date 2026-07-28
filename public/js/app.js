@@ -1636,8 +1636,11 @@ function loadPageData(page) {
     case 'chat-rules': loadChatRules(); break;
     case 'alerts-widget': loadAlerts(); loadAlertTemplates(); break;
     case 'appeals': loadAppeals(); break;
+    case 'multistream-chat': initMultistreamChatPage(); break;
+    case 'multistream-stats': loadMultistreamStats(); break;
+    case 'multistream-config': loadMultistreamConfig(); break;
     case 'share': loadShareLinks(); break;
-    case 'settings': loadModeratorAccounts(); loadEmailConfig(); loadWelcomeConfig(); break;
+    case 'settings': loadModeratorAccounts(); loadEmailConfig(); loadWelcomeConfig(); loadPlatformStatus(); checkPlatformConnection(); break;
   }
 }
 
@@ -4979,4 +4982,554 @@ async function importFromNightbot() {
   } else {
     showToast('Error al importar', 'error');
   }
+}
+
+// ============================================================
+// FEATURE: MULTI-PLATFORM CONNECTIONS
+// ============================================================
+function connectYouTube() {
+  window.location.href = '/auth/youtube';
+}
+
+function connectKick() {
+  window.location.href = '/auth/kick';
+}
+
+async function loadPlatformStatus() {
+  const data = await api('/api/platforms/status');
+  if (data && data.data) {
+    const { youtube, kick, youtubeUser, kickUser } = data.data;
+    
+    // YouTube
+    const youtubeStatus = document.getElementById('youtubeStatus');
+    const youtubeActions = document.getElementById('youtubeActions');
+    if (youtubeStatus) {
+      if (youtube) {
+        youtubeStatus.textContent = youtubeUser?.title || 'Conectado';
+        youtubeStatus.style.color = '#22c55e';
+      } else {
+        youtubeStatus.textContent = 'No conectado';
+        youtubeStatus.style.color = 'var(--text-secondary)';
+      }
+    }
+    if (youtubeActions) {
+      if (youtube) {
+        youtubeActions.innerHTML = `<button class="btn btn-danger btn-sm" onclick="disconnectPlatform('youtube')">Desconectar</button>`;
+      } else {
+        youtubeActions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="connectYouTube()">Conectar</button>`;
+      }
+    }
+    
+    // Kick
+    const kickStatus = document.getElementById('kickStatus');
+    const kickActions = document.getElementById('kickActions');
+    if (kickStatus) {
+      if (kick) {
+        kickStatus.textContent = kickUser?.username || 'Conectado';
+        kickStatus.style.color = '#22c55e';
+      } else {
+        kickStatus.textContent = 'No conectado';
+        kickStatus.style.color = 'var(--text-secondary)';
+      }
+    }
+    if (kickActions) {
+      if (kick) {
+        kickActions.innerHTML = `<button class="btn btn-danger btn-sm" onclick="disconnectPlatform('kick')">Desconectar</button>`;
+      } else {
+        kickActions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="connectKick()">Conectar</button>`;
+      }
+    }
+  }
+}
+
+async function disconnectPlatform(platform) {
+  if (!confirm(`¿Seguro que quieres desconectar ${platform === 'youtube' ? 'YouTube' : 'Kick'}?`)) return;
+  
+  const result = await api(`/api/platforms/disconnect/${platform}`, { method: 'POST' });
+  if (result && result.data && result.data.success) {
+    showToast(`${platform === 'youtube' ? 'YouTube' : 'Kick'} desconectado`, 'success');
+    loadPlatformStatus();
+  } else {
+    showToast('Error al desconectar', 'error');
+  }
+}
+
+// Check URL params for connection status on page load
+function checkPlatformConnection() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('youtube') === 'connected') {
+    showToast('YouTube conectado correctamente', 'success');
+    window.history.replaceState({}, '', '/dashboard');
+  } else if (params.get('youtube')) {
+    showToast('Error al conectar YouTube', 'error');
+    window.history.replaceState({}, '', '/dashboard');
+  }
+  if (params.get('kick') === 'connected') {
+    showToast('Kick conectado correctamente', 'success');
+    window.history.replaceState({}, '', '/dashboard');
+  } else if (params.get('kick')) {
+    showToast('Error al conectar Kick', 'error');
+    window.history.replaceState({}, '', '/dashboard');
+  }
+}
+
+// ============================================================
+// FEATURE: MULTISTREAM DASHBOARD
+// ============================================================
+let multistreamStatus = null;
+
+async function loadMultistreamBar() {
+  const bar = document.getElementById('multistreamBar');
+  if (!bar) return;
+
+  const data = await api('/api/platforms/status');
+  if (!data || !data.data) return;
+
+  const { youtube, kick } = data.data;
+
+  if (youtube) {
+    document.getElementById('msPlatformYoutube').style.display = 'flex';
+  } else {
+    document.getElementById('msPlatformYoutube').style.display = 'none';
+  }
+
+  if (kick) {
+    document.getElementById('msPlatformKick').style.display = 'flex';
+  } else {
+    document.getElementById('msPlatformKick').style.display = 'none';
+  }
+
+  if (youtube || kick) {
+    bar.style.display = 'flex';
+  }
+
+  const statusData = await api('/api/multistream/status');
+  if (!statusData || !statusData.data) return;
+  multistreamStatus = statusData.data;
+
+  // Twitch
+  if (statusData.data.twitch) {
+    const twitchStatus = document.getElementById('msTwitchStatus');
+    const twitchViewers = document.getElementById('msTwitchViewers');
+    if (statusData.data.twitch.live) {
+      twitchStatus.textContent = 'LIVE';
+      twitchStatus.className = 'ms-status live';
+      twitchViewers.textContent = `${statusData.data.twitch.viewers} viewers`;
+    } else {
+      twitchStatus.textContent = 'Offline';
+      twitchStatus.className = 'ms-status offline';
+      twitchViewers.textContent = '';
+    }
+  }
+
+  // YouTube
+  if (statusData.data.youtube) {
+    const ytStatus = document.getElementById('msYoutubeStatus');
+    const ytViewers = document.getElementById('msYoutubeViewers');
+    if (statusData.data.youtube.live) {
+      ytStatus.textContent = 'LIVE';
+      ytStatus.className = 'ms-status live';
+      ytViewers.textContent = `${statusData.data.youtube.viewers} viewers`;
+    } else {
+      ytStatus.textContent = 'Offline';
+      ytStatus.className = 'ms-status offline';
+      ytViewers.textContent = '';
+    }
+  }
+
+  // Kick
+  if (statusData.data.kick) {
+    const kickStatus = document.getElementById('msKickStatus');
+    const kickViewers = document.getElementById('msKickViewers');
+    if (statusData.data.kick.live) {
+      kickStatus.textContent = 'LIVE';
+      kickStatus.className = 'ms-status live';
+      kickViewers.textContent = `${statusData.data.kick.viewers} viewers`;
+    } else {
+      kickStatus.textContent = 'Offline';
+      kickStatus.className = 'ms-status offline';
+      kickViewers.textContent = '';
+    }
+  }
+}
+
+// ============================================================
+// FEATURE: MULTISTREAM STREAM CONFIG
+// ============================================================
+let multistreamPlatforms = [];
+
+async function loadMultistreamConfig() {
+  const data = await api('/api/multistream/stream-info');
+  if (!data || !data.data) return;
+  multistreamPlatforms = data.data;
+
+  const container = document.getElementById('multistreamConfigGrid');
+  if (!container) return;
+
+  container.innerHTML = multistreamPlatforms.map(p => {
+    const colors = { twitch: '#9146FF', youtube: '#FF0000', kick: '#53FC18' };
+    const icons = {
+      twitch: '<svg viewBox="0 0 24 24" width="20" height="20" fill="#9146FF"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>',
+      youtube: '<svg viewBox="0 0 24 24" width="20" height="20" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
+      kick: '<svg viewBox="0 0 24 24" width="20" height="20" fill="#53FC18"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 16.894c-.207.344-.623.459-1.023.252l-2.894-1.734v3.073c0 .433-.351.784-.784.784s-.784-.351-.784-.784v-4.268c0-.433.351-.784.784-.784h2.894c.4 0 .816-.115 1.023-.252.344-.207.459-.623.252-1.023L12.894 4.11c-.207-.344-.623-.459-1.023-.252-.344.207-.459.623-.252 1.023l2.894 1.734V3.538c0-.433.351-.784.784-.784s.784.351.784.784v4.268c0 .433-.351.784-.784.784h-2.894c-.4 0-.816.115-1.023.252-.344.207-.459.623-.252 1.023l3.426 5.725c.207.344.623.459.829.252l.013-.01.013-.005z"/></svg>'
+    };
+    const name = p.platform.charAt(0).toUpperCase() + p.platform.slice(1);
+    return `
+      <div class="ms-config-card">
+        <h4>${icons[p.platform] || ''} ${name}</h4>
+        <div class="form-group">
+          <label>Titulo del stream</label>
+          <input type="text" class="form-input" id="msTitle-${p.platform}" value="${escapeHtml(p.title || '')}" placeholder="Titulo del directo">
+        </div>
+        ${p.platform === 'youtube' ? `
+        <div class="form-group">
+          <label>Descripcion</label>
+          <textarea class="form-input" id="msDesc-${p.platform}" rows="2" placeholder="Descripcion del stream"></textarea>
+        </div>
+        ` : ''}
+        <button class="btn btn-primary btn-sm" onclick="saveMultistreamConfig('${p.platform}')">Guardar en ${name}</button>
+        ${!p.connected ? '<span style="color:var(--text-muted);font-size:0.8rem;margin-left:8px">No conectado</span>' : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+async function saveMultistreamConfig(platform) {
+  const titleEl = document.getElementById(`msTitle-${platform}`);
+  const descEl = document.getElementById(`msDesc-${platform}`);
+
+  const body = {};
+  if (titleEl) body.title = titleEl.value;
+  if (descEl) body.description = descEl.value;
+
+  const endpoint = platform === 'youtube' ? '/api/youtube/stream-config' :
+                   platform === 'kick' ? '/api/kick/stream-config' : null;
+  if (!endpoint) return;
+
+  const result = await api(endpoint, { method: 'PUT', body });
+  if (result && result.data && result.data.success) {
+    showToast(`${platform.charAt(0).toUpperCase() + platform.slice(1)} actualizado`, 'success');
+  } else {
+    showToast(result?.error || 'Error al actualizar', 'error');
+  }
+}
+
+function applyMultistreamTitle() {
+  const twitchTitle = document.getElementById('streamTitleInput')?.value;
+  if (!twitchTitle) return;
+
+  multistreamPlatforms.forEach(p => {
+    if (p.platform !== 'twitch' && p.connected) {
+      const el = document.getElementById(`msTitle-${p.platform}`);
+      if (el) el.value = twitchTitle;
+    }
+  });
+  showToast('Titulo aplicado a todas las plataformas', 'success');
+}
+
+// ============================================================
+// FEATURE: MULTISTREAM CHAT
+// ============================================================
+let multistreamChatMessages = { youtube: [], kick: [] };
+let multistreamChatIntervals = {};
+
+function startMultistreamChat() {
+  stopMultistreamChat();
+
+  if (document.getElementById('msChatYoutube')) {
+    loadYouTubeChat();
+    multistreamChatIntervals.youtube = setInterval(loadYouTubeChat, 3000);
+  }
+
+  if (document.getElementById('msChatKick')) {
+    loadKickChat();
+    multistreamChatIntervals.kick = setInterval(loadKickChat, 3000);
+  }
+}
+
+function stopMultistreamChat() {
+  Object.values(multistreamChatIntervals).forEach(id => clearInterval(id));
+  multistreamChatIntervals = {};
+}
+
+async function loadYouTubeChat() {
+  const container = document.getElementById('msChatYoutube');
+  if (!container) return;
+
+  const data = await api('/api/youtube/chat/messages');
+  if (!data || !data.data || !data.data.messages) return;
+
+  const newMessages = data.data.messages;
+  if (newMessages.length === 0) return;
+
+  multistreamChatMessages.youtube = newMessages;
+  renderYouTubeChat();
+}
+
+function renderYouTubeChat() {
+  const container = document.getElementById('msChatYoutube');
+  if (!container) return;
+
+  container.innerHTML = multistreamChatMessages.youtube.map(msg => `
+    <div class="ms-chat-msg">
+      <img class="msg-avatar" src="${msg.profileImage || ''}" alt="" onerror="this.style.display='none'">
+      <div>
+        <span class="msg-user" style="color:${msg.isOwner ? '#FFD700' : msg.isModerator ? '#9146FF' : '#fff'}">${escapeHtml(msg.user)}</span>
+        <span class="msg-text">${escapeHtml(msg.message)}</span>
+      </div>
+    </div>
+  `).join('');
+
+  container.scrollTop = container.scrollHeight;
+}
+
+async function loadKickChat() {
+  const container = document.getElementById('msChatKick');
+  if (!container) return;
+
+  const data = await api('/api/kick/chat/messages');
+  if (!data || !data.data || !data.data.messages) return;
+
+  const newMessages = data.data.messages;
+  if (newMessages.length === 0) return;
+
+  multistreamChatMessages.kick = newMessages;
+  renderKickChat();
+}
+
+function renderKickChat() {
+  const container = document.getElementById('msChatKick');
+  if (!container) return;
+
+  container.innerHTML = multistreamChatMessages.kick.map(msg => `
+    <div class="ms-chat-msg">
+      <div>
+        <span class="msg-user" style="color:${msg.color || '#53FC18'}">${escapeHtml(msg.user || '')}</span>
+        <span class="msg-text">${escapeHtml(msg.message || '')}</span>
+      </div>
+    </div>
+  `).join('');
+
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendMultistreamChat(platform) {
+  const input = document.getElementById(`msChatInput-${platform}`);
+  if (!input || !input.value.trim()) return;
+
+  const message = input.value.trim();
+  input.value = '';
+
+  if (platform === 'youtube') {
+    const data = await api('/api/youtube/chat/messages');
+    if (data && data.data && data.data.liveChatId) {
+      await api('/api/youtube/chat/send', {
+        method: 'POST',
+        body: { message, liveChatId: data.data.liveChatId }
+      });
+    }
+  } else if (platform === 'kick') {
+    const data = await api('/api/kick/chat/messages');
+    if (data && data.data && data.data.chatroomId) {
+      await api('/api/kick/chat/send', {
+        method: 'POST',
+        body: { chatroomId: data.data.chatroomId, content: message }
+      });
+    }
+  }
+}
+
+// ============================================================
+// FEATURE: MULTISTREAM MODERATION
+// ============================================================
+async function multistreamBan(platform, userId, username) {
+  if (!confirm(`¿Banear a ${username} en ${platform}?`)) return;
+
+  if (platform === 'youtube') {
+    const ytData = await api('/api/youtube/chat/messages');
+    if (ytData && ytData.data && ytData.data.liveChatId) {
+      await api('/api/youtube/mod/ban', {
+        method: 'POST',
+        body: { liveChatId: ytData.data.liveChatId, channelId: userId }
+      });
+      showToast(`${username} baneado en YouTube`, 'success');
+    }
+  } else if (platform === 'kick') {
+    const kickUser = multistreamStatus?.kick;
+    if (kickUser && kickUser.broadcasterUserId) {
+      await api('/api/kick/mod/ban', {
+        method: 'POST',
+        body: { broadcasterUserId: kickUser.broadcasterUserId, userId }
+      });
+      showToast(`${username} baneado en Kick`, 'success');
+    }
+  }
+}
+
+async function multistreamBanAll(platform, userId, username) {
+  if (!confirm(`¿Banear a ${username} en TODAS las plataformas conectadas?`)) return;
+
+  // Twitch ban
+  await api('/api/mod/ban', { method: 'POST', body: { user_id: userId } });
+
+  // YouTube ban
+  if (multistreamStatus?.youtube?.live) {
+    const ytData = await api('/api/youtube/chat/messages');
+    if (ytData && ytData.data && ytData.data.liveChatId) {
+      await api('/api/youtube/mod/ban', {
+        method: 'POST',
+        body: { liveChatId: ytData.data.liveChatId, channelId: userId }
+      });
+    }
+  }
+
+  // Kick ban
+  if (multistreamStatus?.kick?.live) {
+    await api('/api/kick/mod/ban', {
+      method: 'POST',
+      body: { broadcasterUserId: userId, userId }
+    });
+  }
+
+  showToast(`${username} baneado en todas las plataformas`, 'success');
+}
+
+// ============================================================
+// FEATURE: MULTISTREAM STATS
+// ============================================================
+async function loadMultistreamStats() {
+  const statusData = await api('/api/multistream/status');
+  if (!statusData || !statusData.data) return;
+
+  const platforms = statusData.data;
+  const statsGrid = document.getElementById('multistreamStatsGrid');
+  if (!statsGrid) return;
+
+  const stats = [
+    { platform: 'twitch', name: 'Twitch', color: '#9146FF', icon: '🟣', data: platforms.twitch },
+    { platform: 'youtube', name: 'YouTube', color: '#FF0000', icon: '🔴', data: platforms.youtube },
+    { platform: 'kick', name: 'Kick', color: '#53FC18', icon: '🟢', data: platforms.kick }
+  ].filter(s => s.data !== null);
+
+  statsGrid.innerHTML = stats.map(s => `
+    <div class="stat-card" style="border-left: 4px solid ${s.color}">
+      <div class="stat-icon" style="background: ${s.color}20; color: ${s.color}">
+        <span style="font-size: 1.5rem">${s.icon}</span>
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">${s.data.live ? s.data.viewers : '0'}</span>
+        <span class="stat-label">${s.name} ${s.data.live ? 'viewers' : 'offline'}</span>
+      </div>
+    </div>
+  `).join('');
+
+  // Render viewer comparison chart
+  renderViewerComparisonChart(stats);
+}
+
+function renderViewerComparisonChart(stats) {
+  const canvas = document.getElementById('multistreamChart');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width = canvas.offsetWidth;
+  const height = canvas.height = 200;
+
+  ctx.clearRect(0, 0, width, height);
+
+  const liveStats = stats.filter(s => s.data.live);
+  if (liveStats.length === 0) {
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No hay streams activos para comparar', width / 2, height / 2);
+    return;
+  }
+
+  const maxViewers = Math.max(...liveStats.map(s => s.data.viewers), 1);
+  const barWidth = Math.min(80, (width - 60) / liveStats.length - 20);
+  const startX = (width - (barWidth + 20) * liveStats.length + 20) / 2;
+
+  liveStats.forEach((s, i) => {
+    const x = startX + i * (barWidth + 20);
+    const barHeight = (s.data.viewers / maxViewers) * (height - 60);
+    const y = height - 40 - barHeight;
+
+    ctx.fillStyle = s.color;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barWidth, barHeight, 4);
+    ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.data.viewers, x + barWidth / 2, y - 8);
+
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText(s.name, x + barWidth / 2, height - 20);
+  });
+}
+
+// ============================================================
+// FEATURE: MULTISTREAM ALERTS
+// ============================================================
+let multistreamAlerts = [];
+
+function addMultistreamAlert(platform, type, message) {
+  const alert = {
+    id: Date.now(),
+    platform,
+    type,
+    message,
+    timestamp: new Date()
+  };
+  multistreamAlerts.unshift(alert);
+  if (multistreamAlerts.length > 50) multistreamAlerts.pop();
+  renderMultistreamAlerts();
+}
+
+function renderMultistreamAlerts() {
+  const container = document.getElementById('multistreamAlertsList');
+  if (!container) return;
+
+  if (multistreamAlerts.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No hay alertas recientes</p></div>';
+    return;
+  }
+
+  const colors = { twitch: '#9146FF', youtube: '#FF0000', kick: '#53FC18' };
+  const icons = { follow: '👤', sub: '⭐', bits: '💎', raid: '⚔️', message: '💬' };
+
+  container.innerHTML = multistreamAlerts.map(a => `
+    <div class="settings-row" style="border-left: 3px solid ${colors[a.platform] || '#666'}">
+      <div class="settings-info">
+        <h3 style="font-size:0.9rem">${a.platform.charAt(0).toUpperCase() + a.platform.slice(1)} ${icons[a.type] || ''}</h3>
+        <p style="font-size:0.85rem">${escapeHtml(a.message)}</p>
+      </div>
+      <span style="color:var(--text-muted);font-size:0.75rem">${a.timestamp.toLocaleTimeString('es')}</span>
+    </div>
+  `).join('');
+}
+
+async function initMultistreamChatPage() {
+  const data = await api('/api/platforms/status');
+  if (data && data.data) {
+    if (data.data.youtube) {
+      document.getElementById('msChatPanelYoutube').style.display = 'flex';
+    }
+    if (data.data.kick) {
+      document.getElementById('msChatPanelKick').style.display = 'flex';
+    }
+  }
+  startMultistreamChat();
+}
+
+// Override the original loadHomeData to also load multistream bar
+const _origLoadHomeData = typeof loadHomeData === 'function' ? loadHomeData : null;
+if (_origLoadHomeData) {
+  window.loadHomeData = async function() {
+    await _origLoadHomeData();
+    loadMultistreamBar();
+  };
 }

@@ -4836,3 +4836,188 @@ select.form-input:focus {
 .team-chat-send-btn:active {
   transform: scale(0.95);
 }
+
+/* ============================================================
+   MULTI-PLATFORM CONNECTIONS
+   ============================================================ */
+.platform-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.platform-status.connected {
+  color: #22c55e;
+}
+
+.platform-status.disconnected {
+  color: var(--text-secondary);
+}
+
+/* Multistream Bar */
+.multistream-bar {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.multistream-platform {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.ms-label {
+  font-weight: 600;
+}
+
+.ms-status {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.ms-status.live {
+  background: #22c55e;
+  color: #fff;
+}
+
+.ms-status.offline {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+.ms-viewers {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Multistream Config Panel */
+.multistream-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.ms-config-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.ms-config-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 1rem;
+}
+
+.ms-config-card .form-group {
+  margin-bottom: 12px;
+}
+
+.ms-config-card label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+/* Multistream Chat */
+.multistream-chat-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  height: 500px;
+}
+
+.ms-chat-panel {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.ms-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.ms-chat-header svg {
+  flex-shrink: 0;
+}
+
+.ms-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.ms-chat-input {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.ms-chat-input input {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.ms-chat-input input:focus {
+  border-color: var(--purple-500);
+}
+
+.ms-chat-msg {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 4px 0;
+}
+
+.ms-chat-msg .msg-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ms-chat-msg .msg-user {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.ms-chat-msg .msg-text {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  word-break: break-word;
+}
