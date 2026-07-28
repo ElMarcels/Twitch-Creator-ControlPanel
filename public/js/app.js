@@ -2483,6 +2483,7 @@ function switchChatPlatform(platform) {
   document.querySelectorAll('#chatPlatformTabs .platform-tab').forEach(t => t.classList.remove('active'));
   event.target.closest('.platform-tab').classList.add('active');
   document.getElementById('chatContent-twitch').style.display = platform === 'twitch' ? '' : 'none';
+  document.getElementById('chatContent-twitch-announce').style.display = platform === 'twitch' ? '' : 'none';
   document.getElementById('chatContent-youtube').style.display = platform === 'youtube' ? '' : 'none';
   document.getElementById('chatContent-kick').style.display = platform === 'kick' ? '' : 'none';
   if (platform !== 'twitch') {
