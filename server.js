@@ -14,8 +14,6 @@ const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const NIGHTBOT_CLIENT_ID = process.env.NIGHTBOT_CLIENT_ID || '';
 const NIGHTBOT_CLIENT_SECRET = process.env.NIGHTBOT_CLIENT_SECRET || '';
-const YOUTUBE_CLIENT_ID = process.env.YOUTUBE_CLIENT_ID || '';
-const YOUTUBE_CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET || '';
 const KICK_CLIENT_ID = process.env.KICK_CLIENT_ID || '';
 const KICK_CLIENT_SECRET = process.env.KICK_CLIENT_SECRET || '';
 const JWT_SECRET = process.env.JWT_SECRET || 'fav-twitch-jwt-secret-change-me';
@@ -233,7 +231,6 @@ let eventsubConnected = false;
 const nightbotTokens = new Map(); // channelId -> { accessToken, refreshToken, expiresAt, user }
 
 // ===== MULTI-PLATFORM TOKENS =====
-const youtubeTokens = new Map(); // channelId -> { accessToken, refreshToken, expiresAt, user }
 const kickTokens = new Map();    // channelId -> { accessToken, refreshToken, expiresAt, user }
 
 // Moderator access system
@@ -289,12 +286,11 @@ async function loadFromRedis() {
   if (!REDIS_URL) return;
   try {
     await loadWelcomeConfigs();
-    const [tokensRaw, accountsRaw, nightbotRaw, teamChatRaw, youtubeRaw, kickRaw] = await Promise.all([
+    const [tokensRaw, accountsRaw, nightbotRaw, teamChatRaw, kickRaw] = await Promise.all([
       redisGet('fav-twitch:ownerTokens'),
       redisGet('fav-twitch:moderatorAccounts'),
       redisGet('fav-twitch:nightbotTokens'),
       redisGet(TEAM_CHAT_KEY),
-      redisGet('fav-twitch:youtubeTokens'),
       redisGet('fav-twitch:kickTokens')
     ]);
     let tokens = typeof tokensRaw === 'string' ? JSON.parse(tokensRaw) : tokensRaw;
@@ -307,13 +303,10 @@ async function loadFromRedis() {
     ownerTokens.clear();
     moderatorAccounts.clear();
     nightbotTokens.clear();
-    youtubeTokens.clear();
     kickTokens.clear();
     if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
     if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
     if (nightbot && typeof nightbot === 'object') Object.entries(nightbot).forEach(([k, v]) => nightbotTokens.set(k, v));
-    let youtube = typeof youtubeRaw === 'string' ? JSON.parse(youtubeRaw) : youtubeRaw;
-    if (youtube && typeof youtube === 'object') Object.entries(youtube).forEach(([k, v]) => youtubeTokens.set(k, v));
     let kick = typeof kickRaw === 'string' ? JSON.parse(kickRaw) : kickRaw;
     if (kick && typeof kick === 'object') Object.entries(kick).forEach(([k, v]) => kickTokens.set(k, v));
     // Load team chat
@@ -346,13 +339,6 @@ async function saveToRedis() {
   } catch (err) {
     console.error('Failed to save to Redis:', err.message);
   }
-}
-
-async function saveYouTubeTokensToRedis() {
-  if (!REDIS_URL) return;
-  const obj = {};
-  youtubeTokens.forEach((v, k) => { obj[k] = v; });
-  try { await redisSet('fav-twitch:youtubeTokens', obj); } catch {}
 }
 
 async function saveKickTokensToRedis() {
@@ -627,80 +613,6 @@ async function twitchAPI(req, res, endpoint, options = {}) {
     }
   } catch (err) {
     console.error('Twitch API Error:', err.message);
-    return { status: 500, data: { error: 'NetworkError', message: err.message } };
-  }
-}
-
-async function refreshYouTubeAccessToken(tokenData) {
-  if (!tokenData.refreshToken) return null;
-  try {
-    const resp = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: YOUTUBE_CLIENT_ID,
-        client_secret: YOUTUBE_CLIENT_SECRET,
-        refresh_token: tokenData.refreshToken,
-        grant_type: 'refresh_token'
-      })
-    });
-    const data = await resp.json();
-    if (data.access_token) {
-      return {
-        user: tokenData.user,
-        accessToken: data.access_token,
-        refreshToken: data.refresh_token || tokenData.refreshToken,
-        expiresAt: Date.now() + (data.expires_in * 1000)
-      };
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function youtubeAPI(channelId, endpoint, options = {}) {
-  const tokenData = youtubeTokens.get(channelId);
-  if (!tokenData) return { status: 401, data: { error: 'YouTube not connected' } };
-
-  const url = endpoint.startsWith('http') ? endpoint : `https://www.googleapis.com/youtube/v3${endpoint}`;
-  const method = options.method || 'GET';
-  const headers = {
-    'Authorization': `Bearer ${tokenData.accessToken}`,
-    ...options.headers
-  };
-
-  let fetchOptions = { method, headers };
-
-  if (options.body) {
-    headers['Content-Type'] = 'application/json';
-    fetchOptions.body = JSON.stringify(options.body);
-  }
-
-  try {
-    let resp = await fetch(url, fetchOptions);
-
-    if (resp.status === 401) {
-      const refreshed = await refreshYouTubeAccessToken(tokenData);
-      if (refreshed) {
-        youtubeTokens.set(channelId, refreshed);
-        await saveYouTubeTokensToRedis();
-        headers['Authorization'] = `Bearer ${refreshed.accessToken}`;
-        fetchOptions.headers = headers;
-        resp = await fetch(url, fetchOptions);
-      }
-    }
-
-    if (resp.status === 204) return { status: 204 };
-
-    const text = await resp.text();
-    try {
-      return { status: resp.status, data: JSON.parse(text) };
-    } catch {
-      return { status: resp.status, data: text };
-    }
-  } catch (err) {
-    console.error('YouTube API Error:', err.message);
     return { status: 500, data: { error: 'NetworkError', message: err.message } };
   }
 }
@@ -989,81 +901,6 @@ async function nightbotApi(channelId, method, endpoint, body) {
   return data;
 }
 
-// ===== YOUTUBE OAUTH =====
-const YOUTUBE_SCOPES = [
-  'https://www.googleapis.com/auth/youtube',
-  'https://www.googleapis.com/auth/youtube.force-ssl'
-];
-
-app.get('/auth/youtube', requireAuth, (req, res) => {
-  if (!YOUTUBE_CLIENT_ID) return res.status(400).json({ error: 'YouTube client ID not configured' });
-  const params = new URLSearchParams({
-    client_id: YOUTUBE_CLIENT_ID,
-    redirect_uri: `${BASE_URL}/auth/youtube/callback`,
-    response_type: 'code',
-    scope: YOUTUBE_SCOPES.join(' '),
-    access_type: 'offline',
-    prompt: 'consent',
-    state: req.auth.user.id
-  });
-  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
-});
-
-app.get('/auth/youtube/callback', async (req, res) => {
-  const { code, state: channelId, error } = req.query;
-  if (error) return res.redirect('/dashboard?youtube=denied');
-  if (!code) return res.redirect('/dashboard?youtube=no_code');
-
-  try {
-    const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: YOUTUBE_CLIENT_ID,
-        client_secret: YOUTUBE_CLIENT_SECRET,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: `${BASE_URL}/auth/youtube/callback`
-      })
-    });
-    const tokenData = await tokenResp.json();
-
-    if (!tokenData.access_token) {
-      return res.redirect('/dashboard?youtube=token_failed');
-    }
-
-    // Fetch YouTube channel info
-    const userResp = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true', {
-      headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
-    });
-    const userData = await userResp.json();
-
-    const channel = userData.items && userData.items[0];
-    if (!channel) {
-      return res.redirect('/dashboard?youtube=no_channel');
-    }
-
-    youtubeTokens.set(channelId, {
-      accessToken: tokenData.access_token,
-      refreshToken: tokenData.refresh_token,
-      expiresAt: Date.now() + (tokenData.expires_in * 1000),
-      user: {
-        id: channel.id,
-        title: channel.snippet.title,
-        thumbnail: channel.snippet.thumbnails?.default?.url,
-        subscriberCount: channel.statistics?.subscriberCount,
-        viewCount: channel.statistics?.viewCount,
-        videoCount: channel.statistics?.videoCount
-      }
-    });
-    await saveYouTubeTokensToRedis();
-    res.redirect('/dashboard?youtube=connected');
-  } catch (err) {
-    console.error('YouTube auth error:', err);
-    res.redirect('/dashboard?youtube=error');
-  }
-});
-
 // ===== KICK OAUTH =====
 const KICK_SCOPES = [
   'channel:read', 'channel:write', 'chat:write',
@@ -1163,9 +1000,7 @@ app.get('/api/platforms/status', requireAuth, (req, res) => {
   const channelId = req.auth.user.id;
   res.json({
     twitch: true,
-    youtube: youtubeTokens.has(channelId),
     kick: kickTokens.has(channelId),
-    youtubeUser: youtubeTokens.get(channelId)?.user || null,
     kickUser: kickTokens.get(channelId)?.user || null
   });
 });
@@ -1174,14 +1009,11 @@ app.post('/api/platforms/disconnect/:platform', requireAuth, async (req, res) =>
   const { platform } = req.params;
   const channelId = req.auth.user.id;
 
-  if (platform === 'youtube') {
-    youtubeTokens.delete(channelId);
-    await saveYouTubeTokensToRedis();
-  } else if (platform === 'kick') {
+  if (platform === 'kick') {
     kickTokens.delete(channelId);
     await saveKickTokensToRedis();
   } else {
-    return res.status(400).json({ error: 'Invalid platform. Use youtube or kick.' });
+    return res.status(400).json({ error: 'Invalid platform. Use kick.' });
   }
 
   res.json({ success: true });
@@ -1190,7 +1022,7 @@ app.post('/api/platforms/disconnect/:platform', requireAuth, async (req, res) =>
 // ===== MULTISTREAM ENDPOINTS =====
 app.get('/api/multistream/status', requireAuth, async (req, res) => {
   const channelId = req.auth.user.id;
-  const result = { twitch: null, youtube: null, kick: null };
+  const result = { twitch: null, kick: null };
 
   // Twitch stream status (already loaded from Helix)
   try {
@@ -1214,29 +1046,6 @@ app.get('/api/multistream/status', requireAuth, async (req, res) => {
     }
   } catch {
     result.twitch = { live: false };
-  }
-
-  // YouTube stream status
-  if (youtubeTokens.has(channelId)) {
-    try {
-      const ytResp = await youtubeAPI(channelId, '/broadcasts?part=snippet,contentDetails,status&broadcastStatus=active');
-      if (ytResp.status === 200 && ytResp.data && ytResp.data.items && ytResp.data.items.length > 0) {
-        const b = ytResp.data.items[0];
-        result.youtube = {
-          live: true,
-          title: b.snippet.title,
-          description: b.snippet.description,
-          category: b.snippet.categoryId,
-          viewers: 0,
-          startedAt: b.contentDetails?.startTime,
-          thumbnail: b.snippet.thumbnails?.high?.url || b.snippet.thumbnails?.default?.url
-        };
-      } else {
-        result.youtube = { live: false };
-      }
-    } catch {
-      result.youtube = { live: false };
-    }
   }
 
   // Kick stream status
@@ -1287,21 +1096,6 @@ app.get('/api/multistream/stream-info', requireAuth, async (req, res) => {
     viewers: 0
   });
 
-  // YouTube
-  if (youtubeTokens.has(channelId)) {
-    const ytInfo = { platform: 'youtube', connected: true, live: false, title: '', category: '', viewers: 0 };
-    try {
-      const ytResp = await youtubeAPI(channelId, '/broadcasts?part=snippet,contentDetails,status&broadcastStatus=active');
-      if (ytResp.status === 200 && ytResp.data && ytResp.data.items && ytResp.data.items.length > 0) {
-        const b = ytResp.data.items[0];
-        ytInfo.live = true;
-        ytInfo.title = b.snippet.title;
-        ytInfo.category = b.snippet.categoryId;
-      }
-    } catch {}
-    platforms.push(ytInfo);
-  }
-
   // Kick
   if (kickTokens.has(channelId)) {
     const kickInfo = { platform: 'kick', connected: true, live: false, title: '', category: '', viewers: 0 };
@@ -1324,52 +1118,6 @@ app.get('/api/multistream/stream-info', requireAuth, async (req, res) => {
   }
 
   res.json({ data: platforms });
-});
-
-// ===== YOUTUBE STREAM CONFIG =====
-app.get('/api/youtube/categories', requireAuth, async (req, res) => {
-  const channelId = req.auth.user.id;
-  const { q } = req.query;
-  if (!youtubeTokens.has(channelId)) return res.status(400).json({ error: 'YouTube not connected' });
-
-  try {
-    let url = '/guideCategories?part=snippet&regionCode=US&maxResults=30';
-    if (q) url += `&q=${encodeURIComponent(q)}`;
-    const resp = await youtubeAPI(channelId, url);
-    res.json(resp.data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/youtube/stream-config', requireAuth, async (req, res) => {
-  const channelId = req.auth.user.id;
-  if (!youtubeTokens.has(channelId)) return res.status(400).json({ error: 'YouTube not connected' });
-
-  const { title, description, categoryId } = req.body;
-  try {
-    const ytResp = await youtubeAPI(channelId, '/broadcasts?part=snippet,contentDetails,status&broadcastStatus=active');
-    if (ytResp.status !== 200 || !ytResp.data || !ytResp.data.items || ytResp.data.items.length === 0) {
-      return res.status(400).json({ error: 'No active YouTube stream found' });
-    }
-    const broadcastId = ytResp.data.items[0].id;
-    const snippet = ytResp.data.items[0].snippet;
-    const updateBody = {
-      id: broadcastId,
-      snippet: {
-        title: title || snippet.title,
-        description: description || snippet.description,
-        categoryId: categoryId || snippet.categoryId
-      }
-    };
-    const updateResp = await youtubeAPI(channelId, '/broadcasts?part=snippet', {
-      method: 'PUT',
-      body: updateBody
-    });
-    res.json({ data: { success: true, broadcastId } });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
 });
 
 // ===== KICK STREAM CONFIG =====
@@ -1403,93 +1151,6 @@ app.put('/api/kick/stream-config', requireAuth, async (req, res) => {
       headers: { 'Content-Type': 'application/json' }
     });
     res.json({ data: { success: true } });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ===== YOUTUBE CHAT =====
-app.get('/api/youtube/chat/messages', requireAuth, async (req, res) => {
-  const channelId = req.auth.user.id;
-  if (!youtubeTokens.has(channelId)) return res.status(400).json({ error: 'YouTube not connected' });
-
-  try {
-    const ytResp = await youtubeAPI(channelId, '/broadcasts?part=snippet,contentDetails,status&broadcastStatus=active');
-    if (ytResp.status !== 200 || !ytResp.data || !ytResp.data.items || ytResp.data.items.length === 0) {
-      return res.json({ data: { messages: [], liveChatId: null } });
-    }
-    const liveChatId = ytResp.data.items[0].snippet.liveChatId;
-    if (!liveChatId) return res.json({ data: { messages: [], liveChatId: null } });
-
-    const chatResp = await youtubeAPI(channelId, `/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=100`);
-    if (chatResp.status === 200 && chatResp.data && chatResp.data.items) {
-      const messages = chatResp.data.items.map(msg => ({
-        id: msg.id,
-        user: msg.authorDetails.displayName,
-        message: msg.snippet.displayMessage,
-        isModerator: msg.authorDetails.isChatModerator,
-        isOwner: msg.authorDetails.isChatOwner,
-        isSponsor: msg.authorDetails.isChatSponsor,
-        profileImage: msg.authorDetails.profileImageUrl,
-        timestamp: msg.snippet.publishedAt
-      }));
-      return res.json({ data: { messages, liveChatId } });
-    }
-    res.json({ data: { messages: [], liveChatId } });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/youtube/chat/send', requireAuth, async (req, res) => {
-  const channelId = req.auth.user.id;
-  if (!youtubeTokens.has(channelId)) return res.status(400).json({ error: 'YouTube not connected' });
-
-  const { message, liveChatId } = req.body;
-  if (!message || !liveChatId) return res.status(400).json({ error: 'message and liveChatId required' });
-
-  try {
-    const resp = await youtubeAPI(channelId, '/liveChat/messages?part=snippet', {
-      method: 'POST',
-      body: {
-        snippet: {
-          liveChatId,
-          type: 'textMessageEvent',
-          textMessageDetails: { messageText: message }
-        }
-      }
-    });
-    res.json({ data: { success: resp.status === 200 } });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/youtube/mod/ban', requireAuth, async (req, res) => {
-  const channelId = req.auth.user.id;
-  if (!youtubeTokens.has(channelId)) return res.status(400).json({ error: 'YouTube not connected' });
-
-  const { liveChatId, channelId: targetChannelId, duration } = req.body;
-  if (!liveChatId || !targetChannelId) return res.status(400).json({ error: 'liveChatId and channelId required' });
-
-  try {
-    const body = {
-      snippet: {
-        liveChatId,
-        type: 'fanFundingEvent',
-        banDuration: duration || undefined
-      },
-      banDetails: {
-        type: duration ? 'temporary' : 'permanent',
-        banDurationSeconds: duration || undefined,
-        bannedUserDetails: { channelId: targetChannelId }
-      }
-    };
-    const resp = await youtubeAPI(channelId, '/liveChat/bans?part=snippet', {
-      method: 'POST',
-      body
-    });
-    res.json({ data: { success: resp.status === 200 } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

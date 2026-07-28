@@ -655,12 +655,6 @@
               <span class="ms-status offline" id="msTwitchStatus">Offline</span>
               <span class="ms-viewers" id="msTwitchViewers"></span>
             </div>
-            <div class="multistream-platform" id="msPlatformYoutube" style="display:none">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-              <span class="ms-label">YouTube</span>
-              <span class="ms-status offline" id="msYoutubeStatus">Offline</span>
-              <span class="ms-viewers" id="msYoutubeViewers"></span>
-            </div>
             <div class="multistream-platform" id="msPlatformKick" style="display:none">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="#53FC18"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 16.894c-.207.344-.623.459-1.023.252l-2.894-1.734v3.073c0 .433-.351.784-.784.784s-.784-.351-.784-.784v-4.268c0-.433.351-.784.784-.784h2.894c.4 0 .816-.115 1.023-.252.344-.207.459-.623.252-1.023L12.894 4.11c-.207-.344-.623-.459-1.023-.252-.344.207-.459.623-.252 1.023l2.894 1.734V3.538c0-.433.351-.784.784-.784s.784.351.784.784v4.268c0 .433-.351.784-.784.784h-2.894c-.4 0-.816.115-1.023.252-.344.207-.459.623-.252 1.023l3.426 5.725c.207.344.623.459.829.252l.013-.01.013-.005z"/></svg>
               <span class="ms-label">Kick</span>
@@ -814,10 +808,6 @@
               <svg viewBox="0 0 24 24" width="16" height="16" fill="#9146FF"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
               Twitch
             </button>
-            <button class="platform-tab" onclick="switchConfigPlatform('youtube')" id="configTabYoutube" style="display:none">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-              YouTube
-            </button>
             <button class="platform-tab" onclick="switchConfigPlatform('kick')" id="configTabKick" style="display:none">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="#53FC18"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 16.894c-.207.344-.623.459-1.023.252l-2.894-1.734v3.073c0 .433-.351.784-.784.784s-.784-.351-.784-.784v-4.268c0-.433.351-.784.784-.784h2.894c.4 0 .816-.115 1.023-.252.344-.207.459-.623.252-1.023L12.894 4.11c-.207-.344-.623-.459-1.023-.252-.344.207-.459.623-.252 1.023l2.894 1.734V3.538c0-.433.351-.784.784-.784s.784.351.784.784v4.268c0 .433-.351.784-.784.784h-2.894c-.4 0-.816.115-1.023.252-.344.207-.459.623-.252 1.023l3.426 5.725c.207.344.623.459.829.252l.013-.01.013-.005z"/></svg>
               Kick
@@ -891,24 +881,6 @@
             </div>
           </div>
           </div>
-          <div class="config-content" id="configContent-youtube" style="display:none">
-            <div class="card">
-              <div class="card-header"><h3>Configuracion de YouTube</h3></div>
-              <div class="card-body">
-                <div class="form-group">
-                  <label>Titulo del stream</label>
-                  <input type="text" id="msTitle-youtube" class="form-input" placeholder="Titulo del directo en YouTube">
-                </div>
-                <div class="form-group">
-                  <label>Descripcion</label>
-                  <textarea id="msDesc-youtube" class="form-input" rows="3" placeholder="Descripcion del stream"></textarea>
-                </div>
-                <button class="btn btn-primary btn-full" onclick="saveMultistreamConfig('youtube')">
-                  Guardar en YouTube
-                </button>
-              </div>
-            </div>
-          </div>
           <div class="config-content" id="configContent-kick" style="display:none">
             <div class="card">
               <div class="card-header"><h3>Configuracion de Kick</h3></div>
@@ -929,10 +901,6 @@
             <button class="platform-tab active" onclick="switchChatPlatform('twitch')">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="#9146FF"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
               Twitch
-            </button>
-            <button class="platform-tab" onclick="switchChatPlatform('youtube')" id="chatTabYoutube" style="display:none">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-              YouTube
             </button>
             <button class="platform-tab" onclick="switchChatPlatform('kick')" id="chatTabKick" style="display:none">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="#53FC18"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 16.894c-.207.344-.623.459-1.023.252l-2.894-1.734v3.073c0 .433-.351.784-.784.784s-.784-.351-.784-.784v-4.268c0-.433.351-.784.784-.784h2.894c.4 0 .816-.115 1.023-.252.344-.207.459-.623.252-1.023L12.894 4.11c-.207-.344-.623-.459-1.023-.252-.344.207-.459.623-.252 1.023l2.894 1.734V3.538c0-.433.351-.784.784-.784s.784.351.784.784v4.268c0 .433-.351.784-.784.784h-2.894c-.4 0-.816.115-1.023.252-.344.207-.459.623-.252 1.023l3.426 5.725c.207.344.623.459.829.252l.013-.01.013-.005z"/></svg>
@@ -995,18 +963,6 @@
               </div>
             </div>
           </div>
-          <div class="chat-content" id="chatContent-youtube" style="display:none">
-            <div class="card">
-              <div class="card-header"><h3>Chat de YouTube</h3></div>
-              <div class="card-body">
-                <div class="ms-chat-messages" id="msChatYoutube" style="height:400px;overflow-y:auto"></div>
-                <div class="ms-chat-input" style="margin-top:12px">
-                  <input type="text" id="msChatInput-youtube" class="form-input" placeholder="Mensaje a YouTube..." onkeydown="if(event.key==='Enter')sendMultistreamChat('youtube')">
-                  <button class="btn btn-primary" onclick="sendMultistreamChat('youtube')">Enviar</button>
-                </div>
-              </div>
-            </div>
-          </div>
           <div class="chat-content" id="chatContent-kick" style="display:none">
             <div class="card">
               <div class="card-header"><h3>Chat de Kick</h3></div>
@@ -1027,10 +983,6 @@
             <button class="platform-tab active" onclick="switchStatsPlatform('twitch')">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="#9146FF"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>
               Twitch
-            </button>
-            <button class="platform-tab" onclick="switchStatsPlatform('youtube')" id="statsTabYoutube" style="display:none">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-              YouTube
             </button>
             <button class="platform-tab" onclick="switchStatsPlatform('kick')" id="statsTabKick" style="display:none">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="#53FC18"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 16.894c-.207.344-.623.459-1.023.252l-2.894-1.734v3.073c0 .433-.351.784-.784.784s-.784-.351-.784-.784v-4.268c0-.433.351-.784.784-.784h2.894c.4 0 .816-.115 1.023-.252.344-.207.459-.623.252-1.023L12.894 4.11c-.207-.344-.623-.459-1.023-.252-.344.207-.459.623-.252 1.023l2.894 1.734V3.538c0-.433.351-.784.784-.784s.784.351.784.784v4.268c0 .433-.351.784-.784.784h-2.894c-.4 0-.816.115-1.023.252-.344.207-.459.623-.252 1.023l3.426 5.725c.207.344.623.459.829.252l.013-.01.013-.005z"/></svg>
@@ -1119,40 +1071,6 @@
               <div class="emotes-grid" id="globalEmotes"><div class="loading">Cargando emotes...</div></div>
             </div>
           </div>
-          </div>
-          <div class="stats-content" id="statsContent-youtube" style="display:none">
-            <div class="stats-detail-grid">
-              <div class="card stat-highlight">
-                <div class="card-body center">
-                  <div class="big-stat">
-                    <span class="big-stat-value" id="ytStatSubscribers">--</span>
-                    <span class="big-stat-label">Suscriptores</span>
-                  </div>
-                </div>
-              </div>
-              <div class="card stat-highlight">
-                <div class="card-body center">
-                  <div class="big-stat">
-                    <span class="big-stat-value" id="ytStatViews">--</span>
-                    <span class="big-stat-label">Visitas Totales</span>
-                  </div>
-                </div>
-              </div>
-              <div class="card stat-highlight">
-                <div class="card-body center">
-                  <div class="big-stat">
-                    <span class="big-stat-value" id="ytStatVideos">--</span>
-                    <span class="big-stat-label">Videos</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="card" style="margin-top:16px">
-              <div class="card-header"><h3>Informacion del Canal de YouTube</h3></div>
-              <div class="card-body" id="ytChannelInfo">
-                <div class="empty-state"><p>Conecta YouTube para ver estadisticas</p></div>
-              </div>
-            </div>
           </div>
           <div class="stats-content" id="statsContent-kick" style="display:none">
             <div class="stats-detail-grid">
@@ -1934,20 +1852,6 @@
                     </div>
                   </div>
                   <span style="color:#22c55e;font-weight:600;font-size:0.9rem">Conectado</span>
-                </div>
-
-                <!-- YouTube -->
-                <div class="settings-row" style="align-items:center">
-                  <div class="settings-info" style="display:flex;align-items:center;gap:12px">
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                    <div>
-                      <h3>YouTube</h3>
-                      <p id="youtubeStatus" style="color:var(--text-secondary);font-size:0.85rem">No conectado</p>
-                    </div>
-                  </div>
-                  <div id="youtubeActions">
-                    <button class="btn btn-primary btn-sm" onclick="connectYouTube()">Conectar</button>
-                  </div>
                 </div>
 
                 <!-- Kick -->
