@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const fetch = require('node-fetch');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1072,13 +1073,24 @@ const KICK_SCOPES = [
 
 app.get('/auth/kick', requireAuth, (req, res) => {
   if (!KICK_CLIENT_ID) return res.status(400).json({ error: 'Kick client ID not configured' });
-  const state = Buffer.from(JSON.stringify({ channelId: req.auth.user.id })).toString('base64');
+
+  // PKCE: generate code_verifier and code_challenge (required by Kick)
+  const codeVerifier = crypto.randomBytes(32).toString('base64url');
+  const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+
+  const state = Buffer.from(JSON.stringify({
+    channelId: req.auth.user.id,
+    cv: codeVerifier
+  })).toString('base64');
+
   const params = new URLSearchParams({
+    response_type: 'code',
     client_id: KICK_CLIENT_ID,
     redirect_uri: `${BASE_URL}/auth/kick/callback`,
-    response_type: 'code',
     scope: KICK_SCOPES.join(' '),
-    state
+    state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256'
   });
   res.redirect(`https://id.kick.com/oauth/authorize?${params}`);
 });
@@ -1088,10 +1100,11 @@ app.get('/auth/kick/callback', async (req, res) => {
   if (error) return res.redirect('/dashboard?kick=denied');
   if (!code) return res.redirect('/dashboard?kick=no_code');
 
-  let channelId;
+  let channelId, codeVerifier;
   try {
     const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
     channelId = stateData.channelId;
+    codeVerifier = stateData.cv;
   } catch {
     return res.redirect('/dashboard?kick=invalid_state');
   }
@@ -1101,11 +1114,12 @@ app.get('/auth/kick/callback', async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
+        grant_type: 'authorization_code',
         client_id: KICK_CLIENT_ID,
         client_secret: KICK_CLIENT_SECRET,
         code,
-        grant_type: 'authorization_code',
-        redirect_uri: `${BASE_URL}/auth/kick/callback`
+        redirect_uri: `${BASE_URL}/auth/kick/callback`,
+        code_verifier: codeVerifier
       })
     });
     const tokenData = await tokenResp.json();
