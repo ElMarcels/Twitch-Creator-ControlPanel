@@ -1636,9 +1636,6 @@ function loadPageData(page) {
     case 'chat-rules': loadChatRules(); break;
     case 'alerts-widget': loadAlerts(); loadAlertTemplates(); break;
     case 'appeals': loadAppeals(); break;
-    case 'multistream-chat': initMultistreamChatPage(); break;
-    case 'multistream-stats': loadMultistreamStats(); break;
-    case 'multistream-config': loadMultistreamConfig(); break;
     case 'share': loadShareLinks(); break;
     case 'settings': loadModeratorAccounts(); loadEmailConfig(); loadWelcomeConfig(); loadPlatformStatus(); checkPlatformConnection(); break;
   }
@@ -2473,6 +2470,92 @@ async function updateStreamInfo() {
     showToast('Directo actualizado!', 'success');
   } else {
     showToast('Error al actualizar', 'error');
+  }
+}
+
+// ===== PLATFORM TAB SWITCHING =====
+let currentChatPlatform = 'twitch';
+let currentConfigPlatform = 'twitch';
+let currentStatsPlatform = 'twitch';
+
+function switchChatPlatform(platform) {
+  currentChatPlatform = platform;
+  document.querySelectorAll('#chatPlatformTabs .platform-tab').forEach(t => t.classList.remove('active'));
+  event.target.closest('.platform-tab').classList.add('active');
+  document.getElementById('chatContent-twitch').style.display = platform === 'twitch' ? '' : 'none';
+  document.getElementById('chatContent-youtube').style.display = platform === 'youtube' ? '' : 'none';
+  document.getElementById('chatContent-kick').style.display = platform === 'kick' ? '' : 'none';
+  if (platform !== 'twitch') {
+    startMultistreamChat();
+  } else {
+    stopMultistreamChat();
+  }
+}
+
+function switchConfigPlatform(platform) {
+  currentConfigPlatform = platform;
+  document.querySelectorAll('#configPlatformTabs .platform-tab').forEach(t => t.classList.remove('active'));
+  event.target.closest('.platform-tab').classList.add('active');
+  document.getElementById('configContent-twitch').style.display = platform === 'twitch' ? '' : 'none';
+  document.getElementById('configContent-youtube').style.display = platform === 'youtube' ? '' : 'none';
+  document.getElementById('configContent-kick').style.display = platform === 'kick' ? '' : 'none';
+  if (platform !== 'twitch') {
+    loadMultistreamConfigSingle(platform);
+  }
+}
+
+function switchStatsPlatform(platform) {
+  currentStatsPlatform = platform;
+  document.querySelectorAll('#statsPlatformTabs .platform-tab').forEach(t => t.classList.remove('active'));
+  event.target.closest('.platform-tab').classList.add('active');
+  document.getElementById('statsContent-twitch').style.display = platform === 'twitch' ? '' : 'none';
+  document.getElementById('statsContent-youtube').style.display = platform === 'youtube' ? '' : 'none';
+  document.getElementById('statsContent-kick').style.display = platform === 'kick' ? '' : 'none';
+  if (platform !== 'twitch') {
+    loadPlatformStats(platform);
+  }
+}
+
+async function loadPlatformStats(platform) {
+  const data = await api('/api/multistream/status');
+  if (!data || !data.data) return;
+  const p = data.data[platform];
+  if (!p) return;
+  if (platform === 'youtube') {
+    document.getElementById('ytStatSubscribers').textContent = p.subscribers || '--';
+    document.getElementById('ytStatViews').textContent = p.viewers || '--';
+    document.getElementById('ytStatVideos').textContent = p.videos || '--';
+  }
+  if (platform === 'kick') {
+    document.getElementById('kickStatFollowers').textContent = p.followers || '--';
+    document.getElementById('kickStatSubscribers').textContent = p.subscribers || '--';
+  }
+}
+
+async function loadMultistreamConfigSingle(platform) {
+  const data = await api('/api/multistream/stream-info');
+  if (!data || !data.data) return;
+  const p = data.data.find(x => x.platform === platform);
+  if (!p) return;
+  const titleEl = document.getElementById(`msTitle-${platform}`);
+  const descEl = document.getElementById(`msDesc-${platform}`);
+  if (titleEl) titleEl.value = p.title || '';
+  if (descEl) descEl.value = p.description || '';
+}
+
+function showPlatformTabs() {
+  const platforms = multistreamPlatforms || [];
+  const hasYoutube = platforms.some(p => p.platform === 'youtube' && p.connected);
+  const hasKick = platforms.some(p => p.platform === 'kick' && p.connected);
+  if (hasYoutube) {
+    document.getElementById('chatTabYoutube').style.display = '';
+    document.getElementById('configTabYoutube').style.display = '';
+    document.getElementById('statsTabYoutube').style.display = '';
+  }
+  if (hasKick) {
+    document.getElementById('chatTabKick').style.display = '';
+    document.getElementById('configTabKick').style.display = '';
+    document.getElementById('statsTabKick').style.display = '';
   }
 }
 
@@ -5525,11 +5608,12 @@ async function initMultistreamChatPage() {
   startMultistreamChat();
 }
 
-// Override the original loadHomeData to also load multistream bar
+// Override the original loadHomeData to also load multistream bar and show platform tabs
 const _origLoadHomeData = typeof loadHomeData === 'function' ? loadHomeData : null;
 if (_origLoadHomeData) {
   window.loadHomeData = async function() {
     await _origLoadHomeData();
     loadMultistreamBar();
+    showPlatformTabs();
   };
 }
