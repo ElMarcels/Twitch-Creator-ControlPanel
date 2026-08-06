@@ -2485,6 +2485,7 @@ function switchChatPlatform(platform) {
   document.getElementById('chatContent-twitch').style.display = platform === 'twitch' ? '' : 'none';
   document.getElementById('chatContent-twitch-announce').style.display = platform === 'twitch' ? '' : 'none';
   document.getElementById('chatContent-kick').style.display = platform === 'kick' ? '' : 'none';
+  document.getElementById('chatContent-tiktok').style.display = platform === 'tiktok' ? '' : 'none';
   if (platform !== 'twitch') {
     startMultistreamChat();
   } else {
@@ -2498,6 +2499,7 @@ function switchConfigPlatform(platform) {
   event.target.closest('.platform-tab').classList.add('active');
   document.getElementById('configContent-twitch').style.display = platform === 'twitch' ? '' : 'none';
   document.getElementById('configContent-kick').style.display = platform === 'kick' ? '' : 'none';
+  document.getElementById('configContent-tiktok').style.display = platform === 'tiktok' ? '' : 'none';
   if (platform !== 'twitch') {
     loadMultistreamConfigSingle(platform);
   }
@@ -2509,6 +2511,7 @@ function switchStatsPlatform(platform) {
   event.target.closest('.platform-tab').classList.add('active');
   document.getElementById('statsContent-twitch').style.display = platform === 'twitch' ? '' : 'none';
   document.getElementById('statsContent-kick').style.display = platform === 'kick' ? '' : 'none';
+  document.getElementById('statsContent-tiktok').style.display = platform === 'tiktok' ? '' : 'none';
   if (platform !== 'twitch') {
     loadPlatformStats(platform);
   }
@@ -2523,6 +2526,48 @@ async function loadPlatformStats(platform) {
     document.getElementById('kickStatFollowers').textContent = p.followers || '--';
     document.getElementById('kickStatSubscribers').textContent = p.subscribers || '--';
   }
+  if (platform === 'tiktok') {
+    loadTikTokStats();
+  }
+}
+
+async function loadTikTokStats() {
+  const data = await api('/api/tiktok/stats');
+  if (!data || !data.data) return;
+  const s = data.data;
+  const followers = document.getElementById('tiktokStatFollowers');
+  const likes = document.getElementById('tiktokStatLikes');
+  const videos = document.getElementById('tiktokStatVideos');
+  if (followers) followers.textContent = s.follower_count !== undefined ? Number(s.follower_count).toLocaleString('es') : '--';
+  if (likes) likes.textContent = s.like_count !== undefined ? Number(s.like_count).toLocaleString('es') : '--';
+  if (videos) videos.textContent = s.video_count !== undefined ? Number(s.video_count).toLocaleString('es') : '--';
+  renderTikTokChannelInfo();
+}
+
+async function renderTikTokChannelInfo() {
+  const container = document.getElementById('tiktokChannelInfo');
+  if (!container) return;
+  const statusData = await api('/api/platforms/status');
+  const user = statusData?.data?.tiktokUser;
+  if (!user) {
+    container.innerHTML = '<div class="empty-state"><p>Conecta TikTok para ver estadisticas</p></div>';
+    return;
+  }
+  const avatar = user.avatar_url ? `<img src="${user.avatar_url}" alt="avatar" style="width:64px;height:64px;border-radius:50%;object-fit:cover">` : '';
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+      ${avatar}
+      <div>
+        <h3 style="margin:0">${escapeHtml(user.display_name || user.username || 'TikTok User')}</h3>
+        <p style="margin:4px 0 0;color:var(--text-secondary)">@${escapeHtml(user.username || '')}</p>
+        ${user.is_verified ? '<span style="display:inline-block;margin-top:6px;padding:2px 10px;border-radius:99px;background:#25F4EE;color:#000;font-size:0.75rem;font-weight:600">Verificado</span>' : ''}
+      </div>
+    </div>
+    <div class="channel-info-grid">
+      <div class="channel-info-item"><span class="label">Usuario</span><span class="value">@${escapeHtml(user.username || '--')}</span></div>
+      <div class="channel-info-item"><span class="label">Nombre</span><span class="value">${escapeHtml(user.display_name || '--')}</span></div>
+      <div class="channel-info-item"><span class="label">Verificado</span><span class="value">${user.is_verified ? 'Si' : 'No'}</span></div>
+    </div>`;
 }
 
 async function loadMultistreamConfigSingle(platform) {
@@ -2539,13 +2584,19 @@ async function loadMultistreamConfigSingle(platform) {
 async function showPlatformTabs() {
   const data = await api('/api/platforms/status');
   if (!data || !data.data) return;
-  const { kick } = data.data;
+  const { kick, tiktok } = data.data;
   const chatTab = document.getElementById('chatTabKick');
   const configTab = document.getElementById('configTabKick');
   const statsTab = document.getElementById('statsTabKick');
   if (chatTab) chatTab.style.display = kick ? '' : 'none';
   if (configTab) configTab.style.display = kick ? '' : 'none';
   if (statsTab) statsTab.style.display = kick ? '' : 'none';
+  const chatTabTikTok = document.getElementById('chatTabTikTok');
+  const configTabTikTok = document.getElementById('configTabTikTok');
+  const statsTabTikTok = document.getElementById('statsTabTikTok');
+  if (chatTabTikTok) chatTabTikTok.style.display = tiktok ? '' : 'none';
+  if (configTabTikTok) configTabTikTok.style.display = tiktok ? '' : 'none';
+  if (statsTabTikTok) statsTabTikTok.style.display = tiktok ? '' : 'none';
 }
 
 // ===== CHAT SETTINGS =====
@@ -5064,10 +5115,14 @@ function connectKick() {
   window.location.href = '/auth/kick';
 }
 
+function connectTikTok() {
+  window.location.href = '/auth/tiktok';
+}
+
 async function loadPlatformStatus() {
   const data = await api('/api/platforms/status');
   if (data && data.data) {
-    const { kick, kickUser } = data.data;
+    const { kick, kickUser, tiktok, tiktokUser } = data.data;
     
     // Kick
     const kickStatus = document.getElementById('kickStatus');
@@ -5088,15 +5143,37 @@ async function loadPlatformStatus() {
         kickActions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="connectKick()">Conectar</button>`;
       }
     }
+
+    // TikTok
+    const tiktokStatus = document.getElementById('tiktokStatus');
+    const tiktokActions = document.getElementById('tiktokActions');
+    if (tiktokStatus) {
+      if (tiktok) {
+        tiktokStatus.textContent = tiktokUser?.username || 'Conectado';
+        tiktokStatus.style.color = '#22c55e';
+      } else {
+        tiktokStatus.textContent = 'No conectado';
+        tiktokStatus.style.color = 'var(--text-secondary)';
+      }
+    }
+    if (tiktokActions) {
+      if (tiktok) {
+        tiktokActions.innerHTML = `<button class="btn btn-danger btn-sm" onclick="disconnectPlatform('tiktok')">Desconectar</button>`;
+      } else {
+        tiktokActions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="connectTikTok()">Conectar</button>`;
+      }
+    }
   }
 }
 
 async function disconnectPlatform(platform) {
-  if (!confirm(`¿Seguro que quieres desconectar Kick?`)) return;
+  const names = { kick: 'Kick', tiktok: 'TikTok' };
+  const name = names[platform] || platform;
+  if (!confirm(`¿Seguro que quieres desconectar ${name}?`)) return;
   
   const result = await api(`/api/platforms/disconnect/${platform}`, { method: 'POST' });
   if (result && result.data && result.data.success) {
-    showToast('Kick desconectado', 'success');
+    showToast(`${name} desconectado`, 'success');
     loadPlatformStatus();
   } else {
     showToast('Error al desconectar', 'error');
@@ -5113,6 +5190,13 @@ function checkPlatformConnection() {
     showToast('Error al conectar Kick', 'error');
     window.history.replaceState({}, '', '/dashboard');
   }
+  if (params.get('tiktok') === 'connected') {
+    showToast('TikTok conectado correctamente', 'success');
+    window.history.replaceState({}, '', '/dashboard');
+  } else if (params.get('tiktok')) {
+    showToast('Error al conectar TikTok', 'error');
+    window.history.replaceState({}, '', '/dashboard');
+  }
 }
 
 // ============================================================
@@ -5127,7 +5211,7 @@ async function loadMultistreamBar() {
   const data = await api('/api/platforms/status');
   if (!data || !data.data) return;
 
-  const { kick } = data.data;
+  const { kick, tiktok } = data.data;
 
   if (kick) {
     document.getElementById('msPlatformKick').style.display = 'flex';
@@ -5135,7 +5219,13 @@ async function loadMultistreamBar() {
     document.getElementById('msPlatformKick').style.display = 'none';
   }
 
-  if (kick) {
+  if (tiktok) {
+    document.getElementById('msPlatformTikTok').style.display = 'flex';
+  } else {
+    document.getElementById('msPlatformTikTok').style.display = 'none';
+  }
+
+  if (kick || tiktok) {
     bar.style.display = 'flex';
   }
 
@@ -5172,6 +5262,21 @@ async function loadMultistreamBar() {
       kickViewers.textContent = '';
     }
   }
+
+  // TikTok
+  if (statusData.data.tiktok) {
+    const tiktokStatus = document.getElementById('msTikTokStatus');
+    const tiktokViewers = document.getElementById('msTikTokViewers');
+    if (statusData.data.tiktok.live) {
+      tiktokStatus.textContent = 'LIVE';
+      tiktokStatus.className = 'ms-status live';
+      tiktokViewers.textContent = `${statusData.data.tiktok.viewers} viewers`;
+    } else {
+      tiktokStatus.textContent = 'Offline';
+      tiktokStatus.className = 'ms-status offline';
+      tiktokViewers.textContent = '';
+    }
+  }
 }
 
 // ============================================================
@@ -5188,10 +5293,11 @@ async function loadMultistreamConfig() {
   if (!container) return;
 
   container.innerHTML = multistreamPlatforms.map(p => {
-    const colors = { twitch: '#9146FF', kick: '#53FC18' };
+    const colors = { twitch: '#9146FF', kick: '#53FC18', tiktok: '#25F4EE' };
     const icons = {
       twitch: '<svg viewBox="0 0 24 24" width="20" height="20" fill="#9146FF"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>',
-      kick: '<svg viewBox="0 0 24 24" width="20" height="20" fill="#53FC18"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 16.894c-.207.344-.623.459-1.023.252l-2.894-1.734v3.073c0 .433-.351.784-.784.784s-.784-.351-.784-.784v-4.268c0-.433.351-.784.784-.784h2.894c.4 0 .816-.115 1.023-.252.344-.207.459-.623.252-1.023L12.894 4.11c-.207-.344-.623-.459-1.023-.252-.344.207-.459.623-.252 1.023l2.894 1.734V3.538c0-.433.351-.784.784-.784s.784.351.784.784v4.268c0 .433-.351.784-.784.784h-2.894c-.4 0-.816.115-1.023.252-.344.207-.459.623-.252 1.023l3.426 5.725c.207.344.623.459.829.252l.013-.01.013-.005z"/></svg>'
+      kick: '<svg viewBox="0 0 24 24" width="20" height="20" fill="#53FC18"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 16.894c-.207.344-.623.459-1.023.252l-2.894-1.734v3.073c0 .433-.351.784-.784.784s-.784-.351-.784-.784v-4.268c0-.433.351-.784.784-.784h2.894c.4 0 .816-.115 1.023-.252.344-.207.459-.623.252-1.023L12.894 4.11c-.207-.344-.623-.459-1.023-.252-.344.207-.459.623-.252 1.023l2.894 1.734V3.538c0-.433.351-.784.784-.784s.784.351.784.784v4.268c0 .433-.351.784-.784.784h-2.894c-.4 0-.816.115-1.023.252-.344.207-.459.623-.252 1.023l3.426 5.725c.207.344.623.459.829.252l.013-.01.013-.005z"/></svg>',
+      tiktok: '<svg viewBox="0 0 24 24" width="20" height="20" fill="#25F4EE"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>'
     };
     const name = p.platform.charAt(0).toUpperCase() + p.platform.slice(1);
     return `
@@ -5216,7 +5322,7 @@ async function saveMultistreamConfig(platform) {
   if (titleEl) body.title = titleEl.value;
   if (descEl) body.description = descEl.value;
 
-  const endpoint = platform === 'kick' ? '/api/kick/stream-config' : null;
+  const endpoint = platform === 'kick' ? '/api/kick/stream-config' : platform === 'tiktok' ? '/api/tiktok/stream-config' : null;
   if (!endpoint) return;
 
   const result = await api(endpoint, { method: 'PUT', body });
@@ -5243,15 +5349,19 @@ function applyMultistreamTitle() {
 // ============================================================
 // FEATURE: MULTISTREAM CHAT
 // ============================================================
-let multistreamChatMessages = { kick: [] };
+let multistreamChatMessages = { kick: [], tiktok: [] };
 let multistreamChatIntervals = {};
 
 function startMultistreamChat() {
   stopMultistreamChat();
 
-  if (document.getElementById('msChatKick')) {
+  if (currentChatPlatform === 'kick' && document.getElementById('msChatKick')) {
     loadKickChat();
     multistreamChatIntervals.kick = setInterval(loadKickChat, 3000);
+  }
+  if (currentChatPlatform === 'tiktok' && document.getElementById('msChatTikTok')) {
+    loadTikTokChat();
+    multistreamChatIntervals.tiktok = setInterval(loadTikTokChat, 3000);
   }
 }
 
@@ -5290,6 +5400,49 @@ function renderKickChat() {
   container.scrollTop = container.scrollHeight;
 }
 
+async function loadTikTokChat() {
+  const container = document.getElementById('msChatTikTok');
+  if (!container) return;
+
+  const data = await api('/api/tiktok/chat/messages');
+  if (!data || !data.data || !data.data.messages) return;
+
+  const newMessages = data.data.messages;
+  if (newMessages.length === 0) return;
+
+  multistreamChatMessages.tiktok = newMessages;
+  renderTikTokChat();
+}
+
+function renderTikTokChat() {
+  const container = document.getElementById('msChatTikTok');
+  if (!container) return;
+
+  container.innerHTML = multistreamChatMessages.tiktok.map(msg => `
+    <div class="ms-chat-msg">
+      <div>
+        <span class="msg-user" style="color:${msg.color || '#25F4EE'}">${escapeHtml(msg.user || '')}</span>
+        <span class="msg-text">${escapeHtml(msg.message || '')}</span>
+      </div>
+      ${msg.id ? `<button class="btn btn-secondary btn-xs" style="margin-left:8px;padding:2px 8px;font-size:11px" title="Eliminar comentario" onclick="deleteTikTokComment('${msg.id}')">Borrar</button>` : ''}
+    </div>
+  `).join('');
+
+  container.scrollTop = container.scrollHeight;
+}
+
+async function deleteTikTokComment(commentId) {
+  if (!confirm('¿Eliminar este comentario de TikTok?')) return;
+  const result = await api(`/api/tiktok/comments/${encodeURIComponent(commentId)}`, { method: 'DELETE' });
+  if (result && result.data && result.data.success) {
+    multistreamChatMessages.tiktok = multistreamChatMessages.tiktok.filter(m => m.id !== commentId);
+    renderTikTokChat();
+    showToast('Comentario eliminado', 'success');
+  } else {
+    showToast('Error al eliminar comentario', 'error');
+  }
+}
+
 async function sendMultistreamChat(platform) {
   const input = document.getElementById(`msChatInput-${platform}`);
   if (!input || !input.value.trim()) return;
@@ -5304,6 +5457,14 @@ async function sendMultistreamChat(platform) {
         method: 'POST',
         body: { chatroomId: data.data.chatroomId, content: message }
       });
+    }
+  } else if (platform === 'tiktok') {
+    const result = await api('/api/tiktok/chat/send', {
+      method: 'POST',
+      body: { content: message }
+    });
+    if (!result || !result.data || !result.data.success) {
+      showToast(result?.error || 'Error al enviar a TikTok', 'error');
     }
   }
 }
@@ -5356,7 +5517,8 @@ async function loadMultistreamStats() {
 
   const stats = [
     { platform: 'twitch', name: 'Twitch', color: '#9146FF', icon: '🟣', data: platforms.twitch },
-    { platform: 'kick', name: 'Kick', color: '#53FC18', icon: '🟢', data: platforms.kick }
+    { platform: 'kick', name: 'Kick', color: '#53FC18', icon: '🟢', data: platforms.kick },
+    { platform: 'tiktok', name: 'TikTok', color: '#25F4EE', icon: '🎵', data: platforms.tiktok }
   ].filter(s => s.data !== null);
 
   statsGrid.innerHTML = stats.map(s => `
@@ -5446,7 +5608,7 @@ function renderMultistreamAlerts() {
     return;
   }
 
-  const colors = { twitch: '#9146FF', kick: '#53FC18' };
+  const colors = { twitch: '#9146FF', kick: '#53FC18', tiktok: '#25F4EE' };
   const icons = { follow: '👤', sub: '⭐', bits: '💎', raid: '⚔️', message: '💬' };
 
   container.innerHTML = multistreamAlerts.map(a => `
@@ -5465,6 +5627,9 @@ async function initMultistreamChatPage() {
   if (data && data.data) {
     if (data.data.kick) {
       document.getElementById('msChatPanelKick').style.display = 'flex';
+    }
+    if (data.data.tiktok) {
+      document.getElementById('msChatPanelTikTok').style.display = 'flex';
     }
   }
   startMultistreamChat();

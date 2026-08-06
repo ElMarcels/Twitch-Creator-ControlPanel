@@ -16,6 +16,8 @@ const NIGHTBOT_CLIENT_ID = process.env.NIGHTBOT_CLIENT_ID || '';
 const NIGHTBOT_CLIENT_SECRET = process.env.NIGHTBOT_CLIENT_SECRET || '';
 const KICK_CLIENT_ID = process.env.KICK_CLIENT_ID || '';
 const KICK_CLIENT_SECRET = process.env.KICK_CLIENT_SECRET || '';
+const TIKTOK_CLIENT_ID = process.env.TIKTOK_CLIENT_ID || '';
+const TIKTOK_CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET || '';
 const JWT_SECRET = process.env.JWT_SECRET || 'fav-twitch-jwt-secret-change-me';
 let BASE_URL = process.env.BASE_URL || process.env.VERCEL_URL || `http://localhost:${PORT}`;
 if (BASE_URL && !BASE_URL.startsWith('http')) {
@@ -232,6 +234,7 @@ const nightbotTokens = new Map(); // channelId -> { accessToken, refreshToken, e
 
 // ===== MULTI-PLATFORM TOKENS =====
 const kickTokens = new Map();    // channelId -> { accessToken, refreshToken, expiresAt, user }
+const tiktokTokens = new Map();  // channelId -> { accessToken, refreshToken, expiresAt, user }
 
 // Moderator access system
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || '';
@@ -286,12 +289,13 @@ async function loadFromRedis() {
   if (!REDIS_URL) return;
   try {
     await loadWelcomeConfigs();
-    const [tokensRaw, accountsRaw, nightbotRaw, teamChatRaw, kickRaw] = await Promise.all([
+    const [tokensRaw, accountsRaw, nightbotRaw, teamChatRaw, kickRaw, tiktokRaw] = await Promise.all([
       redisGet('fav-twitch:ownerTokens'),
       redisGet('fav-twitch:moderatorAccounts'),
       redisGet('fav-twitch:nightbotTokens'),
       redisGet(TEAM_CHAT_KEY),
-      redisGet('fav-twitch:kickTokens')
+      redisGet('fav-twitch:kickTokens'),
+      redisGet('fav-twitch:tiktokTokens')
     ]);
     let tokens = typeof tokensRaw === 'string' ? JSON.parse(tokensRaw) : tokensRaw;
     let accounts = typeof accountsRaw === 'string' ? JSON.parse(accountsRaw) : accountsRaw;
@@ -304,11 +308,14 @@ async function loadFromRedis() {
     moderatorAccounts.clear();
     nightbotTokens.clear();
     kickTokens.clear();
+    tiktokTokens.clear();
     if (tokens && typeof tokens === 'object') Object.entries(tokens).forEach(([k, v]) => ownerTokens.set(k, v));
     if (accounts && typeof accounts === 'object') Object.entries(accounts).forEach(([k, v]) => moderatorAccounts.set(k, v));
     if (nightbot && typeof nightbot === 'object') Object.entries(nightbot).forEach(([k, v]) => nightbotTokens.set(k, v));
     let kick = typeof kickRaw === 'string' ? JSON.parse(kickRaw) : kickRaw;
     if (kick && typeof kick === 'object') Object.entries(kick).forEach(([k, v]) => kickTokens.set(k, v));
+    let tiktok = typeof tiktokRaw === 'string' ? JSON.parse(tiktokRaw) : tiktokRaw;
+    if (tiktok && typeof tiktok === 'object') Object.entries(tiktok).forEach(([k, v]) => tiktokTokens.set(k, v));
     // Load team chat
     let teamChat = typeof teamChatRaw === 'string' ? JSON.parse(teamChatRaw) : teamChatRaw;
     if (teamChat && typeof teamChat === 'object') {
@@ -346,6 +353,13 @@ async function saveKickTokensToRedis() {
   const obj = {};
   kickTokens.forEach((v, k) => { obj[k] = v; });
   try { await redisSet('fav-twitch:kickTokens', obj); } catch {}
+}
+
+async function saveTikTokTokensToRedis() {
+  if (!REDIS_URL) return;
+  const obj = {};
+  tiktokTokens.forEach((v, k) => { obj[k] = v; });
+  try { await redisSet('fav-twitch:tiktokTokens', obj); } catch {}
 }
 
 app.use(cookieParser());
@@ -691,6 +705,80 @@ async function kickAPI(channelId, endpoint, options = {}) {
   }
 }
 
+async function refreshTikTokAccessToken(tokenData) {
+  if (!tokenData.refreshToken) return null;
+  try {
+    const resp = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_key: TIKTOK_CLIENT_ID,
+        client_secret: TIKTOK_CLIENT_SECRET,
+        grant_type: 'refresh_token',
+        refresh_token: tokenData.refreshToken
+      })
+    });
+    const data = await resp.json();
+    if (data.access_token) {
+      return {
+        user: tokenData.user,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token || tokenData.refreshToken,
+        expiresAt: Date.now() + (data.expires_in * 1000)
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function tiktokAPI(channelId, endpoint, options = {}) {
+  const tokenData = tiktokTokens.get(channelId);
+  if (!tokenData) return { status: 401, data: { error: 'TikTok not connected' } };
+
+  const url = endpoint.startsWith('http') ? endpoint : `https://open.tiktokapis.com${endpoint}`;
+  const method = options.method || 'GET';
+  const headers = {
+    'Authorization': `Bearer ${tokenData.accessToken}`,
+    ...options.headers
+  };
+
+  let fetchOptions = { method, headers };
+
+  if (options.body) {
+    headers['Content-Type'] = 'application/json';
+    fetchOptions.body = JSON.stringify(options.body);
+  }
+
+  try {
+    let resp = await fetch(url, fetchOptions);
+
+    if (resp.status === 401) {
+      const refreshed = await refreshTikTokAccessToken(tokenData);
+      if (refreshed) {
+        tiktokTokens.set(channelId, refreshed);
+        await saveTikTokTokensToRedis();
+        headers['Authorization'] = `Bearer ${refreshed.accessToken}`;
+        fetchOptions.headers = headers;
+        resp = await fetch(url, fetchOptions);
+      }
+    }
+
+    if (resp.status === 204) return { status: 204 };
+
+    const text = await resp.text();
+    try {
+      return { status: resp.status, data: JSON.parse(text) };
+    } catch {
+      return { status: resp.status, data: text };
+    }
+  } catch (err) {
+    console.error('TikTok API Error:', err.message);
+    return { status: 500, data: { error: 'NetworkError', message: err.message } };
+  }
+}
+
 // Auth routes
 app.get('/auth/twitch', (req, res) => {
   const params = new URLSearchParams({
@@ -995,13 +1083,102 @@ app.get('/auth/kick/callback', async (req, res) => {
   }
 });
 
+// ===== TIKTOK OAUTH =====
+const TIKTOK_SCOPES = [
+  'user.info.basic',
+  'video.list',
+  'live.manage',
+  'live.verify',
+  'comment.read',
+  'comment.manage'
+].join(',');
+
+app.get('/auth/tiktok', requireAuth, (req, res) => {
+  if (!TIKTOK_CLIENT_ID) return res.status(400).json({ error: 'TikTok client ID not configured' });
+
+  const state = Buffer.from(JSON.stringify({
+    channelId: req.auth.user.id
+  })).toString('base64');
+
+  const params = new URLSearchParams({
+    client_key: TIKTOK_CLIENT_ID,
+    scope: TIKTOK_SCOPES,
+    response_type: 'code',
+    redirect_uri: `${BASE_URL}/auth/tiktok/callback`,
+    state
+  });
+  res.redirect(`https://www.tiktok.com/v2/auth/authorize/?${params}`);
+});
+
+app.get('/auth/tiktok/callback', async (req, res) => {
+  const { code, state, error } = req.query;
+  if (error) return res.redirect('/dashboard?tiktok=denied');
+  if (!code) return res.redirect('/dashboard?tiktok=no_code');
+
+  let channelId;
+  try {
+    const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+    channelId = stateData.channelId;
+  } catch {
+    return res.redirect('/dashboard?tiktok=invalid_state');
+  }
+
+  try {
+    const tokenResp = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_key: TIKTOK_CLIENT_ID,
+        client_secret: TIKTOK_CLIENT_SECRET,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: `${BASE_URL}/auth/tiktok/callback`
+      })
+    });
+    const tokenData = await tokenResp.json();
+
+    if (!tokenData.access_token) {
+      console.error('TikTok token error:', JSON.stringify(tokenData).substring(0, 500));
+      return res.redirect('/dashboard?tiktok=token_failed');
+    }
+
+    // Fetch TikTok user info
+    const userResp = await fetch('https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,avatar_url,display_name,username,is_verified,profile_deep_link', {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+    });
+    const userData = await userResp.json();
+    const user = userData.data && userData.data.user;
+
+    tiktokTokens.set(channelId, {
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      expiresAt: Date.now() + (tokenData.expires_in * 1000),
+      user: {
+        open_id: user ? user.open_id : tokenData.open_id,
+        username: user ? (user.username || user.display_name || 'TikTok User') : 'TikTok User',
+        display_name: user ? user.display_name : 'TikTok User',
+        avatar_url: user ? user.avatar_url : '',
+        is_verified: user ? user.is_verified : false,
+        profile_deep_link: user ? user.profile_deep_link : ''
+      }
+    });
+    await saveTikTokTokensToRedis();
+    res.redirect('/dashboard?tiktok=connected');
+  } catch (err) {
+    console.error('TikTok auth error:', err);
+    res.redirect('/dashboard?tiktok=error');
+  }
+});
+
 // ===== PLATFORM STATUS ENDPOINTS =====
 app.get('/api/platforms/status', requireAuth, (req, res) => {
   const channelId = req.auth.user.id;
   res.json({
     twitch: true,
     kick: kickTokens.has(channelId),
-    kickUser: kickTokens.get(channelId)?.user || null
+    kickUser: kickTokens.get(channelId)?.user || null,
+    tiktok: tiktokTokens.has(channelId),
+    tiktokUser: tiktokTokens.get(channelId)?.user || null
   });
 });
 
@@ -1012,8 +1189,11 @@ app.post('/api/platforms/disconnect/:platform', requireAuth, async (req, res) =>
   if (platform === 'kick') {
     kickTokens.delete(channelId);
     await saveKickTokensToRedis();
+  } else if (platform === 'tiktok') {
+    tiktokTokens.delete(channelId);
+    await saveTikTokTokensToRedis();
   } else {
-    return res.status(400).json({ error: 'Invalid platform. Use kick.' });
+    return res.status(400).json({ error: 'Invalid platform. Use kick or tiktok.' });
   }
 
   res.json({ success: true });
@@ -1022,7 +1202,7 @@ app.post('/api/platforms/disconnect/:platform', requireAuth, async (req, res) =>
 // ===== MULTISTREAM ENDPOINTS =====
 app.get('/api/multistream/status', requireAuth, async (req, res) => {
   const channelId = req.auth.user.id;
-  const result = { twitch: null, kick: null };
+  const result = { twitch: null, kick: null, tiktok: null };
 
   // Twitch stream status (already loaded from Helix)
   try {
@@ -1079,6 +1259,32 @@ app.get('/api/multistream/status', requireAuth, async (req, res) => {
     }
   }
 
+  // TikTok stream status
+  if (tiktokTokens.has(channelId)) {
+    try {
+      const liveResp = await tiktokAPI(channelId, '/v2/live/status/?fields=status,title,stream_url,viewer_count,language');
+      if (liveResp.status === 200 && liveResp.data && liveResp.data.data) {
+        const ls = liveResp.data.data;
+        if (ls.status && ls.status !== 'offline' && ls.status !== 'ended') {
+          result.tiktok = {
+            live: true,
+            title: ls.title || '',
+            category: '',
+            viewers: ls.viewer_count || 0,
+            startedAt: null,
+            thumbnail: ''
+          };
+        } else {
+          result.tiktok = { live: false };
+        }
+      } else {
+        result.tiktok = { live: false };
+      }
+    } catch {
+      result.tiktok = { live: false };
+    }
+  }
+
   res.json({ data: result });
 });
 
@@ -1115,6 +1321,23 @@ app.get('/api/multistream/stream-info', requireAuth, async (req, res) => {
       }
     } catch {}
     platforms.push(kickInfo);
+  }
+
+  // TikTok
+  if (tiktokTokens.has(channelId)) {
+    const tiktokInfo = { platform: 'tiktok', connected: true, live: false, title: '', category: '', viewers: 0 };
+    try {
+      const liveResp = await tiktokAPI(channelId, '/v2/live/status/?fields=status,title,stream_url,viewer_count,language');
+      if (liveResp.status === 200 && liveResp.data && liveResp.data.data) {
+        const ls = liveResp.data.data;
+        if (ls.status && ls.status !== 'offline' && ls.status !== 'ended') {
+          tiktokInfo.live = true;
+          tiktokInfo.title = ls.title || '';
+          tiktokInfo.viewers = ls.viewer_count || 0;
+        }
+      }
+    } catch {}
+    platforms.push(tiktokInfo);
   }
 
   res.json({ data: platforms });
@@ -1206,6 +1429,102 @@ app.post('/api/kick/mod/ban', requireAuth, async (req, res) => {
     const resp = await kickAPI(channelId, '/public/v1/moderation/bans', {
       method: 'POST',
       body
+    });
+    res.json({ data: { success: resp.status === 200 } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== TIKTOK STREAM CONFIG =====
+app.get('/api/tiktok/stats', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  if (!tiktokTokens.has(channelId)) return res.status(400).json({ error: 'TikTok not connected' });
+
+  try {
+    const statsResp = await tiktokAPI(channelId, '/v2/user/stats/?fields=follower_count,following_count,like_count,video_count');
+    if (statsResp.status === 200 && statsResp.data && statsResp.data.data) {
+      return res.json({ data: statsResp.data.data });
+    }
+    res.json({ data: { follower_count: 0, following_count: 0, like_count: 0, video_count: 0 } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/tiktok/stream-config', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  if (!tiktokTokens.has(channelId)) return res.status(400).json({ error: 'TikTok not connected' });
+
+  const { title } = req.body;
+  if (!title) return res.status(400).json({ error: 'title required' });
+
+  try {
+    // TikTok Live Stream Kit: update live title while streaming.
+    // Falls back gracefully when the live API scope is not available.
+    const resp = await tiktokAPI(channelId, '/v2/live/title/', {
+      method: 'POST',
+      body: { title }
+    });
+    const ok = resp.status === 200 || resp.status === 204 || (resp.data && resp.data.data);
+    res.json({ data: { success: ok } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== TIKTOK CHAT / COMMENTS =====
+app.get('/api/tiktok/chat/messages', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  if (!tiktokTokens.has(channelId)) return res.status(400).json({ error: 'TikTok not connected' });
+
+  try {
+    const commentsResp = await tiktokAPI(channelId, '/v2/live/comments/');
+    if (commentsResp.status === 200 && commentsResp.data && commentsResp.data.data) {
+      const comments = (commentsResp.data.data.comments || []).map(c => ({
+        id: c.comment_id || c.id,
+        user: c.user?.display_name || c.user?.nickname || 'Viewer',
+        avatar: c.user?.avatar_url || '',
+        message: c.text || c.content || '',
+        timestamp: c.create_time ? c.create_time * 1000 : Date.now()
+      }));
+      return res.json({ data: { messages: comments } });
+    }
+    res.json({ data: { messages: [] } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/tiktok/chat/send', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  if (!tiktokTokens.has(channelId)) return res.status(400).json({ error: 'TikTok not connected' });
+
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ error: 'content required' });
+
+  try {
+    const resp = await tiktokAPI(channelId, '/v2/live/comment/', {
+      method: 'POST',
+      body: { content: content.trim() }
+    });
+    res.json({ data: { success: resp.status === 200 } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/tiktok/comments/:commentId', requireAuth, async (req, res) => {
+  const channelId = req.auth.user.id;
+  if (!tiktokTokens.has(channelId)) return res.status(400).json({ error: 'TikTok not connected' });
+
+  const { commentId } = req.params;
+  if (!commentId) return res.status(400).json({ error: 'commentId required' });
+
+  try {
+    const resp = await tiktokAPI(channelId, '/v2/comment/delete/', {
+      method: 'POST',
+      body: { comment_id: commentId }
     });
     res.json({ data: { success: resp.status === 200 } });
   } catch (err) {
